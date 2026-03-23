@@ -2,7 +2,7 @@
   "name": "Minha Holding",
   "short_name": "Holding",
   "description": "Carteira de investimentos pessoal",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0b0e14",
   "theme_color": "#0b0e14",

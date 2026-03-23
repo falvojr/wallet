@@ -1,8 +1,16 @@
-const CACHE_NAME = 'holding-v2';
-const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
+const CACHE_NAME = 'holding-v4';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled([
+        cache.add(new Request('./index.html')),
+        cache.add(new Request('./style.css')),
+        cache.add(new Request('./app.js')),
+        cache.add(new Request('./manifest.json')),
+      ])
+    )
+  );
   self.skipWaiting();
 });
 
@@ -19,16 +27,15 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   const url = e.request.url;
-  if (url.includes('brapi.dev') || url.includes('finnhub.io') || url.includes('awesomeapi')) return;
+  if (url.includes('brapi.dev') || url.includes('finnhub.io') || url.includes('awesomeapi') || url.includes('googleapis')) return;
 
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetched = fetch(e.request).then(res => {
+    fetch(e.request)
+      .then(res => {
         const clone = res.clone();
         caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
         return res;
-      }).catch(() => cached);
-      return cached || fetched;
-    })
+      })
+      .catch(() => caches.match(e.request))
   );
 });

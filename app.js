@@ -36,6 +36,7 @@
     btnPrices: $('#btnPrices'), btnSettings: $('#btnSettings'),
     btnWelcomeImport: $('#btnWelcomeImport'),
     addModal: $('#addModal'), newTicker: $('#newTicker'), newAmount: $('#newAmount'),
+    newTarget: $('#newTarget'),
     modalCancel: $('#modalCancel'), modalConfirm: $('#modalConfirm'),
     settingsModal: $('#settingsModal'), brapiToken: $('#brapiToken'),
     finnhubToken: $('#finnhubToken'), settingsCancel: $('#settingsCancel'),
@@ -44,6 +45,8 @@
     fileInput: $('#fileInput'), app: $('#app'),
     loadingOverlay: $('#loadingOverlay'), loadingText: $('#loadingText'),
   };
+
+  // Persistence
 
   function loadPortfolio() {
     try {
@@ -82,6 +85,8 @@
     sessionStorage.setItem(PRICES_KEY, JSON.stringify({ ts: Date.now(), prices, rates }));
   }
 
+  // Formatting
+
   function formatBRL(val) {
     return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
@@ -113,6 +118,139 @@
 
   function hideLoading() { dom.loadingOverlay.hidden = true; }
 
+  // Conversão para BRL:
+  // BR: preço direto. US: preço * câmbio USD/BRL.
+  // BTC: taxa BTC/BRL * qtd. Renda fixa e imóveis: amount já é o valor em BRL.
+  function assetValueBRL(classKey, asset) {
+    if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
+    if (classKey === 'storeOfValue') return (rates.BTCBRL || 0) * asset.amount;
+
+    const p = prices[asset.id];
+    if (!p) return null;
+
+    const isUSD = classKey === 'usStocks' || classKey === 'usReits';
+    return (isUSD ? p.price * (rates.USDBRL || 0) : p.price) * asset.amount;
+  }
+
+  function classTotalBRL(classKey) {
+    const assets = portfolio[classKey] || [];
+    let total = 0, hasPrices = false;
+    for (const asset of assets) {
+      const val = assetValueBRL(classKey, asset);
+      if (val !== null) { total += val; hasPrices = true; }
+    }
+    return hasPrices ? total : null;
+  }
+
+  function portfolioTotalBRL() {
+    let total = 0, partial = false;
+    for (const key of CLASS_KEYS) {
+      const val = classTotalBRL(key);
+      if (val !== null) total += val;
+      else if ((portfolio[key] || []).length > 0) partial = true;
+    }
+    return { total, partial };
+  }
+
+  // Metas e rebalanceamento:
+  // classTargets[key] = % desejado do portfólio total para cada classe.
+  // asset.target = % desejado dentro da classe. 0 = quarentena.
+  // "gap" = target - actual. A maior gap positiva indica onde aportar.
+  function getClassTarget(classKey) {
+    const targets = portfolio.classTargets || {};
+    if (targets[classKey] !== undefined) return targets[classKey];
+    const activeClasses = CLASS_KEYS.filter(k => (portfolio[k] || []).length > 0);
+    return activeClasses.length > 0 ? 100 / activeClasses.length : 0;
+  }
+
+  function getAssetTarget(classKey, asset) {
+    if (asset.target !== undefined) return asset.target;
+    const assets = portfolio[classKey] || [];
+    const activeAssets = assets.filter(a => a.target === undefined || a.target > 0);
+    return activeAssets.length > 0 ? 100 / activeAssets.length : 0;
+  }
+
+  function isQuarantined(asset) {
+    return asset.target !== undefined && asset.target === 0;
+  }
+
+  function findContributionTarget() {
+    const { total } = portfolioTotalBRL();
+    if (total <= 0) return null;
+
+    let bestClass = null, bestClassGap = -Infinity;
+
+    for (const key of CLASS_KEYS) {
+      if ((portfolio[key] || []).length === 0) continue;
+      const classTotal = classTotalBRL(key);
+      if (classTotal === null) continue;
+
+      const actualPct = (classTotal / total) * 100;
+      const targetPct = getClassTarget(key);
+      const gap = targetPct - actualPct;
+
+      if (gap > bestClassGap) {
+        bestClassGap = gap;
+        bestClass = key;
+      }
+    }
+
+    if (!bestClass) return null;
+
+    const classTotal = classTotalBRL(bestClass);
+    const assets = portfolio[bestClass] || [];
+    let bestAsset = null, bestAssetGap = -Infinity;
+
+    for (const asset of assets) {
+      if (isQuarantined(asset)) continue;
+      const val = assetValueBRL(bestClass, asset);
+      if (val === null) continue;
+
+      const actualPct = classTotal > 0 ? (val / classTotal) * 100 : 0;
+      const targetPct = getAssetTarget(bestClass, asset);
+      const gap = targetPct - actualPct;
+
+      if (gap > bestAssetGap) {
+        bestAssetGap = gap;
+        bestAsset = asset;
+      }
+    }
+
+    return {
+      classKey: bestClass,
+      classGap: bestClassGap,
+      asset: bestAsset,
+      assetGap: bestAssetGap,
+    };
+  }
+
+  function findAssetToRebalance(classKey) {
+    const assets = portfolio[classKey] || [];
+    if (assets.length < 2) return null;
+
+    const classTotal = classTotalBRL(classKey);
+    if (!classTotal || classTotal <= 0) return null;
+
+    let bestAsset = null, bestGap = -Infinity;
+
+    for (const asset of assets) {
+      if (isQuarantined(asset)) continue;
+      const val = assetValueBRL(classKey, asset);
+      if (val === null) continue;
+
+      const actualPct = (val / classTotal) * 100;
+      const targetPct = getAssetTarget(classKey, asset);
+      const gap = targetPct - actualPct;
+
+      if (gap > bestGap) {
+        bestGap = gap;
+        bestAsset = { id: asset.id, value: val, gap: bestGap };
+      }
+    }
+
+    return bestAsset;
+  }
+
   // Price APIs
 
   async function fetchAllPrices() {
@@ -122,25 +260,25 @@
     const brTickers = [...(portfolio.brStocks || []), ...(portfolio.brFiis || [])].map(a => a.id);
     const usTickers = [...(portfolio.usStocks || []), ...(portfolio.usReits || [])].map(a => a.id);
     const totalSteps = brTickers.length + usTickers.length + 1;
-    let step = 0;
+    let currentStep = 0;
 
-    const progress = (label) => {
-      step++;
-      showLoading(`${label} (${step}/${totalSteps})`);
+    const progress = label => {
+      currentStep++;
+      showLoading(`${label} (${currentStep}/${totalSteps})`);
     };
 
     try {
-      progress('Câmbio USD/BRL, BTC/BRL');
+      progress('Câmbio');
       await fetchExchangeRates();
 
       for (const ticker of brTickers) {
         progress(ticker);
-        await fetchBrSingle(ticker);
+        await fetchSingleBrQuote(ticker);
       }
 
       for (const ticker of usTickers) {
         progress(ticker);
-        await fetchUsSingle(ticker);
+        await fetchSingleUsQuote(ticker);
       }
 
       cachePrices();
@@ -162,110 +300,60 @@
     if (data.BTCBRL) rates.BTCBRL = parseFloat(data.BTCBRL.bid);
   }
 
-  async function fetchBrSingle(ticker) {
+  async function fetchSingleBrQuote(ticker) {
     if (!settings.brapiToken) return;
     try {
       const res = await fetch(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
       const data = await res.json();
-      if (data.results?.[0]) {
-        const r = data.results[0];
-        prices[r.symbol] = {
-          price: r.regularMarketPrice,
-          currency: r.currency || 'BRL',
-          change: r.regularMarketChangePercent,
+      const result = data.results?.[0];
+      if (result) {
+        prices[result.symbol] = {
+          price: result.regularMarketPrice,
+          currency: result.currency || 'BRL',
+          change: result.regularMarketChangePercent,
         };
       }
-    } catch (e) { console.warn(`brapi error (${ticker}):`, e); }
+    } catch (e) { console.warn(`brapi (${ticker}):`, e); }
   }
 
-  async function fetchUsSingle(ticker) {
+  async function fetchSingleUsQuote(ticker) {
     if (!settings.finnhubToken) return;
     try {
       const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${settings.finnhubToken}`);
       const data = await res.json();
-      if (data.c && data.c > 0) {
+      if (data.c > 0) {
         prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
       }
-    } catch (e) { console.warn(`finnhub error (${ticker}):`, e); }
+    } catch (e) { console.warn(`finnhub (${ticker}):`, e); }
     await new Promise(r => setTimeout(r, 120));
   }
 
-  // Conversão para BRL:
-  // BR: preço direto. US: preço * câmbio USD/BRL.
-  // BTC: taxa BTC/BRL * qtd. Renda fixa e imóveis: amount já é o valor em BRL.
-  function getAssetValue(classKey, asset) {
-    if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
-    if (classKey === 'storeOfValue') return (rates.BTCBRL || 0) * asset.amount;
+  // Donut chart
 
-    const p = prices[asset.id];
-    if (!p) return null;
-
-    const isUSD = classKey === 'usStocks' || classKey === 'usReits';
-    return (isUSD ? p.price * (rates.USDBRL || 0) : p.price) * asset.amount;
-  }
-
-  function getClassTotal(classKey) {
-    const assets = portfolio[classKey] || [];
-    let total = 0, hasPrice = false;
-    for (const asset of assets) {
-      const val = getAssetValue(classKey, asset);
-      if (val !== null) { total += val; hasPrice = true; }
-    }
-    return hasPrice ? total : null;
-  }
-
-  function getPortfolioTotal() {
-    let total = 0, partial = false;
-    for (const key of CLASS_KEYS) {
-      const val = getClassTotal(key);
-      if (val !== null) total += val;
-      else if ((portfolio[key] || []).length > 0) partial = true;
-    }
-    return { total, partial };
-  }
-
-  function getLowestAsset(classKey) {
-    const assets = portfolio[classKey] || [];
-    if (assets.length < 2) return null;
-
-    let lowest = null, lowestVal = Infinity;
-    for (const asset of assets) {
-      const val = getAssetValue(classKey, asset);
-      if (val !== null && val < lowestVal) {
-        lowestVal = val;
-        lowest = { id: asset.id, value: val };
-      }
-    }
-    return lowest;
-  }
-
-  // Donut
-
-  function buildDonut(segments) {
+  function renderDonut(segments) {
     const total = segments.reduce((s, d) => s + d.value, 0);
-    if (total === 0) return '<p style="color:var(--text-muted);padding:24px">Sem dados</p>';
+    if (total === 0) return '<p style="color:var(--text-muted);padding:20px;font-size:0.82rem">Sem dados</p>';
 
-    const R = 80, C = Math.PI * 2 * R;
+    const R = 75, C = Math.PI * 2 * R;
     let offset = 0;
 
     const arcs = segments.map(d => {
       const dash = (d.value / total) * C;
       const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
-        stroke-width="24" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}"
-        opacity="0.88"/>`;
+        stroke-width="22" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}" opacity="0.88"/>`;
       offset += dash;
       return arc;
     });
 
-    const { total: portfolioTotal, partial } = getPortfolioTotal();
-    const hasValue = portfolioTotal > 0;
+    const { total: ptotal, partial } = portfolioTotalBRL();
+    const hasValue = ptotal > 0;
 
     return `
       <div class="donut-wrap">
         <svg viewBox="0 0 200 200">${arcs.join('')}</svg>
         <div class="donut-center">
           <div class="total-label">${hasValue ? 'Patrimônio' : 'Posições'}</div>
-          <div class="total-value">${hasValue ? formatCompact(portfolioTotal) : segments.reduce((s, d) => s + d.count, 0)}</div>
+          <div class="total-value">${hasValue ? formatCompact(ptotal) : segments.reduce((s, d) => s + d.count, 0)}</div>
           ${hasValue && partial ? '<div class="total-sub">(parcial)</div>' : ''}
         </div>
       </div>`;
@@ -290,12 +378,16 @@
     updateEditUI();
   }
 
+  function activeClassKeys() {
+    return CLASS_KEYS.filter(k => (portfolio[k] || []).length > 0);
+  }
+
   function renderTabs() {
     const tabs = [
       { key: 'overview', label: 'Visão Geral', count: null },
-      ...CLASS_KEYS
-        .filter(k => (portfolio[k] || []).length > 0)
-        .map(k => ({ key: k, label: CLASS_META[k].label, count: (portfolio[k] || []).length })),
+      ...activeClassKeys().map(k => ({
+        key: k, label: CLASS_META[k].label, count: (portfolio[k]).length,
+      })),
     ];
 
     dom.tabNav.innerHTML = tabs.map(t => `
@@ -310,43 +402,60 @@
   }
 
   function renderPanels() {
-    let html = `<div class="tab-panel ${activeTab === 'overview' ? 'active' : ''}" data-panel="overview">`;
-    html += renderOverview();
-    html += '</div>';
+    let html = panelWrap('overview', renderOverview());
 
-    for (const key of CLASS_KEYS) {
-      if ((portfolio[key] || []).length === 0 && activeTab !== key) continue;
-      html += `<div class="tab-panel ${activeTab === key ? 'active' : ''}" data-panel="${key}">`;
-      html += renderAssetPanel(key);
-      html += '</div>';
+    for (const key of activeClassKeys()) {
+      html += panelWrap(key, renderAssetPanel(key));
     }
 
     dom.panels.innerHTML = html;
     bindPanelEvents();
   }
 
+  function panelWrap(key, content) {
+    return `<div class="tab-panel ${key === activeTab ? 'active' : ''}" data-panel="${key}">${content}</div>`;
+  }
+
   function renderOverview() {
-    const chartData = CLASS_KEYS.map(k => {
-      const classTotal = getClassTotal(k);
-      const count = (portfolio[k] || []).length;
+    const { total: pTotal } = portfolioTotalBRL();
+
+    const chartData = activeClassKeys().map(k => {
+      const classTotal = classTotalBRL(k);
+      const count = portfolio[k].length;
       return {
         key: k, label: CLASS_META[k].label, color: CLASS_META[k].color,
         value: classTotal !== null ? classTotal : count * 0.01,
         count, hasPrices: classTotal !== null, total: classTotal,
       };
-    }).filter(d => d.count > 0);
+    });
 
-    const pTotal = getPortfolioTotal().total;
-
+    const contributionTarget = findContributionTarget();
     let html = '<div class="overview-grid">';
 
+    // Próximo aporte
+    if (contributionTarget?.asset) {
+      const cm = CLASS_META[contributionTarget.classKey];
+      html += `
+        <div class="next-contribution" style="grid-column:1/-1">
+          <div class="next-contribution-title">Próximo aporte sugerido</div>
+          <div class="next-contribution-row">
+            <span class="nc-class" style="color:${cm.color}">${cm.label}</span>
+            <span class="next-contribution-arrow">→</span>
+            <span class="nc-asset" style="color:${cm.color}">${contributionTarget.asset.id}</span>
+            <span class="nc-gap">classe ${contributionTarget.classGap >= 0 ? '+' : ''}${contributionTarget.classGap.toFixed(1)}% · ativo ${contributionTarget.assetGap >= 0 ? '+' : ''}${contributionTarget.assetGap.toFixed(1)}%</span>
+          </div>
+        </div>`;
+    }
+
+    // Donut + Legend
     html += '<div class="chart-card"><h2>Diversificação</h2>';
-    html += buildDonut(chartData);
+    html += renderDonut(chartData);
     html += '<div class="chart-legend">';
     chartData.forEach(d => {
       const pct = d.hasPrices && pTotal > 0 ? ((d.total / pTotal) * 100).toFixed(1) : null;
+      const targetPct = getClassTarget(d.key);
       const valueStr = d.hasPrices ? formatBRL(d.total) : `${d.count} pos.`;
-      const pctStr = pct ? ` (${pct}%)` : '';
+      const pctStr = pct !== null ? ` (${pct}%` + (targetPct ? `/${targetPct.toFixed(0)}%` : '') + ')' : '';
       html += `
         <div class="legend-row" data-goto="${d.key}">
           <span class="legend-dot" style="background:${d.color}"></span>
@@ -356,25 +465,31 @@
     });
     html += '</div></div>';
 
+    // Summary cards
     html += '<div class="summary-cards">';
-    CLASS_KEYS.forEach(key => {
-      const assets = portfolio[key] || [];
-      const count = assets.length;
-      if (count === 0) return;
-
+    activeClassKeys().forEach(key => {
+      const count = portfolio[key].length;
       const meta = CLASS_META[key];
-      const classTotal = getClassTotal(key);
+      const classTotal = classTotalBRL(key);
+      const isTarget = contributionTarget?.classKey === key;
       const posLabel = count === 1 ? '1 posição' : `${count} posições`;
       const sub = classTotal !== null ? posLabel : `${posLabel} · sem cotação`;
-      const valueHtml = classTotal !== null
-        ? `<div class="summary-card-value" style="color:${meta.color}">${formatBRL(classTotal)}</div>`
-        : `<div class="summary-card-value" style="color:${meta.color}">${count}</div>`;
+
+      const actualPct = classTotal !== null && pTotal > 0 ? (classTotal / pTotal) * 100 : 0;
+      const targetPct = getClassTarget(key);
+      const barFill = targetPct > 0 ? Math.min((actualPct / targetPct) * 100, 100) : 0;
 
       html += `
-        <div class="summary-card" data-class="${key}" data-goto="${key}">
+        <div class="summary-card ${isTarget ? 'is-target' : ''}" data-class="${key}" data-goto="${key}">
           <div class="summary-card-label">${meta.label}</div>
-          ${valueHtml}
+          <div class="summary-card-value" style="color:${meta.color}">
+            ${classTotal !== null ? formatBRL(classTotal) : count}
+          </div>
           <div class="summary-card-sub">${sub}</div>
+          ${targetPct > 0 ? `
+            <div class="target-bar">
+              <div class="target-bar-fill" style="width:${barFill}%;background:${meta.color}"></div>
+            </div>` : ''}
         </div>`;
     });
     html += '</div></div>';
@@ -386,49 +501,53 @@
     const meta = CLASS_META[key];
     const assets = portfolio[key] || [];
     const isUSD = key === 'usStocks' || key === 'usReits';
-    const lowest = getLowestAsset(key);
+    const rebalanceTarget = findAssetToRebalance(key);
+    const classTarget = getClassTarget(key);
 
     let html = `
       <div class="asset-section-header">
         <h2 class="asset-section-title" style="color:${meta.color}">${meta.icon} ${meta.label}</h2>
       </div>`;
 
-    if (lowest && !editMode) {
+    // Meta da classe (editável)
+    html += `
+      <div class="edit-target-row">
+        <label>Meta da classe: </label>
+        <input type="text" value="${classTarget.toFixed(0)}" data-class-target="${key}" inputmode="decimal">
+        <span>% do portfólio</span>
+      </div>`;
+
+    // Indicador de rebalanceamento
+    if (rebalanceTarget && !editMode) {
       html += `
         <div class="rebalance-hint">
-          <svg class="rebalance-hint-icon" viewBox="0 0 24 24" fill="none" stroke="#fbbf24"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
           <span class="rebalance-hint-label">
-            Menor posição:
-            <strong class="rebalance-hint-ticker" style="color:${meta.color}">${lowest.id}</strong>
+            Aportar em:
+            <strong class="rebalance-hint-ticker" style="color:${meta.color}">${rebalanceTarget.id}</strong>
+            (gap ${rebalanceTarget.gap >= 0 ? '+' : ''}${rebalanceTarget.gap.toFixed(1)}%)
           </span>
-          <span class="rebalance-hint-value" style="color:${meta.color}">${formatBRL(lowest.value)}</span>
+          <span class="rebalance-hint-value" style="color:${meta.color}">${formatBRL(rebalanceTarget.value)}</span>
         </div>`;
     }
 
+    // Tabela
     html += `
+      <div class="table-wrap">
       <table class="asset-table">
-        <thead>
-          <tr>
-            <th>Ticker</th>
-            <th class="col-right">Qtd</th>
-            <th class="col-right">Preço</th>
-            <th class="col-right">Var.</th>
-            <th class="col-right">Total</th>
-          </tr>
-        </thead>
+        <thead><tr>
+          <th>Ticker</th>
+          <th class="col-r">Qtd</th>
+          <th class="col-r">Preço</th>
+          <th class="col-r">Var.</th>
+          <th class="col-r">Total</th>
+        </tr></thead>
         <tbody>`;
 
-    const assetsWithValues = assets.map((asset, idx) => ({
-      asset, idx, value: getAssetValue(key, asset),
-    }));
-
-    assetsWithValues.forEach(({ asset, idx, value }) => {
-      const isLowest = lowest && asset.id === lowest.id;
+    assets.forEach((asset, idx) => {
+      const isTarget = rebalanceTarget && asset.id === rebalanceTarget.id;
+      const quarantined = isQuarantined(asset);
       const p = prices[asset.id];
+      const value = assetValueBRL(key, asset);
 
       let priceStr = '', changeHtml = '';
       if (key === 'fixedIncome' || key === 'realEstate') {
@@ -439,29 +558,34 @@
         priceStr = (isUSD ? '$ ' : 'R$ ') + p.price.toFixed(2);
         if (p.change !== undefined) {
           const cls = p.change >= 0 ? 'change-up' : 'change-down';
-          const sign = p.change >= 0 ? '+' : '';
-          changeHtml = `<span class="${cls}">${sign}${p.change.toFixed(2)}%</span>`;
+          changeHtml = `<span class="${cls}">${p.change >= 0 ? '+' : ''}${p.change.toFixed(2)}%</span>`;
         }
       }
 
-      const valueStr = value !== null ? formatBRL(value) : '';
+      const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
+      const assetTarget = getAssetTarget(key, asset);
+      const badge = isTarget ? '<span class="target-badge">aportar</span>'
+                  : quarantined ? '<span class="quarantine-badge">Q</span>' : '';
 
       html += `
-          <tr class="${isLowest ? 'row-lowest' : ''}">
-            <td class="td-ticker">
-              ${asset.id}${isLowest ? '<span class="lowest-badge">rebalancear</span>' : ''}
-            </td>
-            <td class="td-right view-cell">${formatQty(asset.amount)}</td>
-            <td class="td-right edit-cell">
-              <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" inputmode="decimal">
+          <tr class="${rowClass}">
+            <td class="td-ticker">${asset.id}${badge}</td>
+            <td class="td-r view-cell">${formatQty(asset.amount)}</td>
+            <td class="td-r edit-cell">
+              <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">
             </td>
             <td class="td-price">${priceStr}</td>
             <td class="td-change">${changeHtml}</td>
-            <td class="td-value" style="color:${meta.color}">${valueStr}</td>
-            <td class="edit-cell" style="width:40px">
+            <td class="td-value" style="color:${meta.color}">${value !== null ? formatBRL(value) : ''}</td>
+            <td class="edit-cell" style="width:60px;text-align:right">
+              <input type="text" value="${asset.target !== undefined ? asset.target : ''}"
+                data-class="${key}" data-idx="${idx}" data-field="target"
+                placeholder="auto" style="width:45px" inputmode="decimal" title="Meta % (0=quarentena)">
+            </td>
+            <td class="edit-cell" style="width:32px">
               <button class="edit-remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </td>
@@ -470,24 +594,55 @@
 
     html += `
           <tr class="add-row" data-add-class="${key}">
-            <td colspan="6">+ Adicionar ativo</td>
+            <td colspan="7">+ Adicionar ativo</td>
           </tr>
         </tbody>
-      </table>`;
+      </table>
+      </div>`;
 
     return html;
   }
+
+  // Event binding
 
   function bindPanelEvents() {
     $$('[data-goto]', dom.panels).forEach(el =>
       el.addEventListener('click', () => { activeTab = el.dataset.goto; render(); })
     );
 
-    $$('.edit-cell input', dom.panels).forEach(input =>
+    $$('.edit-cell input[data-field="amount"]', dom.panels).forEach(input =>
       input.addEventListener('change', () => {
         const val = parseFloat(input.value.replace(',', '.'));
         if (!isNaN(val) && val >= 0) {
           portfolio[input.dataset.class][parseInt(input.dataset.idx)].amount = val;
+          savePortfolio();
+        }
+      })
+    );
+
+    $$('.edit-cell input[data-field="target"]', dom.panels).forEach(input =>
+      input.addEventListener('change', () => {
+        const idx = parseInt(input.dataset.idx);
+        const raw = input.value.trim();
+        if (raw === '') {
+          delete portfolio[input.dataset.class][idx].target;
+        } else {
+          const val = parseFloat(raw.replace(',', '.'));
+          if (!isNaN(val) && val >= 0) {
+            portfolio[input.dataset.class][idx].target = val;
+          }
+        }
+        savePortfolio();
+      })
+    );
+
+    $$('input[data-class-target]', dom.panels).forEach(input =>
+      input.addEventListener('change', () => {
+        const val = parseFloat(input.value.replace(',', '.'));
+        if (!isNaN(val) && val >= 0) {
+          if (!portfolio.classTargets) portfolio.classTargets = {};
+          portfolio[input.dataset.classTarget] = undefined;
+          portfolio.classTargets[input.dataset.classTarget] = val;
           savePortfolio();
         }
       })
@@ -542,6 +697,7 @@
     addTargetClass = cls;
     dom.newTicker.value = '';
     dom.newAmount.value = '';
+    dom.newTarget.value = '';
     dom.addModal.classList.add('open');
     setTimeout(() => dom.newTicker.focus(), 100);
   }
@@ -559,12 +715,19 @@
     if (isNaN(amount) || amount <= 0) { dom.newAmount.focus(); return; }
 
     if ((portfolio[addTargetClass] || []).find(a => a.id === ticker)) {
-      toast(`${ticker} já existe nesta classe`);
+      toast(`${ticker} já existe`);
       return;
     }
 
+    const newAsset = { id: ticker, amount };
+    const targetRaw = dom.newTarget.value.trim();
+    if (targetRaw !== '') {
+      const targetVal = parseFloat(targetRaw.replace(',', '.'));
+      if (!isNaN(targetVal) && targetVal >= 0) newAsset.target = targetVal;
+    }
+
     if (!portfolio[addTargetClass]) portfolio[addTargetClass] = [];
-    portfolio[addTargetClass].push({ id: ticker, amount });
+    portfolio[addTargetClass].push(newAsset);
     savePortfolio();
     closeAddModal();
     render();
@@ -593,6 +756,7 @@
 
   function exportJSON() {
     const out = { currency: portfolio.currency || 'BRL', syncedAt: portfolio.syncedAt };
+    if (portfolio.classTargets) out.classTargets = portfolio.classTargets;
     CLASS_KEYS.forEach(k => { out[k] = portfolio[k] || []; });
 
     const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
@@ -630,8 +794,6 @@
     reader.readAsText(file);
   }
 
-  function triggerFileInput() { dom.fileInput.click(); }
-
   // Drag & Drop
 
   let dragCounter = 0;
@@ -657,8 +819,8 @@
 
   dom.btnEdit.addEventListener('click', toggleEditMode);
   dom.btnExport.addEventListener('click', exportJSON);
-  dom.btnImport.addEventListener('click', triggerFileInput);
-  dom.btnWelcomeImport.addEventListener('click', triggerFileInput);
+  dom.btnImport.addEventListener('click', () => dom.fileInput.click());
+  dom.btnWelcomeImport.addEventListener('click', () => dom.fileInput.click());
   dom.btnPrices.addEventListener('click', fetchAllPrices);
   dom.btnSettings.addEventListener('click', openSettings);
 
@@ -675,7 +837,8 @@
   dom.settingsSave.addEventListener('click', saveSettingsFromModal);
   dom.settingsModal.addEventListener('click', e => { if (e.target === dom.settingsModal) closeSettings(); });
 
-  dom.newAmount.addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
+  dom.newAmount.addEventListener('keydown', e => { if (e.key === 'Enter') dom.newTarget.focus(); });
+  dom.newTarget.addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
   dom.newTicker.addEventListener('keydown', e => { if (e.key === 'Enter') dom.newAmount.focus(); });
 
   document.addEventListener('keydown', e => {
@@ -685,6 +848,8 @@
       else if (editMode) toggleEditMode();
     }
   });
+
+  // PWA
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
