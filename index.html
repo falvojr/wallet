@@ -49,8 +49,7 @@
         <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
       </div>
       <h2>Importe sua carteira</h2>
@@ -59,8 +58,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
         Importar JSON
       </button>
@@ -70,6 +68,15 @@
     <div id="panels"></div>
   </main>
 
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay" hidden>
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <p class="loading-text" id="loadingText">Buscando cotações...</p>
+    </div>
+  </div>
+
+  <!-- Add Asset Modal -->
   <div class="modal-overlay" id="addModal">
     <div class="modal">
       <h3>Adicionar Ativo</h3>
@@ -88,6 +95,7 @@
     </div>
   </div>
 
+  <!-- Settings Modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal modal--wide">
       <h3>Configurações de API</h3>

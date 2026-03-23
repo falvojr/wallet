@@ -42,6 +42,7 @@
     settingsSave: $('#settingsSave'),
     dropZone: $('#dropZone'), toastContainer: $('#toastContainer'),
     fileInput: $('#fileInput'), app: $('#app'),
+    loadingOverlay: $('#loadingOverlay'), loadingText: $('#loadingText'),
   };
 
   function loadPortfolio() {
@@ -56,19 +57,11 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(portfolio));
   }
 
-  function clearPortfolio() {
-    portfolio = null;
-    prices = {};
-    rates = {};
-    localStorage.removeItem(STORAGE_KEY);
-    sessionStorage.removeItem(PRICES_KEY);
-  }
-
   function loadSettings() {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
       if (stored) settings = JSON.parse(stored);
-    } catch { /* keep defaults */ }
+    } catch {}
   }
 
   function saveSettings() {
@@ -82,7 +75,7 @@
         prices = stored.prices || {};
         rates = stored.rates || {};
       }
-    } catch { /* no cache */ }
+    } catch {}
   }
 
   function cachePrices() {
@@ -113,30 +106,42 @@
     setTimeout(() => el.remove(), 3000);
   }
 
+  function showLoading(text) {
+    dom.loadingText.textContent = text;
+    dom.loadingOverlay.hidden = false;
+  }
+
+  function hideLoading() { dom.loadingOverlay.hidden = true; }
+
   // Price APIs
 
   async function fetchAllPrices() {
     if (fetchingPrices || !portfolio) return;
     fetchingPrices = true;
-    dom.btnPrices.classList.add('btn--loading');
+
+    const brTickers = [...(portfolio.brStocks || []), ...(portfolio.brFiis || [])].map(a => a.id);
+    const usTickers = [...(portfolio.usStocks || []), ...(portfolio.usReits || [])].map(a => a.id);
+    const totalSteps = brTickers.length + usTickers.length + 1;
+    let step = 0;
+
+    const progress = (label) => {
+      step++;
+      showLoading(`${label} (${step}/${totalSteps})`);
+    };
 
     try {
+      progress('Câmbio USD/BRL, BTC/BRL');
       await fetchExchangeRates();
 
-      const brTickers = [
-        ...(portfolio.brStocks || []),
-        ...(portfolio.brFiis || []),
-      ].map(a => a.id);
+      for (const ticker of brTickers) {
+        progress(ticker);
+        await fetchBrSingle(ticker);
+      }
 
-      const usTickers = [
-        ...(portfolio.usStocks || []),
-        ...(portfolio.usReits || []),
-      ].map(a => a.id);
-
-      await Promise.allSettled([
-        brTickers.length ? fetchBrPrices(brTickers) : Promise.resolve(),
-        usTickers.length ? fetchUsPrices(usTickers) : Promise.resolve(),
-      ]);
+      for (const ticker of usTickers) {
+        progress(ticker);
+        await fetchUsSingle(ticker);
+      }
 
       cachePrices();
       render();
@@ -146,7 +151,7 @@
       console.error(err);
     } finally {
       fetchingPrices = false;
-      dom.btnPrices.classList.remove('btn--loading');
+      hideLoading();
     }
   }
 
@@ -157,42 +162,32 @@
     if (data.BTCBRL) rates.BTCBRL = parseFloat(data.BTCBRL.bid);
   }
 
-  async function fetchBrPrices(tickers) {
+  async function fetchBrSingle(ticker) {
     if (!settings.brapiToken) return;
-    const batchSize = 1; // plano atual da brapi permite apenas 1 ativo por requisição
-
-    for (let i = 0; i < tickers.length; i += batchSize) {
-      const batch = tickers.slice(i, i + batchSize).join(',');
-      try {
-        const res = await fetch(`https://brapi.dev/api/quote/${batch}?token=${settings.brapiToken}`);
-        const data = await res.json();
-        if (data.results) {
-          data.results.forEach(r => {
-            prices[r.symbol] = {
-              price: r.regularMarketPrice,
-              currency: r.currency || 'BRL',
-              change: r.regularMarketChangePercent,
-            };
-          });
-        }
-      } catch (e) { console.warn('brapi batch error:', e); }
-    }
+    try {
+      const res = await fetch(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
+      const data = await res.json();
+      if (data.results?.[0]) {
+        const r = data.results[0];
+        prices[r.symbol] = {
+          price: r.regularMarketPrice,
+          currency: r.currency || 'BRL',
+          change: r.regularMarketChangePercent,
+        };
+      }
+    } catch (e) { console.warn(`brapi error (${ticker}):`, e); }
   }
 
-  async function fetchUsPrices(tickers) {
+  async function fetchUsSingle(ticker) {
     if (!settings.finnhubToken) return;
-    const delay = ms => new Promise(r => setTimeout(r, ms));
-
-    for (const ticker of tickers) {
-      try {
-        const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${settings.finnhubToken}`);
-        const data = await res.json();
-        if (data.c && data.c > 0) {
-          prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
-        }
-      } catch (e) { console.warn(`finnhub error (${ticker}):`, e); }
-      await delay(120);
-    }
+    try {
+      const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${settings.finnhubToken}`);
+      const data = await res.json();
+      if (data.c && data.c > 0) {
+        prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
+      }
+    } catch (e) { console.warn(`finnhub error (${ticker}):`, e); }
+    await new Promise(r => setTimeout(r, 120));
   }
 
   // Conversão para BRL:
@@ -206,14 +201,12 @@
     if (!p) return null;
 
     const isUSD = classKey === 'usStocks' || classKey === 'usReits';
-    const priceInBRL = isUSD ? p.price * (rates.USDBRL || 0) : p.price;
-    return priceInBRL * asset.amount;
+    return (isUSD ? p.price * (rates.USDBRL || 0) : p.price) * asset.amount;
   }
 
   function getClassTotal(classKey) {
     const assets = portfolio[classKey] || [];
-    let total = 0;
-    let hasPrice = false;
+    let total = 0, hasPrice = false;
     for (const asset of assets) {
       const val = getAssetValue(classKey, asset);
       if (val !== null) { total += val; hasPrice = true; }
@@ -222,8 +215,7 @@
   }
 
   function getPortfolioTotal() {
-    let total = 0;
-    let partial = false;
+    let total = 0, partial = false;
     for (const key of CLASS_KEYS) {
       const val = getClassTotal(key);
       if (val !== null) total += val;
@@ -232,14 +224,28 @@
     return { total, partial };
   }
 
+  function getLowestAsset(classKey) {
+    const assets = portfolio[classKey] || [];
+    if (assets.length < 2) return null;
+
+    let lowest = null, lowestVal = Infinity;
+    for (const asset of assets) {
+      const val = getAssetValue(classKey, asset);
+      if (val !== null && val < lowestVal) {
+        lowestVal = val;
+        lowest = { id: asset.id, value: val };
+      }
+    }
+    return lowest;
+  }
+
   // Donut
 
   function buildDonut(segments) {
     const total = segments.reduce((s, d) => s + d.value, 0);
     if (total === 0) return '<p style="color:var(--text-muted);padding:24px">Sem dados</p>';
 
-    const R = 80;
-    const C = Math.PI * 2 * R;
+    const R = 80, C = Math.PI * 2 * R;
     let offset = 0;
 
     const arcs = segments.map(d => {
@@ -253,17 +259,14 @@
 
     const { total: portfolioTotal, partial } = getPortfolioTotal();
     const hasValue = portfolioTotal > 0;
-    const centerValue = hasValue ? formatCompact(portfolioTotal) : segments.reduce((s, d) => s + d.count, 0);
-    const centerLabel = hasValue ? 'Patrimônio' : 'Posições';
-    const centerSub = hasValue && partial ? '(parcial)' : '';
 
     return `
       <div class="donut-wrap">
         <svg viewBox="0 0 200 200">${arcs.join('')}</svg>
         <div class="donut-center">
-          <div class="total-label">${centerLabel}</div>
-          <div class="total-value">${centerValue}</div>
-          ${centerSub ? `<div class="total-sub">${centerSub}</div>` : ''}
+          <div class="total-label">${hasValue ? 'Patrimônio' : 'Posições'}</div>
+          <div class="total-value">${hasValue ? formatCompact(portfolioTotal) : segments.reduce((s, d) => s + d.count, 0)}</div>
+          ${hasValue && partial ? '<div class="total-sub">(parcial)</div>' : ''}
         </div>
       </div>`;
   }
@@ -290,9 +293,9 @@
   function renderTabs() {
     const tabs = [
       { key: 'overview', label: 'Visão Geral', count: null },
-      ...CLASS_KEYS.map(k => ({
-        key: k, label: CLASS_META[k].label, count: (portfolio[k] || []).length,
-      })),
+      ...CLASS_KEYS
+        .filter(k => (portfolio[k] || []).length > 0)
+        .map(k => ({ key: k, label: CLASS_META[k].label, count: (portfolio[k] || []).length })),
     ];
 
     dom.tabNav.innerHTML = tabs.map(t => `
@@ -312,6 +315,7 @@
     html += '</div>';
 
     for (const key of CLASS_KEYS) {
+      if ((portfolio[key] || []).length === 0 && activeTab !== key) continue;
       html += `<div class="tab-panel ${activeTab === key ? 'active' : ''}" data-panel="${key}">`;
       html += renderAssetPanel(key);
       html += '</div>';
@@ -335,24 +339,24 @@
     const pTotal = getPortfolioTotal().total;
 
     let html = '<div class="overview-grid">';
+
     html += '<div class="chart-card"><h2>Diversificação</h2>';
     html += buildDonut(chartData);
     html += '<div class="chart-legend">';
-
     chartData.forEach(d => {
-      const display = d.hasPrices ? formatBRL(d.total) : `${d.count} pos.`;
-      const pct = d.hasPrices && pTotal > 0 ? ((d.total / pTotal) * 100).toFixed(1) + '%' : '';
+      const pct = d.hasPrices && pTotal > 0 ? ((d.total / pTotal) * 100).toFixed(1) : null;
+      const valueStr = d.hasPrices ? formatBRL(d.total) : `${d.count} pos.`;
+      const pctStr = pct ? ` (${pct}%)` : '';
       html += `
-        <div class="legend-item" data-goto="${d.key}">
+        <div class="legend-row" data-goto="${d.key}">
           <span class="legend-dot" style="background:${d.color}"></span>
-          ${d.label}
-          <span class="legend-value">${pct ? pct + ' · ' : ''}${display}</span>
+          <span class="legend-label">${d.label}</span>
+          <span class="legend-amount">${valueStr}${pctStr}</span>
         </div>`;
     });
-
     html += '</div></div>';
-    html += '<div class="summary-cards">';
 
+    html += '<div class="summary-cards">';
     CLASS_KEYS.forEach(key => {
       const assets = portfolio[key] || [];
       const count = assets.length;
@@ -360,23 +364,21 @@
 
       const meta = CLASS_META[key];
       const classTotal = getClassTotal(key);
-
-      const valueDisplay = classTotal !== null
+      const posLabel = count === 1 ? '1 posição' : `${count} posições`;
+      const sub = classTotal !== null ? posLabel : `${posLabel} · sem cotação`;
+      const valueHtml = classTotal !== null
         ? `<div class="summary-card-value" style="color:${meta.color}">${formatBRL(classTotal)}</div>`
         : `<div class="summary-card-value" style="color:${meta.color}">${count}</div>`;
-
-      const posLabel = count === 1 ? '1 posição' : `${count} posições`;
-      const subDisplay = classTotal !== null ? posLabel : `${posLabel} · sem cotação`;
 
       html += `
         <div class="summary-card" data-class="${key}" data-goto="${key}">
           <div class="summary-card-label">${meta.label}</div>
-          ${valueDisplay}
-          <div class="summary-card-sub">${subDisplay}</div>
+          ${valueHtml}
+          <div class="summary-card-sub">${sub}</div>
         </div>`;
     });
-
     html += '</div></div>';
+
     return html;
   }
 
@@ -384,57 +386,94 @@
     const meta = CLASS_META[key];
     const assets = portfolio[key] || [];
     const isUSD = key === 'usStocks' || key === 'usReits';
+    const lowest = getLowestAsset(key);
 
     let html = `
       <div class="asset-section-header">
         <h2 class="asset-section-title" style="color:${meta.color}">${meta.icon} ${meta.label}</h2>
-      </div>
-      <div class="asset-grid">`;
+      </div>`;
 
-    assets.forEach((asset, idx) => {
+    if (lowest && !editMode) {
+      html += `
+        <div class="rebalance-hint">
+          <svg class="rebalance-hint-icon" viewBox="0 0 24 24" fill="none" stroke="#fbbf24"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          <span class="rebalance-hint-label">
+            Menor posição:
+            <strong class="rebalance-hint-ticker" style="color:${meta.color}">${lowest.id}</strong>
+          </span>
+          <span class="rebalance-hint-value" style="color:${meta.color}">${formatBRL(lowest.value)}</span>
+        </div>`;
+    }
+
+    html += `
+      <table class="asset-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th class="col-right">Qtd</th>
+            <th class="col-right">Preço</th>
+            <th class="col-right">Var.</th>
+            <th class="col-right">Total</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    const assetsWithValues = assets.map((asset, idx) => ({
+      asset, idx, value: getAssetValue(key, asset),
+    }));
+
+    assetsWithValues.forEach(({ asset, idx, value }) => {
+      const isLowest = lowest && asset.id === lowest.id;
       const p = prices[asset.id];
-      const val = getAssetValue(key, asset);
 
-      let priceHtml = '';
+      let priceStr = '', changeHtml = '';
       if (key === 'fixedIncome' || key === 'realEstate') {
-        priceHtml = '<div class="asset-price">Valor declarado</div>';
+        priceStr = 'Declarado';
       } else if (key === 'storeOfValue' && rates.BTCBRL) {
-        priceHtml = `<div class="asset-price">${formatBRL(rates.BTCBRL)}</div>`;
+        priceStr = formatBRL(rates.BTCBRL);
       } else if (p) {
-        const sym = isUSD ? '$' : 'R$';
-        const chg = p.change !== undefined ? ` (${p.change >= 0 ? '+' : ''}${p.change.toFixed(2)}%)` : '';
-        priceHtml = `<div class="asset-price">${sym} ${p.price.toFixed(2)}${chg}</div>`;
+        priceStr = (isUSD ? '$ ' : 'R$ ') + p.price.toFixed(2);
+        if (p.change !== undefined) {
+          const cls = p.change >= 0 ? 'change-up' : 'change-down';
+          const sign = p.change >= 0 ? '+' : '';
+          changeHtml = `<span class="${cls}">${sign}${p.change.toFixed(2)}%</span>`;
+        }
       }
 
-      const valueHtml = val !== null
-        ? `<div class="asset-value" style="color:${meta.color}">${formatBRL(val)}</div>` : '';
+      const valueStr = value !== null ? formatBRL(value) : '';
 
       html += `
-        <div class="asset-card" data-class="${key}" data-idx="${idx}">
-          <div class="asset-ticker">${asset.id}</div>
-          ${priceHtml}
-          <div class="asset-amount">Qtd: <strong>${formatQty(asset.amount)}</strong></div>
-          ${valueHtml}
-          <div class="edit-input-group">
-            <input type="text" class="edit-input" value="${asset.amount}"
-              data-class="${key}" data-idx="${idx}" inputmode="decimal">
-            <button class="edit-remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        </div>`;
+          <tr class="${isLowest ? 'row-lowest' : ''}">
+            <td class="td-ticker">
+              ${asset.id}${isLowest ? '<span class="lowest-badge">rebalancear</span>' : ''}
+            </td>
+            <td class="td-right view-cell">${formatQty(asset.amount)}</td>
+            <td class="td-right edit-cell">
+              <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" inputmode="decimal">
+            </td>
+            <td class="td-price">${priceStr}</td>
+            <td class="td-change">${changeHtml}</td>
+            <td class="td-value" style="color:${meta.color}">${valueStr}</td>
+            <td class="edit-cell" style="width:40px">
+              <button class="edit-remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </td>
+          </tr>`;
     });
 
     html += `
-        <div class="add-asset-card" data-add-class="${key}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Adicionar
-        </div>
-      </div>`;
+          <tr class="add-row" data-add-class="${key}">
+            <td colspan="6">+ Adicionar ativo</td>
+          </tr>
+        </tbody>
+      </table>`;
 
     return html;
   }
@@ -444,7 +483,7 @@
       el.addEventListener('click', () => { activeTab = el.dataset.goto; render(); })
     );
 
-    $$('.edit-input', dom.panels).forEach(input =>
+    $$('.edit-cell input', dom.panels).forEach(input =>
       input.addEventListener('change', () => {
         const val = parseFloat(input.value.replace(',', '.'));
         if (!isNaN(val) && val >= 0) {
@@ -468,8 +507,8 @@
       })
     );
 
-    $$('.add-asset-card', dom.panels).forEach(card =>
-      card.addEventListener('click', () => openAddModal(card.dataset.addClass))
+    $$('.add-row', dom.panels).forEach(row =>
+      row.addEventListener('click', () => openAddModal(row.dataset.addClass))
     );
   }
 
@@ -566,26 +605,25 @@
     toast('JSON exportado');
   }
 
-  function validatePortfolioJSON(data) {
-    return CLASS_KEYS.some(k => Array.isArray(data[k]));
-  }
-
   function importJSON(file) {
+    showLoading('Importando carteira...');
     const reader = new FileReader();
     reader.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        if (!validatePortfolioJSON(data)) throw new Error('Formato inválido');
+        if (!CLASS_KEYS.some(k => Array.isArray(data[k]))) throw new Error('Formato inválido');
 
         portfolio = data;
         savePortfolio();
         activeTab = 'overview';
         editMode = false;
         render();
+        hideLoading();
         toast('Carteira importada');
 
         if (settings.brapiToken || settings.finnhubToken) fetchAllPrices();
       } catch (err) {
+        hideLoading();
         toast('Erro: ' + err.message);
       }
     };
@@ -599,22 +637,16 @@
   let dragCounter = 0;
 
   document.addEventListener('dragenter', e => {
-    e.preventDefault();
-    dragCounter++;
+    e.preventDefault(); dragCounter++;
     dom.dropZone.classList.add('visible');
   });
-
   document.addEventListener('dragleave', e => {
-    e.preventDefault();
-    dragCounter--;
+    e.preventDefault(); dragCounter--;
     if (dragCounter <= 0) { dragCounter = 0; dom.dropZone.classList.remove('visible'); }
   });
-
   document.addEventListener('dragover', e => e.preventDefault());
-
   document.addEventListener('drop', e => {
-    e.preventDefault();
-    dragCounter = 0;
+    e.preventDefault(); dragCounter = 0;
     dom.dropZone.classList.remove('visible');
     const file = e.dataTransfer.files[0];
     if (file?.name.endsWith('.json')) importJSON(file);
@@ -653,8 +685,6 @@
       else if (editMode) toggleEditMode();
     }
   });
-
-  // PWA
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
