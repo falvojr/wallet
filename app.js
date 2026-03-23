@@ -101,10 +101,6 @@
     return val.toFixed(0);
   }
 
-  function formatGap(gap) {
-    return (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%';
-  }
-
   function toast(msg) {
     const el = document.createElement('div');
     el.className = 'toast';
@@ -135,9 +131,8 @@
   }
 
   function classTotalBRL(classKey) {
-    const assets = portfolio[classKey] || [];
     let total = 0, hasPrices = false;
-    for (const asset of assets) {
+    for (const asset of portfolio[classKey] || []) {
       const val = assetValueBRL(classKey, asset);
       if (val !== null) { total += val; hasPrices = true; }
     }
@@ -161,7 +156,7 @@
   // Metas e rebalanceamento:
   // classTargets[key] = % desejado do portfólio total.
   // asset.target = % desejado dentro da classe. 0 = quarentena (excluído dos aportes).
-  // "gap" = target - actual. Maior gap positivo = mais defasado = prioridade de aporte.
+  // O ativo/classe com maior diferença (meta - atual) é o candidato a aporte.
 
   function classTargetPct(classKey) {
     const targets = portfolio.classTargets || {};
@@ -171,79 +166,50 @@
   }
 
   function classActualPct(classKey) {
-    const classTotal = classTotalBRL(classKey);
+    const val = classTotalBRL(classKey);
     const { total } = portfolioTotalBRL();
-    if (classTotal === null || total <= 0) return null;
-    return (classTotal / total) * 100;
+    return val !== null && total > 0 ? (val / total) * 100 : null;
   }
 
   function assetTargetPct(classKey, asset) {
     if (asset.target !== undefined) return asset.target;
-    const activeAssets = (portfolio[classKey] || []).filter(a => !isQuarantined(a));
-    return activeAssets.length > 0 ? 100 / activeAssets.length : 0;
+    const activeCount = (portfolio[classKey] || []).filter(a => !isQuarantined(a)).length;
+    return activeCount > 0 ? 100 / activeCount : 0;
   }
 
   function isQuarantined(asset) {
-    return asset.target !== undefined && asset.target === 0;
+    return asset.target === 0;
   }
 
-  function findTopSuggestions(count) {
-    const { total } = portfolioTotalBRL();
-    if (total <= 0) return [];
+  function classGap(classKey) {
+    const actual = classActualPct(classKey);
+    return actual !== null ? classTargetPct(classKey) - actual : null;
+  }
 
-    const candidates = [];
-
-    for (const classKey of activeClassKeys()) {
-      const classTotal = classTotalBRL(classKey);
-      if (classTotal === null) continue;
-
-      const classGap = classTargetPct(classKey) - (classTotal / total) * 100;
-
-      for (const asset of portfolio[classKey]) {
-        if (isQuarantined(asset)) continue;
-        const val = assetValueBRL(classKey, asset);
-        if (val === null) continue;
-
-        const assetGap = assetTargetPct(classKey, asset) - (classTotal > 0 ? (val / classTotal) * 100 : 0);
-
-        // Score combinado: peso maior na classe, refinado pelo ativo
-        candidates.push({
-          classKey,
-          classLabel: CLASS_META[classKey].label,
-          classColor: CLASS_META[classKey].color,
-          id: asset.id,
-          value: val,
-          classGap,
-          assetGap,
-          score: classGap * 2 + assetGap,
-        });
-      }
+  function findMostDeficientClass() {
+    let bestKey = null, bestGap = -Infinity;
+    for (const key of activeClassKeys()) {
+      const gap = classGap(key);
+      if (gap !== null && gap > bestGap) { bestGap = gap; bestKey = key; }
     }
-
-    return candidates.sort((a, b) => b.score - a.score).slice(0, count);
+    return bestKey;
   }
 
-  function findAssetToRebalance(classKey) {
+  function findMostDeficientAsset(classKey) {
     const assets = portfolio[classKey] || [];
-    if (assets.length < 2) return null;
-
     const classTotal = classTotalBRL(classKey);
-    if (!classTotal || classTotal <= 0) return null;
+    if (!classTotal || classTotal <= 0 || assets.length < 2) return null;
 
-    let best = null, bestGap = -Infinity;
-
+    let bestId = null, bestGap = -Infinity;
     for (const asset of assets) {
       if (isQuarantined(asset)) continue;
       const val = assetValueBRL(classKey, asset);
       if (val === null) continue;
 
       const gap = assetTargetPct(classKey, asset) - (val / classTotal) * 100;
-      if (gap > bestGap) {
-        bestGap = gap;
-        best = { id: asset.id, value: val, gap };
-      }
+      if (gap > bestGap) { bestGap = gap; bestId = asset.id; }
     }
-    return best;
+    return bestId;
   }
 
   // Price APIs
@@ -262,7 +228,6 @@
     try {
       progress('Câmbio');
       await fetchExchangeRates();
-
       for (const t of brTickers)  { progress(t); await fetchSingleBrQuote(t); }
       for (const t of usTickers)  { progress(t); await fetchSingleUsQuote(t); }
 
@@ -289,11 +254,8 @@
     if (!settings.brapiToken) return;
     try {
       const res = await fetch(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
-      const data = await res.json();
-      const r = data.results?.[0];
-      if (r) {
-        prices[r.symbol] = { price: r.regularMarketPrice, currency: r.currency || 'BRL', change: r.regularMarketChangePercent };
-      }
+      const r = (await res.json()).results?.[0];
+      if (r) prices[r.symbol] = { price: r.regularMarketPrice, currency: r.currency || 'BRL', change: r.regularMarketChangePercent };
     } catch (e) { console.warn(`brapi (${ticker}):`, e); }
   }
 
@@ -307,7 +269,7 @@
     await new Promise(r => setTimeout(r, 120));
   }
 
-  // Donut chart
+  // Donut chart (com tooltip nativo via <title>)
 
   function renderDonut(segments) {
     const total = segments.reduce((s, d) => s + d.value, 0);
@@ -317,9 +279,12 @@
     let offset = 0;
 
     const arcs = segments.map(d => {
+      const pct = ((d.value / total) * 100).toFixed(1);
       const dash = (d.value / total) * C;
       const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
-        stroke-width="22" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}" opacity="0.88"/>`;
+        stroke-width="22" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}" opacity="0.88">
+        <title>${d.label}: ${pct}%</title>
+      </circle>`;
       offset += dash;
       return arc;
     });
@@ -360,9 +325,7 @@
   function renderTabs() {
     const tabs = [
       { key: 'overview', label: 'Visão Geral', count: null },
-      ...activeClassKeys().map(k => ({
-        key: k, label: CLASS_META[k].label, count: portfolio[k].length,
-      })),
+      ...activeClassKeys().map(k => ({ key: k, label: CLASS_META[k].label, count: portfolio[k].length })),
     ];
 
     dom.tabNav.innerHTML = tabs.map(t => `
@@ -378,9 +341,7 @@
 
   function renderPanels() {
     let html = panelWrap('overview', renderOverview());
-    for (const key of activeClassKeys()) {
-      html += panelWrap(key, renderAssetPanel(key));
-    }
+    for (const key of activeClassKeys()) html += panelWrap(key, renderAssetPanel(key));
     dom.panels.innerHTML = html;
     bindPanelEvents();
   }
@@ -390,8 +351,7 @@
   }
 
   function renderOverview() {
-    const { total: pTotal } = portfolioTotalBRL();
-    const suggestions = findTopSuggestions(3);
+    const targetClassKey = findMostDeficientClass();
 
     const chartData = activeClassKeys().map(k => {
       const classTotal = classTotalBRL(k);
@@ -405,23 +365,7 @@
 
     let html = '<div class="overview-grid">';
 
-    // Top 3 sugestões de aporte
-    if (suggestions.length > 0) {
-      html += '<div class="suggestions-card">';
-      html += '<div class="suggestions-title">Sugestões de aporte</div>';
-      suggestions.forEach((s, i) => {
-        html += `
-          <div class="suggestion-row">
-            <span class="suggestion-rank ${i === 0 ? 'rank-1' : ''}">${i + 1}</span>
-            <span class="suggestion-class">${s.classLabel}</span>
-            <span class="suggestion-ticker" style="color:${s.classColor}">${s.id}</span>
-            <span class="suggestion-gap">classe ${formatGap(s.classGap)} · ativo ${formatGap(s.assetGap)}</span>
-          </div>`;
-      });
-      html += '</div>';
-    }
-
-    // Donut + legend limpa (só valor em BRL)
+    // Donut + legend limpa
     html += '<div class="chart-card"><h2>Diversificação</h2>';
     html += renderDonut(chartData);
     html += '<div class="chart-legend">';
@@ -435,35 +379,26 @@
     });
     html += '</div></div>';
 
-    // Summary cards com actual% → target%
+    // Summary cards
     html += '<div class="summary-cards">';
-    const topTargetClass = suggestions[0]?.classKey;
-
     activeClassKeys().forEach(key => {
       const meta = CLASS_META[key];
       const classTotal = classTotalBRL(key);
       const actual = classActualPct(key);
       const target = classTargetPct(key);
-      const isTarget = key === topTargetClass;
-
+      const isTarget = key === targetClassKey;
       const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-      const aboveTarget = actual !== null && actual >= target;
+
+      const aportarBadge = isTarget ? '<span class="aportar-badge">aportar</span>' : '';
 
       let pctHtml = '';
       if (actual !== null) {
-        const arrowCls = aboveTarget ? 'above' : 'below';
-        const arrowIcon = aboveTarget ? '▲' : '▼';
-        pctHtml = `
-          <div class="summary-card-pcts">
-            <span class="pct-actual" style="color:${meta.color}">${actual.toFixed(1)}%</span>
-            <span class="pct-arrow ${arrowCls}">${arrowIcon}</span>
-            <span class="pct-target">meta ${target.toFixed(0)}%</span>
-          </div>`;
+        pctHtml = `<div class="summary-card-pct"><strong style="color:${meta.color}">${actual.toFixed(1)}%</strong> de ${target.toFixed(0)}%</div>`;
       }
 
       html += `
-        <div class="summary-card ${isTarget ? 'is-target' : ''}" data-class="${key}" data-goto="${key}">
-          <div class="summary-card-label">${meta.label}</div>
+        <div class="summary-card" data-class="${key}" data-goto="${key}">
+          <div class="summary-card-label">${meta.label} ${aportarBadge}</div>
           <div class="summary-card-value" style="color:${meta.color}">
             ${classTotal !== null ? formatBRL(classTotal) : portfolio[key].length}
           </div>
@@ -480,7 +415,7 @@
     const meta = CLASS_META[key];
     const assets = portfolio[key] || [];
     const isUSD = key === 'usStocks' || key === 'usReits';
-    const rebalanceTarget = findAssetToRebalance(key);
+    const targetAssetId = findMostDeficientAsset(key);
 
     let html = `
       <div class="asset-section-header">
@@ -490,21 +425,7 @@
         <label>Meta da classe:</label>
         <input type="text" value="${classTargetPct(key).toFixed(0)}" data-class-target="${key}" inputmode="decimal">
         <span>% do portfólio</span>
-      </div>`;
-
-    if (rebalanceTarget && !editMode) {
-      html += `
-        <div class="rebalance-hint">
-          <span class="rebalance-hint-label">
-            Aportar em:
-            <strong class="rebalance-hint-ticker" style="color:${meta.color}">${rebalanceTarget.id}</strong>
-            (gap ${formatGap(rebalanceTarget.gap)})
-          </span>
-          <span class="rebalance-hint-value" style="color:${meta.color}">${formatBRL(rebalanceTarget.value)}</span>
-        </div>`;
-    }
-
-    html += `
+      </div>
       <div class="table-wrap">
       <table class="asset-table">
         <thead><tr>
@@ -517,7 +438,7 @@
         <tbody>`;
 
     assets.forEach((asset, idx) => {
-      const isTarget = rebalanceTarget?.id === asset.id;
+      const isTarget = asset.id === targetAssetId;
       const quarantined = isQuarantined(asset);
       const p = prices[asset.id];
       const value = assetValueBRL(key, asset);
@@ -531,17 +452,17 @@
         priceStr = (isUSD ? '$ ' : 'R$ ') + p.price.toFixed(2);
         if (p.change !== undefined) {
           const cls = p.change >= 0 ? 'change-up' : 'change-down';
-          changeHtml = `<span class="${cls}">${formatGap(p.change).replace('%', '')}%</span>`;
+          changeHtml = `<span class="${cls}">${p.change >= 0 ? '+' : ''}${p.change.toFixed(2)}%</span>`;
         }
       }
 
       const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
-      const badge = isTarget ? '<span class="target-badge">aportar</span>'
+      const badge = isTarget ? '<span class="aportar-badge">aportar</span>'
                   : quarantined ? '<span class="quarantine-badge">Q</span>' : '';
 
       html += `
           <tr class="${rowClass}">
-            <td class="td-ticker">${asset.id}${badge}</td>
+            <td class="td-ticker">${asset.id} ${badge}</td>
             <td class="td-r view-cell">${formatQty(asset.amount)}</td>
             <td class="td-r edit-cell">
               <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">
