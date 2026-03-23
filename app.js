@@ -159,7 +159,7 @@
 
   async function fetchBrPrices(tickers) {
     if (!settings.brapiToken) return;
-    const batchSize = 20;
+    const batchSize = 1; // plano atual da brapi permite apenas 1 ativo por requisição
 
     for (let i = 0; i < tickers.length; i += batchSize) {
       const batch = tickers.slice(i, i + batchSize).join(',');
