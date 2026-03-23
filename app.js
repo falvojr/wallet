@@ -67,9 +67,7 @@
     } catch {}
   }
 
-  function saveSettings() {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }
+  function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
 
   function loadCachedPrices() {
     try {
@@ -101,6 +99,10 @@
     if (val >= 1_000_000) return (val / 1_000_000).toFixed(1) + 'M';
     if (val >= 1_000) return (val / 1_000).toFixed(1) + 'K';
     return val.toFixed(0);
+  }
+
+  function formatGap(gap) {
+    return (gap >= 0 ? '+' : '') + gap.toFixed(1) + '%';
   }
 
   function toast(msg) {
@@ -152,21 +154,32 @@
     return { total, partial };
   }
 
-  // Metas e rebalanceamento:
-  // classTargets[key] = % desejado do portfólio total para cada classe.
-  // asset.target = % desejado dentro da classe. 0 = quarentena.
-  // "gap" = target - actual. A maior gap positiva indica onde aportar.
-  function getClassTarget(classKey) {
-    const targets = portfolio.classTargets || {};
-    if (targets[classKey] !== undefined) return targets[classKey];
-    const activeClasses = CLASS_KEYS.filter(k => (portfolio[k] || []).length > 0);
-    return activeClasses.length > 0 ? 100 / activeClasses.length : 0;
+  function activeClassKeys() {
+    return CLASS_KEYS.filter(k => (portfolio[k] || []).length > 0);
   }
 
-  function getAssetTarget(classKey, asset) {
+  // Metas e rebalanceamento:
+  // classTargets[key] = % desejado do portfólio total.
+  // asset.target = % desejado dentro da classe. 0 = quarentena (excluído dos aportes).
+  // "gap" = target - actual. Maior gap positivo = mais defasado = prioridade de aporte.
+
+  function classTargetPct(classKey) {
+    const targets = portfolio.classTargets || {};
+    if (targets[classKey] !== undefined) return targets[classKey];
+    const active = activeClassKeys();
+    return active.length > 0 ? 100 / active.length : 0;
+  }
+
+  function classActualPct(classKey) {
+    const classTotal = classTotalBRL(classKey);
+    const { total } = portfolioTotalBRL();
+    if (classTotal === null || total <= 0) return null;
+    return (classTotal / total) * 100;
+  }
+
+  function assetTargetPct(classKey, asset) {
     if (asset.target !== undefined) return asset.target;
-    const assets = portfolio[classKey] || [];
-    const activeAssets = assets.filter(a => a.target === undefined || a.target > 0);
+    const activeAssets = (portfolio[classKey] || []).filter(a => !isQuarantined(a));
     return activeAssets.length > 0 ? 100 / activeAssets.length : 0;
   }
 
@@ -174,54 +187,40 @@
     return asset.target !== undefined && asset.target === 0;
   }
 
-  function findContributionTarget() {
+  function findTopSuggestions(count) {
     const { total } = portfolioTotalBRL();
-    if (total <= 0) return null;
+    if (total <= 0) return [];
 
-    let bestClass = null, bestClassGap = -Infinity;
+    const candidates = [];
 
-    for (const key of CLASS_KEYS) {
-      if ((portfolio[key] || []).length === 0) continue;
-      const classTotal = classTotalBRL(key);
+    for (const classKey of activeClassKeys()) {
+      const classTotal = classTotalBRL(classKey);
       if (classTotal === null) continue;
 
-      const actualPct = (classTotal / total) * 100;
-      const targetPct = getClassTarget(key);
-      const gap = targetPct - actualPct;
+      const classGap = classTargetPct(classKey) - (classTotal / total) * 100;
 
-      if (gap > bestClassGap) {
-        bestClassGap = gap;
-        bestClass = key;
+      for (const asset of portfolio[classKey]) {
+        if (isQuarantined(asset)) continue;
+        const val = assetValueBRL(classKey, asset);
+        if (val === null) continue;
+
+        const assetGap = assetTargetPct(classKey, asset) - (classTotal > 0 ? (val / classTotal) * 100 : 0);
+
+        // Score combinado: peso maior na classe, refinado pelo ativo
+        candidates.push({
+          classKey,
+          classLabel: CLASS_META[classKey].label,
+          classColor: CLASS_META[classKey].color,
+          id: asset.id,
+          value: val,
+          classGap,
+          assetGap,
+          score: classGap * 2 + assetGap,
+        });
       }
     }
 
-    if (!bestClass) return null;
-
-    const classTotal = classTotalBRL(bestClass);
-    const assets = portfolio[bestClass] || [];
-    let bestAsset = null, bestAssetGap = -Infinity;
-
-    for (const asset of assets) {
-      if (isQuarantined(asset)) continue;
-      const val = assetValueBRL(bestClass, asset);
-      if (val === null) continue;
-
-      const actualPct = classTotal > 0 ? (val / classTotal) * 100 : 0;
-      const targetPct = getAssetTarget(bestClass, asset);
-      const gap = targetPct - actualPct;
-
-      if (gap > bestAssetGap) {
-        bestAssetGap = gap;
-        bestAsset = asset;
-      }
-    }
-
-    return {
-      classKey: bestClass,
-      classGap: bestClassGap,
-      asset: bestAsset,
-      assetGap: bestAssetGap,
-    };
+    return candidates.sort((a, b) => b.score - a.score).slice(0, count);
   }
 
   function findAssetToRebalance(classKey) {
@@ -231,24 +230,20 @@
     const classTotal = classTotalBRL(classKey);
     if (!classTotal || classTotal <= 0) return null;
 
-    let bestAsset = null, bestGap = -Infinity;
+    let best = null, bestGap = -Infinity;
 
     for (const asset of assets) {
       if (isQuarantined(asset)) continue;
       const val = assetValueBRL(classKey, asset);
       if (val === null) continue;
 
-      const actualPct = (val / classTotal) * 100;
-      const targetPct = getAssetTarget(classKey, asset);
-      const gap = targetPct - actualPct;
-
+      const gap = assetTargetPct(classKey, asset) - (val / classTotal) * 100;
       if (gap > bestGap) {
         bestGap = gap;
-        bestAsset = { id: asset.id, value: val, gap: bestGap };
+        best = { id: asset.id, value: val, gap };
       }
     }
-
-    return bestAsset;
+    return best;
   }
 
   // Price APIs
@@ -260,26 +255,16 @@
     const brTickers = [...(portfolio.brStocks || []), ...(portfolio.brFiis || [])].map(a => a.id);
     const usTickers = [...(portfolio.usStocks || []), ...(portfolio.usReits || [])].map(a => a.id);
     const totalSteps = brTickers.length + usTickers.length + 1;
-    let currentStep = 0;
+    let step = 0;
 
-    const progress = label => {
-      currentStep++;
-      showLoading(`${label} (${currentStep}/${totalSteps})`);
-    };
+    const progress = label => showLoading(`${label} (${++step}/${totalSteps})`);
 
     try {
       progress('Câmbio');
       await fetchExchangeRates();
 
-      for (const ticker of brTickers) {
-        progress(ticker);
-        await fetchSingleBrQuote(ticker);
-      }
-
-      for (const ticker of usTickers) {
-        progress(ticker);
-        await fetchSingleUsQuote(ticker);
-      }
+      for (const t of brTickers)  { progress(t); await fetchSingleBrQuote(t); }
+      for (const t of usTickers)  { progress(t); await fetchSingleUsQuote(t); }
 
       cachePrices();
       render();
@@ -305,13 +290,9 @@
     try {
       const res = await fetch(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
       const data = await res.json();
-      const result = data.results?.[0];
-      if (result) {
-        prices[result.symbol] = {
-          price: result.regularMarketPrice,
-          currency: result.currency || 'BRL',
-          change: result.regularMarketChangePercent,
-        };
+      const r = data.results?.[0];
+      if (r) {
+        prices[r.symbol] = { price: r.regularMarketPrice, currency: r.currency || 'BRL', change: r.regularMarketChangePercent };
       }
     } catch (e) { console.warn(`brapi (${ticker}):`, e); }
   }
@@ -321,9 +302,7 @@
     try {
       const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${settings.finnhubToken}`);
       const data = await res.json();
-      if (data.c > 0) {
-        prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
-      }
+      if (data.c > 0) prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
     } catch (e) { console.warn(`finnhub (${ticker}):`, e); }
     await new Promise(r => setTimeout(r, 120));
   }
@@ -378,15 +357,11 @@
     updateEditUI();
   }
 
-  function activeClassKeys() {
-    return CLASS_KEYS.filter(k => (portfolio[k] || []).length > 0);
-  }
-
   function renderTabs() {
     const tabs = [
       { key: 'overview', label: 'Visão Geral', count: null },
       ...activeClassKeys().map(k => ({
-        key: k, label: CLASS_META[k].label, count: (portfolio[k]).length,
+        key: k, label: CLASS_META[k].label, count: portfolio[k].length,
       })),
     ];
 
@@ -403,11 +378,9 @@
 
   function renderPanels() {
     let html = panelWrap('overview', renderOverview());
-
     for (const key of activeClassKeys()) {
       html += panelWrap(key, renderAssetPanel(key));
     }
-
     dom.panels.innerHTML = html;
     bindPanelEvents();
   }
@@ -418,6 +391,7 @@
 
   function renderOverview() {
     const { total: pTotal } = portfolioTotalBRL();
+    const suggestions = findTopSuggestions(3);
 
     const chartData = activeClassKeys().map(k => {
       const classTotal = classTotalBRL(k);
@@ -429,67 +403,72 @@
       };
     });
 
-    const contributionTarget = findContributionTarget();
     let html = '<div class="overview-grid">';
 
-    // Próximo aporte
-    if (contributionTarget?.asset) {
-      const cm = CLASS_META[contributionTarget.classKey];
-      html += `
-        <div class="next-contribution" style="grid-column:1/-1">
-          <div class="next-contribution-title">Próximo aporte sugerido</div>
-          <div class="next-contribution-row">
-            <span class="nc-class" style="color:${cm.color}">${cm.label}</span>
-            <span class="next-contribution-arrow">→</span>
-            <span class="nc-asset" style="color:${cm.color}">${contributionTarget.asset.id}</span>
-            <span class="nc-gap">classe ${contributionTarget.classGap >= 0 ? '+' : ''}${contributionTarget.classGap.toFixed(1)}% · ativo ${contributionTarget.assetGap >= 0 ? '+' : ''}${contributionTarget.assetGap.toFixed(1)}%</span>
-          </div>
-        </div>`;
+    // Top 3 sugestões de aporte
+    if (suggestions.length > 0) {
+      html += '<div class="suggestions-card">';
+      html += '<div class="suggestions-title">Sugestões de aporte</div>';
+      suggestions.forEach((s, i) => {
+        html += `
+          <div class="suggestion-row">
+            <span class="suggestion-rank ${i === 0 ? 'rank-1' : ''}">${i + 1}</span>
+            <span class="suggestion-class">${s.classLabel}</span>
+            <span class="suggestion-ticker" style="color:${s.classColor}">${s.id}</span>
+            <span class="suggestion-gap">classe ${formatGap(s.classGap)} · ativo ${formatGap(s.assetGap)}</span>
+          </div>`;
+      });
+      html += '</div>';
     }
 
-    // Donut + Legend
+    // Donut + legend limpa (só valor em BRL)
     html += '<div class="chart-card"><h2>Diversificação</h2>';
     html += renderDonut(chartData);
     html += '<div class="chart-legend">';
     chartData.forEach(d => {
-      const pct = d.hasPrices && pTotal > 0 ? ((d.total / pTotal) * 100).toFixed(1) : null;
-      const targetPct = getClassTarget(d.key);
-      const valueStr = d.hasPrices ? formatBRL(d.total) : `${d.count} pos.`;
-      const pctStr = pct !== null ? ` (${pct}%` + (targetPct ? `/${targetPct.toFixed(0)}%` : '') + ')' : '';
       html += `
         <div class="legend-row" data-goto="${d.key}">
           <span class="legend-dot" style="background:${d.color}"></span>
           <span class="legend-label">${d.label}</span>
-          <span class="legend-amount">${valueStr}${pctStr}</span>
+          <span class="legend-amount">${d.hasPrices ? formatBRL(d.total) : d.count + ' pos.'}</span>
         </div>`;
     });
     html += '</div></div>';
 
-    // Summary cards
+    // Summary cards com actual% → target%
     html += '<div class="summary-cards">';
+    const topTargetClass = suggestions[0]?.classKey;
+
     activeClassKeys().forEach(key => {
-      const count = portfolio[key].length;
       const meta = CLASS_META[key];
       const classTotal = classTotalBRL(key);
-      const isTarget = contributionTarget?.classKey === key;
-      const posLabel = count === 1 ? '1 posição' : `${count} posições`;
-      const sub = classTotal !== null ? posLabel : `${posLabel} · sem cotação`;
+      const actual = classActualPct(key);
+      const target = classTargetPct(key);
+      const isTarget = key === topTargetClass;
 
-      const actualPct = classTotal !== null && pTotal > 0 ? (classTotal / pTotal) * 100 : 0;
-      const targetPct = getClassTarget(key);
-      const barFill = targetPct > 0 ? Math.min((actualPct / targetPct) * 100, 100) : 0;
+      const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
+      const aboveTarget = actual !== null && actual >= target;
+
+      let pctHtml = '';
+      if (actual !== null) {
+        const arrowCls = aboveTarget ? 'above' : 'below';
+        const arrowIcon = aboveTarget ? '▲' : '▼';
+        pctHtml = `
+          <div class="summary-card-pcts">
+            <span class="pct-actual" style="color:${meta.color}">${actual.toFixed(1)}%</span>
+            <span class="pct-arrow ${arrowCls}">${arrowIcon}</span>
+            <span class="pct-target">meta ${target.toFixed(0)}%</span>
+          </div>`;
+      }
 
       html += `
         <div class="summary-card ${isTarget ? 'is-target' : ''}" data-class="${key}" data-goto="${key}">
           <div class="summary-card-label">${meta.label}</div>
           <div class="summary-card-value" style="color:${meta.color}">
-            ${classTotal !== null ? formatBRL(classTotal) : count}
+            ${classTotal !== null ? formatBRL(classTotal) : portfolio[key].length}
           </div>
-          <div class="summary-card-sub">${sub}</div>
-          ${targetPct > 0 ? `
-            <div class="target-bar">
-              <div class="target-bar-fill" style="width:${barFill}%;background:${meta.color}"></div>
-            </div>` : ''}
+          ${pctHtml}
+          ${target > 0 ? `<div class="target-bar"><div class="target-bar-fill" style="width:${barFill}%;background:${meta.color}"></div></div>` : ''}
         </div>`;
     });
     html += '</div></div>';
@@ -502,35 +481,29 @@
     const assets = portfolio[key] || [];
     const isUSD = key === 'usStocks' || key === 'usReits';
     const rebalanceTarget = findAssetToRebalance(key);
-    const classTarget = getClassTarget(key);
 
     let html = `
       <div class="asset-section-header">
         <h2 class="asset-section-title" style="color:${meta.color}">${meta.icon} ${meta.label}</h2>
-      </div>`;
-
-    // Meta da classe (editável)
-    html += `
+      </div>
       <div class="edit-target-row">
-        <label>Meta da classe: </label>
-        <input type="text" value="${classTarget.toFixed(0)}" data-class-target="${key}" inputmode="decimal">
+        <label>Meta da classe:</label>
+        <input type="text" value="${classTargetPct(key).toFixed(0)}" data-class-target="${key}" inputmode="decimal">
         <span>% do portfólio</span>
       </div>`;
 
-    // Indicador de rebalanceamento
     if (rebalanceTarget && !editMode) {
       html += `
         <div class="rebalance-hint">
           <span class="rebalance-hint-label">
             Aportar em:
             <strong class="rebalance-hint-ticker" style="color:${meta.color}">${rebalanceTarget.id}</strong>
-            (gap ${rebalanceTarget.gap >= 0 ? '+' : ''}${rebalanceTarget.gap.toFixed(1)}%)
+            (gap ${formatGap(rebalanceTarget.gap)})
           </span>
           <span class="rebalance-hint-value" style="color:${meta.color}">${formatBRL(rebalanceTarget.value)}</span>
         </div>`;
     }
 
-    // Tabela
     html += `
       <div class="table-wrap">
       <table class="asset-table">
@@ -544,7 +517,7 @@
         <tbody>`;
 
     assets.forEach((asset, idx) => {
-      const isTarget = rebalanceTarget && asset.id === rebalanceTarget.id;
+      const isTarget = rebalanceTarget?.id === asset.id;
       const quarantined = isQuarantined(asset);
       const p = prices[asset.id];
       const value = assetValueBRL(key, asset);
@@ -558,12 +531,11 @@
         priceStr = (isUSD ? '$ ' : 'R$ ') + p.price.toFixed(2);
         if (p.change !== undefined) {
           const cls = p.change >= 0 ? 'change-up' : 'change-down';
-          changeHtml = `<span class="${cls}">${p.change >= 0 ? '+' : ''}${p.change.toFixed(2)}%</span>`;
+          changeHtml = `<span class="${cls}">${formatGap(p.change).replace('%', '')}%</span>`;
         }
       }
 
       const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
-      const assetTarget = getAssetTarget(key, asset);
       const badge = isTarget ? '<span class="target-badge">aportar</span>'
                   : quarantined ? '<span class="quarantine-badge">Q</span>' : '';
 
@@ -628,9 +600,7 @@
           delete portfolio[input.dataset.class][idx].target;
         } else {
           const val = parseFloat(raw.replace(',', '.'));
-          if (!isNaN(val) && val >= 0) {
-            portfolio[input.dataset.class][idx].target = val;
-          }
+          if (!isNaN(val) && val >= 0) portfolio[input.dataset.class][idx].target = val;
         }
         savePortfolio();
       })
@@ -641,7 +611,6 @@
         const val = parseFloat(input.value.replace(',', '.'));
         if (!isNaN(val) && val >= 0) {
           if (!portfolio.classTargets) portfolio.classTargets = {};
-          portfolio[input.dataset.classTarget] = undefined;
           portfolio.classTargets[input.dataset.classTarget] = val;
           savePortfolio();
         }
@@ -672,11 +641,7 @@
   function toggleEditMode() {
     editMode = !editMode;
     updateEditUI();
-    if (!editMode) {
-      savePortfolio();
-      render();
-      toast('Alterações salvas');
-    }
+    if (!editMode) { savePortfolio(); render(); toast('Alterações salvas'); }
   }
 
   function updateEditUI() {
@@ -815,7 +780,7 @@
     else toast('Apenas arquivos .json');
   });
 
-  // Event bindings
+  // Global event listeners
 
   dom.btnEdit.addEventListener('click', toggleEditMode);
   dom.btnExport.addEventListener('click', exportJSON);
@@ -848,8 +813,6 @@
       else if (editMode) toggleEditMode();
     }
   });
-
-  // PWA
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
