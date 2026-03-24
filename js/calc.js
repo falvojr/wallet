@@ -22,13 +22,17 @@ export function formatCompact(val) {
 // BR: preço direto. US: preço * câmbio USD/BRL.
 // BTC: taxa BTC/BRL * qtd. Renda fixa e imóveis: amount já é o valor em BRL.
 
+// Renda fixa e imóveis: amount é o valor declarado em BRL.
+// Reserva de valor sem cotação (ex: dinheiro em espécie): amount é o valor declarado em BRL.
+// Demais classes: preço * quantidade, convertido via câmbio se necessário.
 export function assetValueBRL(classKey, asset) {
   if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
+
   const p = state.prices[asset.id];
 
-  if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
-
-  if (!p) return null;
+  if (!p) {
+    return classKey === 'storeOfValue' ? asset.amount : null;
+  }
 
   if (p.currency === 'USD') return p.price * (state.rates.USDBRL || 0) * asset.amount;
   return p.price * asset.amount;

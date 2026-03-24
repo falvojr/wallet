@@ -200,7 +200,8 @@ function renderAssetPanel(key) {
     const value = assetValueBRL(key, asset);
 
     let priceStr = '', changeHtml = '';
-    if (key === 'fixedIncome' || key === 'realEstate') {
+    const isDeclaredValue = key === 'fixedIncome' || key === 'realEstate' || (key === 'storeOfValue' && !p);
+    if (isDeclaredValue) {
       priceStr = 'Declarado';
     } else if (p) {
       const sym = p.currency === 'USD' ? '$ ' : 'R$ ';
