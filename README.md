@@ -27,7 +27,7 @@ npx serve .
 
 - **Visão geral** com gráfico de diversificação e patrimônio total em BRL
 - **Cotações automáticas** para Ações BR, FIIs, Ações US, REITs, Cripto, Moedas e ETFs
-- **Rebalanceamento**: tag `APORTAR` indica classe e ativo mais defasados em relação à meta
+- **Rebalanceamento inteligente**: tag `APORTAR` indica classes e ativos mais defasados em relação à meta
 - **Quarentena**: meta 0% exclui o ativo das sugestões de aporte
 - **Tema** claro/escuro
 - **Offline-first** via Service Worker
@@ -112,10 +112,15 @@ npx serve .
 
 ## Regras de rebalanceamento
 
-1. A tag `APORTAR` aparece apenas em classes **abaixo da meta**
-2. Com **3+ candidatos** elegíveis, as 2 maiores defasagens recebem tag. Com 2 ou menos, apenas 1
-3. A mesma lógica se aplica para ativos dentro de cada classe
-4. Ativos em **quarentena** (`target: 0`) são ignorados no cálculo
+A solução usa uma heurística offline de **threshold-based greedy rebalancing**:
+
+1. A tag `APORTAR` aparece apenas em classes **abaixo da meta** por uma banda mínima
+2. A banda mínima da classe é `max(0,5 p.p., 10% da meta da classe)`
+3. Dentro da classe, os ativos elegíveis são ordenados pelo score `gap do ativo × gap da classe`
+4. O limite de sugestões por classe é adaptativo: até 4 ativos elegíveis = 1 sugestão; de 5 a 9 = 2; 10+ = 3
+5. Ativos em **quarentena** (`target: 0`) são ignorados no cálculo
+
+Objetivo: priorizar os ativos e classes mais subalocados, reduzindo ruído visual e microajustes.
 
 ---
 

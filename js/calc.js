@@ -60,7 +60,10 @@ export function portfolioTotalBRL() {
 // Metas e rebalanceamento:
 // classTargets[key] = % desejado do portfólio total.
 // asset.target = % desejado dentro da classe. 0 = quarentena.
-// O ativo/classe com maior diferença (meta - atual) é o candidato a aporte.
+// Heurística: threshold-based greedy rebalancing.
+// 1) só recomenda classes abaixo da meta por uma banda mínima
+// 2) dentro da classe, prioriza ativos mais subalocados
+// 3) limita a quantidade de sugestões por classe para evitar ruído visual
 
 export function isQuarantined(asset) {
   return asset.target === 0;
@@ -85,35 +88,61 @@ export function assetTargetPct(classKey, asset) {
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
+const CLASS_THRESHOLD_MIN = 0.5;
+const CLASS_THRESHOLD_FACTOR = 0.1;
+
+function classThresholdPct(classKey) {
+  return Math.max(CLASS_THRESHOLD_MIN, classTargetPct(classKey) * CLASS_THRESHOLD_FACTOR);
+}
+
+function actionableAssets(classKey) {
+  return (state.portfolio[classKey] || []).filter(asset => !isQuarantined(asset));
+}
+
+function recommendationLimit(count) {
+  if (count >= 10) return 3;
+  if (count >= 5) return 2;
+  return count >= 2 ? 1 : 0;
+}
+
+function classDeficitPct(classKey) {
+  const actual = classActualPct(classKey);
+  if (actual === null) return null;
+  return Math.max(0, classTargetPct(classKey) - actual);
+}
+
 export function findMostDeficientClasses() {
   const results = [];
   for (const key of activeClassKeys()) {
     if ((state.portfolio[key] || []).length === 0) continue;
-    const actual = classActualPct(key);
-    if (actual === null) continue;
-    const gap = classTargetPct(key) - actual;
-    if (gap <= 0) continue;
+    const gap = classDeficitPct(key);
+    if (gap === null || gap < classThresholdPct(key)) continue;
     results.push({ key, gap });
   }
   results.sort((a, b) => b.gap - a.gap);
-  const limit = results.length >= 3 ? 2 : 1;
+  const limit = results.length >= 4 ? 3 : results.length >= 2 ? 2 : 1;
   return results.slice(0, limit).map(r => r.key);
 }
 
 export function findMostDeficientAssets(classKey) {
-  const assets = state.portfolio[classKey] || [];
+  const assets = actionableAssets(classKey);
   const classTotal = classTotalBRL(classKey);
-  if (!classTotal || classTotal <= 0 || assets.length < 2) return [];
+  const classGap = classDeficitPct(classKey);
+  if (!classTotal || classTotal <= 0 || assets.length < 2 || !classGap || classGap < classThresholdPct(classKey)) return [];
 
   const results = [];
   for (const asset of assets) {
-    if (isQuarantined(asset)) continue;
     const val = assetValueBRL(classKey, asset);
     if (val === null) continue;
-    const gap = assetTargetPct(classKey, asset) - (val / classTotal) * 100;
-    results.push({ id: asset.id, gap });
+
+    const actualPct = (val / classTotal) * 100;
+    const targetPct = assetTargetPct(classKey, asset);
+    const gap = Math.max(0, targetPct - actualPct);
+    if (gap <= 0) continue;
+
+    results.push({ id: asset.id, score: gap * classGap, gap });
   }
-  results.sort((a, b) => b.gap - a.gap);
-  const limit = results.length >= 3 ? 2 : 1;
-  return results.slice(0, limit).map(r => r.id);
+
+  results.sort((a, b) => b.score - a.score || b.gap - a.gap);
+  return results.slice(0, recommendationLimit(assets.length)).map(r => r.id);
 }

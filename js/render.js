@@ -7,16 +7,18 @@ import {
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
+const SMART_BADGE_TITLE = 'Sugestão inteligente baseada no desvio para a alocação-alvo';
 
 function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
 
-function renderStatusBadge({ isTarget = false, isSecondaryTarget = false, quarantined = false }) {
-  if (isTarget) return ' <span class="badge badge--aportar">aportar</span>';
-  if (isSecondaryTarget) return ' <span class="badge badge--aportar-alt">aportar</span>';
-  if (quarantined) return ' <span class="badge badge--quarentena">quarentena</span>';
-  return '';
+function renderAportarBadge() {
+  return ` <span class="badge badge--aportar" title="${SMART_BADGE_TITLE}">aportar</span>`;
+}
+
+function renderQuarantineBadge() {
+  return ' <span class="badge badge--quarentena">quarentena</span>';
 }
 
 export function render() {
@@ -98,13 +100,9 @@ function renderOverview() {
     const classTotal = classTotalBRL(key);
     const actual = classActualPct(key);
     const target = classTargetPct(key);
-    const isTarget = key === targetClasses[0];
-    const isTarget2 = key === targetClasses[1];
+    const isTarget = targetClasses.includes(key);
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-    const aportarHtml = renderStatusBadge({
-      isTarget,
-      isSecondaryTarget: isTarget2,
-    });
+    const aportarHtml = isTarget ? renderAportarBadge() : '';
 
     let pctHtml = '';
     if (actual !== null) {
@@ -202,8 +200,7 @@ function renderAssetPanel(key) {
       <tbody>`;
 
   assets.forEach((asset, idx) => {
-    const isTarget = asset.id === targetAssetIds[0];
-    const isTarget2 = asset.id === targetAssetIds[1];
+    const isTarget = targetAssetIds.includes(asset.id);
     const quarantined = isQuarantined(asset);
     const p = state.prices[asset.id];
     const value = assetValueBRL(key, asset);
@@ -221,12 +218,8 @@ function renderAssetPanel(key) {
       }
     }
 
-    const rowClass = (isTarget || isTarget2) ? 'row-target' : quarantined ? 'row-quarantine' : '';
-    const badgeHtml = renderStatusBadge({
-      isTarget,
-      isSecondaryTarget: isTarget2,
-      quarantined,
-    });
+    const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
+    const badgeHtml = isTarget ? renderAportarBadge() : quarantined ? renderQuarantineBadge() : '';
 
     html += `
         <tr class="${rowClass}">
