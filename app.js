@@ -20,13 +20,17 @@ function showLoading(text) {
 
 function hideLoading() { $('#loadingOverlay').hidden = true; }
 
+function rerender() {
+  render();
+  bindPanelEvents();
+}
+
 // Price fetching with loading overlay
 
 async function refreshPrices() {
   const success = await fetchAllPrices(showLoading);
   hideLoading();
-  render();
-  bindPanelEvents();
+  rerender();
   toast(success ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
 }
 
@@ -37,8 +41,7 @@ function toggleEditMode() {
   updateEditUI();
   if (!state.editMode) {
     savePortfolio();
-    render();
-    bindPanelEvents();
+    rerender();
     toast('Alterações salvas');
   }
 }
@@ -100,8 +103,7 @@ function confirmAddAsset() {
   state.portfolio[addTargetClass].push(newAsset);
   savePortfolio();
   closeAddModal();
-  render();
-  bindPanelEvents();
+  rerender();
   toast(`${ticker} adicionado`);
 }
 
@@ -152,8 +154,7 @@ function importJSON(file) {
       state.activeTab = 'overview';
       state.editMode = false;
       savePortfolio();
-      render();
-      bindPanelEvents();
+      rerender();
       hideLoading();
       toast('Carteira importada');
 
@@ -170,11 +171,11 @@ function importJSON(file) {
 
 function bindPanelEvents() {
   $$('[data-goto]').forEach(el =>
-    el.addEventListener('click', () => { state.activeTab = el.dataset.goto; render(); bindPanelEvents(); })
+    el.addEventListener('click', () => { state.activeTab = el.dataset.goto; rerender(); })
   );
 
   $$('[data-tab]').forEach(btn =>
-    btn.addEventListener('click', () => { state.activeTab = btn.dataset.tab; render(); bindPanelEvents(); })
+    btn.addEventListener('click', () => { state.activeTab = btn.dataset.tab; rerender(); })
   );
 
   $$('.edit-cell input[data-field="amount"]').forEach(input =>
@@ -288,7 +289,6 @@ loadTheme();
 loadSettings();
 loadPortfolio();
 loadCachedPrices();
-render();
-bindPanelEvents();
+rerender();
 
 if (state.portfolio && hasApiTokens() && !hasCachedPrices()) refreshPrices();

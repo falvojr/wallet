@@ -12,6 +12,13 @@ function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
 
+function renderStatusBadge({ isTarget = false, isSecondaryTarget = false, quarantined = false }) {
+  if (isTarget) return ' <span class="badge badge--aportar">aportar</span>';
+  if (isSecondaryTarget) return ' <span class="badge badge--aportar-alt">aportar</span>';
+  if (quarantined) return ' <span class="badge badge--quarentena">quarentena</span>';
+  return '';
+}
+
 export function render() {
   const hasPortfolio = state.portfolio !== null;
 
@@ -94,8 +101,10 @@ function renderOverview() {
     const isTarget = key === targetClasses[0];
     const isTarget2 = key === targetClasses[1];
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-    const aportarHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>'
-                      : isTarget2 ? ' <span class="badge badge--aportar-alt">aportar</span>' : '';
+    const aportarHtml = renderStatusBadge({
+      isTarget,
+      isSecondaryTarget: isTarget2,
+    });
 
     let pctHtml = '';
     if (actual !== null) {
@@ -213,9 +222,11 @@ function renderAssetPanel(key) {
     }
 
     const rowClass = (isTarget || isTarget2) ? 'row-target' : quarantined ? 'row-quarantine' : '';
-    const badgeHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>'
-                    : isTarget2 ? ' <span class="badge badge--aportar-alt">aportar</span>'
-                    : quarantined ? ' <span class="badge badge--quarentena">quarentena</span>' : '';
+    const badgeHtml = renderStatusBadge({
+      isTarget,
+      isSecondaryTarget: isTarget2,
+      quarantined,
+    });
 
     html += `
         <tr class="${rowClass}">
