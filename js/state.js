@@ -74,3 +74,17 @@ export function hasApiTokens() {
 export function hasCachedPrices() {
   return Object.keys(state.prices).length > 0;
 }
+
+const THEME_KEY = 'holding_theme';
+
+export function loadTheme() {
+  const theme = localStorage.getItem(THEME_KEY) || 'dark';
+  document.documentElement.dataset.theme = theme;
+}
+
+export function toggleTheme() {
+  const current = document.documentElement.dataset.theme || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem(THEME_KEY, next);
+}

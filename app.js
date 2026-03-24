@@ -1,4 +1,4 @@
-import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, hasCachedPrices } from './js/state.js';
+import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, hasCachedPrices, loadTheme, toggleTheme } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
 import { render } from './js/render.js';
 
@@ -254,6 +254,7 @@ $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
+$('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
 
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
@@ -283,6 +284,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 
 // Init
 
+loadTheme();
 loadSettings();
 loadPortfolio();
 loadCachedPrices();

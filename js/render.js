@@ -3,7 +3,7 @@ import {
   formatBRL, formatQty, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
   classTargetPct, classActualPct, isQuarantined,
-  findMostDeficientClass, findMostDeficientAsset,
+  findMostDeficientClasses, findMostDeficientAssets,
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
@@ -57,7 +57,7 @@ function panelWrap(key, content) {
 }
 
 function renderOverview() {
-  const targetClassKey = findMostDeficientClass();
+  const targetClasses = findMostDeficientClasses(2);
   const populatedKeys = CLASS_KEYS.filter(classHasAssets);
 
   const chartData = populatedKeys.map(k => {
@@ -91,9 +91,11 @@ function renderOverview() {
     const classTotal = classTotalBRL(key);
     const actual = classActualPct(key);
     const target = classTargetPct(key);
-    const isTarget = key === targetClassKey;
+    const isTarget = key === targetClasses[0];
+    const isTarget2 = key === targetClasses[1];
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-    const aportarHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>' : '';
+    const aportarHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>'
+                      : isTarget2 ? ' <span class="badge badge--aportar-alt">aportar</span>' : '';
 
     let pctHtml = '';
     if (actual !== null) {
@@ -153,8 +155,7 @@ function renderDonut(segments) {
 function renderAssetPanel(key) {
   const meta = CLASS_META[key];
   const assets = state.portfolio[key] || [];
-  const isUSD = key === 'usStocks' || key === 'usReits';
-  const targetAssetId = findMostDeficientAsset(key);
+  const targetAssetIds = findMostDeficientAssets(key, 2);
 
   let html = `
     <div class="asset-section-header">
@@ -192,7 +193,8 @@ function renderAssetPanel(key) {
       <tbody>`;
 
   assets.forEach((asset, idx) => {
-    const isTarget = asset.id === targetAssetId;
+    const isTarget = asset.id === targetAssetIds[0];
+    const isTarget2 = asset.id === targetAssetIds[1];
     const quarantined = isQuarantined(asset);
     const p = state.prices[asset.id];
     const value = assetValueBRL(key, asset);
@@ -200,18 +202,18 @@ function renderAssetPanel(key) {
     let priceStr = '', changeHtml = '';
     if (key === 'fixedIncome' || key === 'realEstate') {
       priceStr = 'Declarado';
-    } else if (key === 'storeOfValue' && state.rates.BTCBRL) {
-      priceStr = formatBRL(state.rates.BTCBRL);
     } else if (p) {
-      priceStr = (isUSD ? '$ ' : 'R$ ') + p.price.toFixed(2);
+      const sym = p.currency === 'USD' ? '$ ' : 'R$ ';
+      priceStr = sym + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       if (p.change !== undefined) {
         const cls = p.change >= 0 ? 'change-up' : 'change-down';
         changeHtml = `<span class="${cls}">${p.change >= 0 ? '+' : ''}${p.change.toFixed(2)}%</span>`;
       }
     }
 
-    const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
+    const rowClass = (isTarget || isTarget2) ? 'row-target' : quarantined ? 'row-quarantine' : '';
     const badgeHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>'
+                    : isTarget2 ? ' <span class="badge badge--aportar-alt">aportar</span>'
                     : quarantined ? ' <span class="badge badge--quarentena">quarentena</span>' : '';
 
     html += `

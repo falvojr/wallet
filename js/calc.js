@@ -24,13 +24,14 @@ export function formatCompact(val) {
 
 export function assetValueBRL(classKey, asset) {
   if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
-  if (classKey === 'storeOfValue') return (state.rates.BTCBRL || 0) * asset.amount;
-
   const p = state.prices[asset.id];
+
+  if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
+
   if (!p) return null;
 
-  const isUSD = classKey === 'usStocks' || classKey === 'usReits';
-  return (isUSD ? p.price * (state.rates.USDBRL || 0) : p.price) * asset.amount;
+  if (p.currency === 'USD') return p.price * (state.rates.USDBRL || 0) * asset.amount;
+  return p.price * asset.amount;
 }
 
 export function classTotalBRL(classKey) {
@@ -80,31 +81,31 @@ export function assetTargetPct(classKey, asset) {
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
-export function findMostDeficientClass() {
-  let bestKey = null, bestGap = -Infinity;
+export function findMostDeficientClasses(count = 2) {
+  const results = [];
   for (const key of activeClassKeys()) {
     if ((state.portfolio[key] || []).length === 0) continue;
     const actual = classActualPct(key);
     if (actual === null) continue;
     const gap = classTargetPct(key) - actual;
     if (gap <= 0) continue;
-    if (gap > bestGap) { bestGap = gap; bestKey = key; }
+    results.push({ key, gap });
   }
-  return bestKey;
+  return results.sort((a, b) => b.gap - a.gap).slice(0, count).map(r => r.key);
 }
 
-export function findMostDeficientAsset(classKey) {
+export function findMostDeficientAssets(classKey, count = 2) {
   const assets = state.portfolio[classKey] || [];
   const classTotal = classTotalBRL(classKey);
-  if (!classTotal || classTotal <= 0 || assets.length < 2) return null;
+  if (!classTotal || classTotal <= 0 || assets.length < 2) return [];
 
-  let bestId = null, bestGap = -Infinity;
+  const results = [];
   for (const asset of assets) {
     if (isQuarantined(asset)) continue;
     const val = assetValueBRL(classKey, asset);
     if (val === null) continue;
     const gap = assetTargetPct(classKey, asset) - (val / classTotal) * 100;
-    if (gap > bestGap) { bestGap = gap; bestId = asset.id; }
+    results.push({ id: asset.id, gap });
   }
-  return bestId;
+  return results.sort((a, b) => b.gap - a.gap).slice(0, count).map(r => r.id);
 }

@@ -8,7 +8,8 @@ export async function fetchAllPrices(onProgress) {
 
   const brTickers = [...(state.portfolio.brStocks || []), ...(state.portfolio.brFiis || [])].map(a => a.id);
   const usTickers = [...(state.portfolio.usStocks || []), ...(state.portfolio.usReits || [])].map(a => a.id);
-  const totalSteps = brTickers.length + usTickers.length + 1;
+  const sovTickers = (state.portfolio.storeOfValue || []).map(a => a.id);
+  const totalSteps = brTickers.length + usTickers.length + sovTickers.length + 1;
   let step = 0;
 
   const progress = label => onProgress?.(`${label} (${++step}/${totalSteps})`);
@@ -18,6 +19,7 @@ export async function fetchAllPrices(onProgress) {
     await fetchExchangeRates();
     for (const t of brTickers)  { progress(t); await fetchBrQuote(t); }
     for (const t of usTickers)  { progress(t); await fetchUsQuote(t); }
+    for (const t of sovTickers) { progress(t); await fetchStoreOfValueQuote(t); }
     cachePrices();
     return true;
   } catch (err) {
@@ -29,10 +31,9 @@ export async function fetchAllPrices(onProgress) {
 }
 
 async function fetchExchangeRates() {
-  const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,BTC-BRL');
+  const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
   const data = await res.json();
   if (data.USDBRL) state.rates.USDBRL = parseFloat(data.USDBRL.bid);
-  if (data.BTCBRL) state.rates.BTCBRL = parseFloat(data.BTCBRL.bid);
 }
 
 async function fetchBrQuote(ticker) {
@@ -59,5 +60,42 @@ async function fetchUsQuote(ticker) {
       state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
     }
   } catch (e) { console.warn(`finnhub (${ticker}):`, e); }
+  await new Promise(r => setTimeout(r, 120));
+}
+
+// Reserva de Valor: tenta AwesomeAPI como cripto ({TICKER}-BRL).
+// Se não encontrar, tenta Finnhub como ETF (GLD, SLV, etc).
+async function fetchStoreOfValueQuote(ticker) {
+  const found = await tryAwesomeApiCrypto(ticker);
+  if (!found) await tryFinnhubQuote(ticker);
+}
+
+async function tryAwesomeApiCrypto(ticker) {
+  try {
+    const pair = `${ticker}-BRL`;
+    const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pair}`);
+    const data = await res.json();
+    const key = `${ticker}BRL`;
+    if (data[key]) {
+      state.prices[ticker] = {
+        price: parseFloat(data[key].bid),
+        currency: 'BRL',
+        change: parseFloat(data[key].pctChange),
+      };
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+async function tryFinnhubQuote(ticker) {
+  if (!state.settings.finnhubToken) return;
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${state.settings.finnhubToken}`);
+    const data = await res.json();
+    if (data.c > 0) {
+      state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
+    }
+  } catch (e) { console.warn(`finnhub fallback (${ticker}):`, e); }
   await new Promise(r => setTimeout(r, 120));
 }
