@@ -57,7 +57,7 @@ function panelWrap(key, content) {
 }
 
 function renderOverview() {
-  const targetClasses = findMostDeficientClasses(2);
+  const targetClasses = findMostDeficientClasses();
   const populatedKeys = CLASS_KEYS.filter(classHasAssets);
 
   const chartData = populatedKeys.map(k => {
@@ -155,7 +155,7 @@ function renderDonut(segments) {
 function renderAssetPanel(key) {
   const meta = CLASS_META[key];
   const assets = state.portfolio[key] || [];
-  const targetAssetIds = findMostDeficientAssets(key, 2);
+  const targetAssetIds = findMostDeficientAssets(key);
 
   let html = `
     <div class="asset-section-header">

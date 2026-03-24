@@ -81,7 +81,7 @@ export function assetTargetPct(classKey, asset) {
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
-export function findMostDeficientClasses(count = 2) {
+export function findMostDeficientClasses() {
   const results = [];
   for (const key of activeClassKeys()) {
     if ((state.portfolio[key] || []).length === 0) continue;
@@ -91,10 +91,12 @@ export function findMostDeficientClasses(count = 2) {
     if (gap <= 0) continue;
     results.push({ key, gap });
   }
-  return results.sort((a, b) => b.gap - a.gap).slice(0, count).map(r => r.key);
+  results.sort((a, b) => b.gap - a.gap);
+  const limit = results.length >= 3 ? 2 : 1;
+  return results.slice(0, limit).map(r => r.key);
 }
 
-export function findMostDeficientAssets(classKey, count = 2) {
+export function findMostDeficientAssets(classKey) {
   const assets = state.portfolio[classKey] || [];
   const classTotal = classTotalBRL(classKey);
   if (!classTotal || classTotal <= 0 || assets.length < 2) return [];
@@ -107,5 +109,7 @@ export function findMostDeficientAssets(classKey, count = 2) {
     const gap = assetTargetPct(classKey, asset) - (val / classTotal) * 100;
     results.push({ id: asset.id, gap });
   }
-  return results.sort((a, b) => b.gap - a.gap).slice(0, count).map(r => r.id);
+  results.sort((a, b) => b.gap - a.gap);
+  const limit = results.length >= 3 ? 2 : 1;
+  return results.slice(0, limit).map(r => r.id);
 }

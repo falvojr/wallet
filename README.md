@@ -4,21 +4,19 @@ PWA para visualização e rebalanceamento de carteira de investimentos pessoal, 
 
 Funciona offline, sem backend, com dados armazenados localmente no navegador.
 
-> Esta solução é uma interpretação pessoal da estratégia de Buy and Hold, influenciada por investidores e educadores como [Bastter](https://bastter.com), [Fabio Faria (Canal do Holder)](https://www.youtube.com/@canaldoholder), [Gustavo Cerbasi](https://www.youtube.com/@gustavocerbasi), [Eduardo Cavalcanti](https://www.youtube.com/@eduardocavalcanti) e [Arthur Asvid](https://www.youtube.com/@CanaldoASVID).
+> Esta solução é uma interpretação pessoal da estratégia de Buy and Hold, influenciada por investidores e educadores como [Bastter](https://bastter.com), [Fabio Faria](https://www.youtube.com/@canaldoholder), [Gustavo Cerbasi](https://www.youtube.com/@gustavocerbasi), [Eduardo Cavalcanti](https://www.youtube.com/@eduardocavalcanti) e [Arthur Asvid](https://www.youtube.com/@CanaldoASVID).
 
 ## Funcionalidades
 
 - **Visão consolidada** do portfólio com gráfico de diversificação e valor total em BRL
 - **7 classes de ativos**: Ações BR, FIIs, Ações US, REITs, Renda Fixa, Reserva de Valor e Imóveis
-- **Cotações em tempo real** via [brapi.dev](https://brapi.dev) (B3), [Finnhub](https://finnhub.io) (US) e [AwesomeAPI](https://docs.awesomeapi.com.br) (câmbio e cripto)
-- **Reserva de Valor inteligente**: busca automática via AwesomeAPI para criptomoedas (BTC, ETH, etc.) e fallback para Finnhub para ETFs (GLD, SLV, etc.)
-- **Sistema de metas e rebalanceamento**: defina metas por classe e por ativo, as tags `APORTAR` indicam automaticamente as 2 classes e 2 ativos prioritários para o próximo aporte
+- **Cotações automáticas** via [brapi.dev](https://brapi.dev) (B3), [Finnhub](https://finnhub.io) (US) e [AwesomeAPI](https://docs.awesomeapi.com.br) (câmbio, cripto e moedas)
+- **Reserva de Valor inteligente**: detecção automática de criptomoedas (BTC, ETH), moedas estrangeiras (USD, EUR, GBP) e ETFs (GLD, SLV)
+- **Metas e rebalanceamento**: defina metas por classe e por ativo, a tag `APORTAR` indica onde alocar o próximo aporte
 - **Quarentena**: ativos com meta 0% ficam marcados e são excluídos das sugestões de aporte
-- **Regra de aporte**: classes que já estão acima da meta não recebem sugestão de aporte
-- **Classes persistentes**: todas as 7 classes são sempre acessíveis, mesmo quando vazias
-- **Tema claro/escuro**: alternável pelo botão no header, com preferência salva localmente
+- **Tema claro/escuro** com preferência salva localmente
 - **Edição inline**: adicione, remova e edite ativos e metas diretamente na interface
-- **Import/Export JSON**: importe sua carteira arrastando um arquivo `.json`, exporte para salvar ou versionar
+- **Import/Export JSON**: importe arrastando um arquivo `.json`, exporte para versionar
 - **PWA offline-first**: funciona sem internet após o primeiro acesso
 
 ## Setup
@@ -27,7 +25,7 @@ Funciona offline, sem backend, com dados armazenados localmente no navegador.
 2. Ative o GitHub Pages (Settings > Pages > Source: `main`, pasta `/`)
 3. Acesse `https://seu-usuario.github.io/seu-repo/`
 
-Para desenvolvimento local, use qualquer servidor HTTP estático:
+Para desenvolvimento local:
 
 ```bash
 npx serve .
@@ -35,8 +33,8 @@ npx serve .
 
 ## Uso
 
-1. **Importe** seu arquivo `portfolio.json` (arraste ou clique em importar)
-2. **Configure os tokens** de API clicando em ⚙️ (ambos são gratuitos)
+1. **Importe** seu `portfolio.json` (arraste ou clique em importar)
+2. **Configure os tokens** clicando em ⚙️ (ambos são gratuitos)
 3. **Atualize cotações** clicando em "Cotar"
 4. **Edite** ativos e metas clicando em "Editar"
 5. **Exporte** o JSON atualizado para versionar no repositório
@@ -62,7 +60,12 @@ npx serve .
   ],
   "storeOfValue": [
     { "id": "BTC", "amount": 0.5 },
+    { "id": "USD", "amount": 1000 },
     { "id": "GLD", "amount": 10 }
+  ],
+  "fixedIncome": [
+    { "id": "TESOURO SELIC", "amount": 50000 },
+    { "id": "CAIXA (BRL)", "amount": 5000 }
   ]
 }
 ```
@@ -71,28 +74,34 @@ npx serve .
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `id` | string | Identificador do ativo (ticker ou nome livre) |
-| `amount` | number | Quantidade (cotas) ou valor declarado (renda fixa/imóveis) |
+| `id` | string | Identificador do ativo (ticker, código de moeda ou nome livre) |
+| `amount` | number | Quantidade (cotas/unidades) ou valor declarado em BRL (renda fixa/imóveis) |
 | `target` | number? | Meta % dentro da classe. Omitido = distribuição igual. `0` = quarentena |
 
 **`classTargets`** define a meta % de cada classe no portfólio total. Se omitido, distribui igualmente entre as classes com ativos.
 
+### Tipos de ativos suportados
+
+| Classe | Exemplos de `id` | Cotação via | Observação |
+|--------|-------------------|-------------|------------|
+| Ações BR / FIIs | `WEGE3`, `HGLG11` | brapi.dev | Ticker da B3 |
+| Ações US / REITs | `AAPL`, `O` | Finnhub | Ticker NYSE/NASDAQ |
+| Reserva de Valor | `BTC`, `ETH` | AwesomeAPI | Criptomoedas (par {ID}-BRL) |
+| Reserva de Valor | `USD`, `EUR`, `GBP` | AwesomeAPI | Moedas estrangeiras (quantidade em espécie) |
+| Reserva de Valor | `GLD`, `SLV`, `IAU` | Finnhub | ETFs de commodities (fallback automático) |
+| Renda Fixa | `TESOURO SELIC`, `CDB BANCO X` | -- | Nome livre, `amount` = valor em BRL |
+| Imóveis | `APARTAMENTO SP` | -- | Nome livre, `amount` = valor em BRL |
+
+Para **dinheiro em espécie (BRL)**, use a classe Renda Fixa com um nome descritivo (ex: `"id": "CAIXA (BRL)"`) e `amount` como o valor em reais.
+
 ### Regras de rebalanceamento
 
-A sugestão de aporte segue duas regras simples:
+A tag `APORTAR` segue estas regras:
 
-1. **Classe**: as 2 classes com maior diferença positiva entre meta e valor atual recebem a tag `APORTAR`. Classes acima da meta são ignoradas.
-2. **Ativo**: dentro de cada classe, os 2 ativos mais defasados em relação à sua meta recebem a tag `APORTAR`. Ativos em quarentena são ignorados.
-
-A primeira tag (vermelha) indica a prioridade máxima. A segunda (amarela) indica o próximo candidato.
-
-### Reserva de Valor
-
-Ativos na classe Reserva de Valor são cotados automaticamente:
-
-- **Criptomoedas** (BTC, ETH, LTC, etc.): buscados na AwesomeAPI via par `{TICKER}-BRL`
-- **ETFs de commodities** (GLD, SLV, IAU, etc.): buscados no Finnhub como fallback
-- A detecção é automática, sem necessidade de configuração
+1. **Apenas classes abaixo da meta** recebem a tag. Classes que já atingiram ou ultrapassaram seu objetivo são ignoradas.
+2. **Quantidade de tags**: quando existem 3 ou mais candidatos elegíveis, as 2 maiores defasagens recebem tag. Com apenas 2 candidatos, apenas 1 recebe.
+3. **Prioridade visual**: a tag primária (âmbar sólido) indica a maior defasagem. A secundária (âmbar outline) indica a segunda.
+4. A mesma lógica se aplica dentro de cada classe para os ativos individuais. Ativos em quarentena são ignorados.
 
 ## Estrutura do Projeto
 
