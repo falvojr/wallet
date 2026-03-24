@@ -7,7 +7,7 @@ import {
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
-const SMART_BADGE_TITLE = 'Sugestão inteligente baseada no desvio para a alocação-alvo';
+const SMART_BADGE_TITLE = 'Sugestão inteligente baseada no desvio para a alocação-alvo.';
 
 function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
@@ -18,7 +18,7 @@ function renderAportarBadge() {
 }
 
 function renderQuarantineBadge() {
-  return ' <span class="badge badge--quarentena">quarentena</span>';
+  return ' <span class="badge badge--ignorar">ignorar</span>';
 }
 
 export function render() {
