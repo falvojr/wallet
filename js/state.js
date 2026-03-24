@@ -64,7 +64,7 @@ export function cachePrices() {
 }
 
 export function activeClassKeys() {
-  return CLASS_KEYS.filter(k => (state.portfolio[k] || []).length > 0);
+  return CLASS_KEYS;
 }
 
 export function hasApiTokens() {

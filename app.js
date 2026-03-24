@@ -227,8 +227,8 @@ function bindPanelEvents() {
     })
   );
 
-  $$('.add-row').forEach(row =>
-    row.addEventListener('click', () => openAddModal(row.dataset.addClass))
+  $$('.add-row, .add-to-empty').forEach(el =>
+    el.addEventListener('click', () => openAddModal(el.dataset.addClass))
   );
 }
 

@@ -1,14 +1,20 @@
 # Minha Holding
 
-PWA para visualização e rebalanceamento de carteira de investimentos pessoal. Funciona offline, sem backend, com dados armazenados localmente no navegador.
+PWA para visualização e rebalanceamento de carteira de investimentos pessoal, baseada na estratégia Buy and Hold.
+
+Funciona offline, sem backend, com dados armazenados localmente no navegador.
+
+> Esta solução é uma interpretação pessoal da estratégia de Buy and Hold, influenciada por investidores e educadores como [Bastter](https://bastter.com), [Fabio Faria (Canal do Holder)](https://www.youtube.com/@canaldoholder), [Gustavo Cerbasi](https://www.youtube.com/@gustavocerbasi), [Eduardo Cavalcanti](https://www.youtube.com/@eduardocavalcanti) e [Asvid (Fundamentei)](https://fundamentei.com).
 
 ## Funcionalidades
 
 - **Visão consolidada** do portfólio com gráfico de diversificação e valor total em BRL
 - **7 classes de ativos**: Ações BR, FIIs, Ações US, REITs, Renda Fixa, Reserva de Valor e Imóveis
 - **Cotações em tempo real** via [brapi.dev](https://brapi.dev) (B3) e [Finnhub](https://finnhub.io) (US), com câmbio USD/BRL e BTC/BRL via [AwesomeAPI](https://docs.awesomeapi.com.br)
-- **Sistema de metas e rebalanceamento**: defina metas por classe e por ativo, visualize qual está mais defasado com a tag `APORTAR`
-- **Quarentena**: ativos com meta 0% são excluídos do cálculo de rebalanceamento
+- **Sistema de metas e rebalanceamento**: defina metas por classe e por ativo, a tag `APORTAR` indica automaticamente onde alocar o próximo aporte
+- **Quarentena**: ativos com meta 0% ficam marcados e são excluídos das sugestões de aporte
+- **Regra de aporte**: classes que já estão acima da meta não recebem sugestão de aporte
+- **Classes persistentes**: todas as 7 classes são sempre acessíveis, mesmo quando vazias, permitindo adicionar ativos a qualquer momento
 - **Edição inline**: adicione, remova e edite ativos e metas diretamente na interface
 - **Import/Export JSON**: importe sua carteira arrastando um arquivo `.json`, exporte para salvar ou versionar
 - **PWA offline-first**: funciona sem internet após o primeiro acesso
@@ -51,25 +57,26 @@ npx serve .
   "brStocks": [
     { "id": "WEGE3", "amount": 400 },
     { "id": "MGLU3", "amount": 105, "target": 0 }
-  ],
-  "brFiis": [],
-  "usStocks": [],
-  "usReits": [],
-  "fixedIncome": [],
-  "storeOfValue": [],
-  "realEstate": []
+  ]
 }
 ```
 
-**Campos por ativo:**
+### Campos por ativo
 
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
-| `id` | string | Identificador do ativo (ticker ou nome) |
+| `id` | string | Identificador do ativo (ticker ou nome livre) |
 | `amount` | number | Quantidade (cotas) ou valor declarado (renda fixa/imóveis) |
 | `target` | number? | Meta % dentro da classe. Omitido = distribuição igual. `0` = quarentena |
 
-**`classTargets`** define a meta % de cada classe no portfólio total. Se omitido, distribui igualmente entre as classes ativas.
+**`classTargets`** define a meta % de cada classe no portfólio total. Se omitido, distribui igualmente entre as classes com ativos.
+
+### Regras de rebalanceamento
+
+A sugestão de aporte segue duas regras simples:
+
+1. **Classe**: a tag `APORTAR` aparece na classe com maior diferença positiva entre meta e valor atual. Classes que já estão acima da meta são ignoradas.
+2. **Ativo**: dentro da classe selecionada, o ativo com maior defasagem em relação à sua meta recebe a tag `APORTAR`. Ativos em quarentena são ignorados.
 
 ## Estrutura do Projeto
 
@@ -77,10 +84,11 @@ npx serve .
 index.html          HTML principal
 style.css           Estilos (mobile-first)
 app.js              Entry point (eventos, modais, import/export)
-js/state.js         Estado, constantes, persistência
-js/calc.js          Cálculos de valor, metas, rebalanceamento
-js/api.js           Integração com APIs de cotação
-js/render.js        Renderização do DOM
+js/
+  state.js          Estado, constantes, persistência
+  calc.js           Cálculos de valor, metas, rebalanceamento
+  api.js            Integração com APIs de cotação
+  render.js         Renderização do DOM
 sw.js               Service Worker (offline-first)
 manifest.json       PWA manifest
 portfolio.json      Exemplo de carteira

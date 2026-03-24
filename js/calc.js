@@ -83,9 +83,11 @@ export function assetTargetPct(classKey, asset) {
 export function findMostDeficientClass() {
   let bestKey = null, bestGap = -Infinity;
   for (const key of activeClassKeys()) {
+    if ((state.portfolio[key] || []).length === 0) continue;
     const actual = classActualPct(key);
     if (actual === null) continue;
     const gap = classTargetPct(key) - actual;
+    if (gap <= 0) continue;
     if (gap > bestGap) { bestGap = gap; bestKey = key; }
   }
   return bestKey;

@@ -1,4 +1,4 @@
-import { state, CLASS_META, activeClassKeys } from './state.js';
+import { state, CLASS_META, CLASS_KEYS, activeClassKeys } from './state.js';
 import {
   formatBRL, formatQty, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
@@ -7,6 +7,10 @@ import {
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
+
+function classHasAssets(key) {
+  return (state.portfolio[key] || []).length > 0;
+}
 
 export function render() {
   const hasPortfolio = state.portfolio !== null;
@@ -28,7 +32,11 @@ export function render() {
 function renderTabs() {
   const tabs = [
     { key: 'overview', label: 'Visão Geral', count: null },
-    ...activeClassKeys().map(k => ({ key: k, label: CLASS_META[k].label, count: state.portfolio[k].length })),
+    ...activeClassKeys().map(k => ({
+      key: k,
+      label: CLASS_META[k].label,
+      count: (state.portfolio[k] || []).length,
+    })),
   ];
 
   $('#tabNav').innerHTML = tabs.map(t => `
@@ -39,7 +47,6 @@ function renderTabs() {
 }
 
 function renderPanels() {
-  const tab = state.activeTab;
   let html = panelWrap('overview', renderOverview());
   for (const key of activeClassKeys()) html += panelWrap(key, renderAssetPanel(key));
   $('#panels').innerHTML = html;
@@ -51,8 +58,9 @@ function panelWrap(key, content) {
 
 function renderOverview() {
   const targetClassKey = findMostDeficientClass();
+  const populatedKeys = CLASS_KEYS.filter(classHasAssets);
 
-  const chartData = activeClassKeys().map(k => {
+  const chartData = populatedKeys.map(k => {
     const total = classTotalBRL(k);
     const count = state.portfolio[k].length;
     return {
@@ -78,14 +86,14 @@ function renderOverview() {
   html += '</div></div>';
 
   html += '<div class="summary-cards">';
-  activeClassKeys().forEach(key => {
+  populatedKeys.forEach(key => {
     const meta = CLASS_META[key];
     const classTotal = classTotalBRL(key);
     const actual = classActualPct(key);
     const target = classTargetPct(key);
     const isTarget = key === targetClassKey;
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-    const aportarBadge = isTarget ? ' <span class="aportar-badge">aportar</span>' : '';
+    const aportarHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>' : '';
 
     let pctHtml = '';
     if (actual !== null) {
@@ -96,7 +104,7 @@ function renderOverview() {
       <div class="summary-card" data-class="${key}" data-goto="${key}">
         <div class="summary-card-label">
           <i data-lucide="${meta.icon}" class="summary-icon" style="color:${meta.color}"></i>
-          ${meta.label}${aportarBadge}
+          ${meta.label}${aportarHtml}
         </div>
         <div class="summary-card-value" style="color:${meta.color}">
           ${classTotal !== null ? formatBRL(classTotal) : state.portfolio[key].length}
@@ -158,7 +166,18 @@ function renderAssetPanel(key) {
       <label>Meta da classe:</label>
       <input type="text" value="${classTargetPct(key).toFixed(0)}" data-class-target="${key}" inputmode="decimal">
       <span>% do portfólio</span>
-    </div>
+    </div>`;
+
+  if (assets.length === 0) {
+    html += `
+      <div class="empty-class">
+        <p>Nenhum ativo nesta classe.</p>
+        <button class="btn btn--primary add-to-empty" data-add-class="${key}">+ Adicionar ativo</button>
+      </div>`;
+    return html;
+  }
+
+  html += `
     <div class="table-wrap">
     <table class="asset-table">
       <thead><tr>
@@ -192,12 +211,12 @@ function renderAssetPanel(key) {
     }
 
     const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
-    const badge = isTarget ? ' <span class="aportar-badge">aportar</span>'
-                : quarantined ? ' <span class="quarantine-badge">Q</span>' : '';
+    const badgeHtml = isTarget ? ' <span class="badge badge--aportar">aportar</span>'
+                    : quarantined ? ' <span class="badge badge--quarentena">quarentena</span>' : '';
 
     html += `
         <tr class="${rowClass}">
-          <td class="td-ticker">${asset.id}${badge}</td>
+          <td class="td-ticker">${asset.id}${badgeHtml}</td>
           <td class="td-r view-cell">${formatQty(asset.amount)}</td>
           <td class="td-r edit-cell">
             <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">
