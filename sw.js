@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holding-v4';
+const CACHE_NAME = 'holding-v5';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -7,6 +7,10 @@ self.addEventListener('install', e => {
         cache.add(new Request('./index.html')),
         cache.add(new Request('./style.css')),
         cache.add(new Request('./app.js')),
+        cache.add(new Request('./js/state.js')),
+        cache.add(new Request('./js/calc.js')),
+        cache.add(new Request('./js/api.js')),
+        cache.add(new Request('./js/render.js')),
         cache.add(new Request('./manifest.json')),
       ])
     )
@@ -27,7 +31,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   const url = e.request.url;
-  if (url.includes('brapi.dev') || url.includes('finnhub.io') || url.includes('awesomeapi') || url.includes('googleapis')) return;
+  if (url.includes('brapi.dev') || url.includes('finnhub.io') || url.includes('awesomeapi')) return;
 
   e.respondWith(
     fetch(e.request)
