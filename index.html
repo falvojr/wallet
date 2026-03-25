@@ -17,13 +17,13 @@
 
   <header class="app-header">
     <div class="header-inner">
-      <div class="header-brand">
-        <h1>Minha Holding</h1>
-      </div>
+      <div class="header-brand"><h1>Minha Holding</h1></div>
       <div class="header-actions" id="headerActions" hidden>
-        <button class="btn" id="btnPrices" title="Atualizar cotações">
-          <i data-lucide="refresh-cw"></i>
-          <span class="btn-label">Cotar</span>
+        <button class="btn" id="btnSettings" title="Configurações de API">
+          <i data-lucide="settings"></i>
+        </button>
+        <button class="btn" id="btnTheme" title="Alternar tema">
+          <i data-lucide="sun-moon"></i>
         </button>
         <button class="btn" id="btnImport" title="Importar JSON">
           <i data-lucide="download"></i>
@@ -31,11 +31,9 @@
         <button class="btn" id="btnExport" title="Exportar JSON">
           <i data-lucide="upload"></i>
         </button>
-        <button class="btn" id="btnTheme" title="Alternar tema">
-          <i data-lucide="sun-moon"></i>
-        </button>
-        <button class="btn" id="btnSettings" title="Configurações de API">
-          <i data-lucide="settings"></i>
+        <button class="btn btn--primary" id="btnPrices" title="Atualizar cotações">
+          <i data-lucide="refresh-cw"></i>
+          <span class="btn-label">Cotar</span>
         </button>
       </div>
     </div>
@@ -59,16 +57,15 @@
     </div>
   </div>
 
-  <!-- Add asset modal -->
   <div class="modal-overlay" id="addModal">
     <div class="modal">
       <h3>Adicionar Ativo</h3>
       <div class="modal-field">
         <label for="newTicker">Nome / Ticker</label>
-        <input type="text" id="newTicker" placeholder="Ex: PETR4, Tesouro Selic" autocomplete="off">
+        <input type="text" id="newTicker" placeholder="Ex: PETR4, CDB Inter" autocomplete="off">
       </div>
       <div class="modal-field">
-        <label for="newAmount">Quantidade / Valor</label>
+        <label for="newAmount">Quantidade ou valor (R$)</label>
         <input type="text" id="newAmount" placeholder="Ex: 100" inputmode="decimal" autocomplete="off">
       </div>
       <div class="modal-field">
@@ -82,14 +79,12 @@
     </div>
   </div>
 
-  <!-- Note modal -->
   <div class="modal-overlay" id="noteModal">
     <div class="modal">
       <h3>Comentário</h3>
-      <p class="modal-hint" id="noteAssetName"></p>
+      <p class="modal-hint">Nota sobre <strong id="noteAssetName"></strong></p>
       <div class="modal-field">
-        <label for="noteText">Nota</label>
-        <textarea id="noteText" rows="3" placeholder="Ex: Vencimento 2027, CDB 120% CDI"></textarea>
+        <textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI"></textarea>
       </div>
       <div class="modal-actions">
         <button class="btn" id="noteCancel">Cancelar</button>
@@ -98,13 +93,12 @@
     </div>
   </div>
 
-  <!-- Settings modal -->
   <div class="modal-overlay" id="settingsModal">
     <div class="modal modal--wide">
       <h3>Tokens de API</h3>
       <p class="modal-hint">Tokens gratuitos para cotações em tempo real.</p>
       <div class="modal-field">
-        <label for="brapiToken">brapi.dev (Ações BR / FIIs)</label>
+        <label for="brapiToken">brapi.dev (Ações / FIIs)</label>
         <input type="text" id="brapiToken" placeholder="Crie grátis em brapi.dev/dashboard" autocomplete="off">
         <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener">Criar conta &rarr;</a>
       </div>

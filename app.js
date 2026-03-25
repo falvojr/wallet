@@ -35,8 +35,6 @@ function scheduleSave() {
   }, 600);
 }
 
-// Price fetching (manual only)
-
 async function refreshPrices() {
   const success = await fetchAllPrices(showLoading);
   hideLoading();
@@ -89,7 +87,7 @@ function confirmAddAsset() {
   toast(ticker + ' adicionado');
 }
 
-// Note modal (for assets without external link)
+// Note modal
 
 let noteTargetClass = null;
 let noteTargetId = null;
@@ -97,7 +95,7 @@ let noteTargetId = null;
 function openNoteModal(cls, id) {
   noteTargetClass = cls;
   noteTargetId = id;
-  const asset = state.portfolio[cls].find(a => a.id === id);
+  const asset = state.portfolio[cls]?.find(a => a.id === id);
   $('#noteAssetName').textContent = id;
   $('#noteText').value = asset?.note || '';
   $('#noteModal').classList.add('open');
@@ -110,7 +108,7 @@ function closeNoteModal() {
   noteTargetId = null;
 }
 
-function saveNote() {
+function saveNoteFromModal() {
   if (noteTargetClass && noteTargetId) {
     setAssetNote(noteTargetClass, noteTargetId, $('#noteText').value);
     closeNoteModal();
@@ -178,7 +176,7 @@ function importJSON(file) {
   reader.readAsText(file);
 }
 
-// Panel events (re-bound after each render)
+// Panel events
 
 function bindPanelEvents() {
   $$('[data-goto]').forEach(el =>
@@ -189,7 +187,7 @@ function bindPanelEvents() {
     btn.addEventListener('click', () => { state.activeTab = btn.dataset.tab; rerender(); })
   );
 
-  // Inline auto-save inputs
+  // Inline asset inputs (auto-save)
   $$('.inline-input[data-field="amount"]').forEach(input =>
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
@@ -214,7 +212,9 @@ function bindPanelEvents() {
     })
   );
 
-  $$('input[data-class-target]').forEach(input =>
+  // Class target inputs (in summary cards and asset panels)
+  $$('input[data-class-target]').forEach(input => {
+    input.addEventListener('click', e => e.stopPropagation());
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val) && val >= 0) {
@@ -223,8 +223,8 @@ function bindPanelEvents() {
         savePortfolio();
         rerender();
       }
-    })
-  );
+    });
+  });
 
   $$('.remove-btn').forEach(btn =>
     btn.addEventListener('click', () => {
@@ -244,7 +244,6 @@ function bindPanelEvents() {
     el.addEventListener('click', () => openAddModal(el.dataset.addClass))
   );
 
-  // Hidden class toggle
   $$('[data-toggle-hidden]').forEach(btn =>
     btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -253,13 +252,12 @@ function bindPanelEvents() {
     })
   );
 
-  // Note modal for non-linked tickers
   $$('.ticker-note').forEach(el =>
     el.addEventListener('click', () => openNoteModal(el.dataset.noteClass, el.dataset.noteId))
   );
 }
 
-// Drag & Drop
+// Drag and Drop
 
 let dragCounter = 0;
 
@@ -273,7 +271,7 @@ document.addEventListener('drop', e => {
   else toast('Apenas arquivos .json');
 });
 
-// Global event listeners
+// Global listeners
 
 $('#btnExport').addEventListener('click', exportJSON);
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
@@ -281,7 +279,6 @@ $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
-
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
@@ -293,13 +290,13 @@ $('#settingsSave').addEventListener('click', saveSettingsFromModal);
 $('#settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
 
 $('#noteCancel').addEventListener('click', closeNoteModal);
-$('#noteSave').addEventListener('click', saveNote);
+$('#noteSave').addEventListener('click', saveNoteFromModal);
 $('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
 
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
-$('#noteText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); } });
+$('#noteText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNoteFromModal(); } });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
@@ -309,12 +306,9 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// PWA
-
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-// Init (offline-first: always use cached prices, never auto-fetch)
-
+// Init (offline-first)
 loadTheme();
 loadSettings();
 loadPortfolio();

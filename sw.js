@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holding-v7';
+const CACHE_NAME = 'holding-v8';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -29,7 +29,6 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-
   const url = e.request.url;
   if (url.includes('brapi.dev') || url.includes('finnhub.io') || url.includes('awesomeapi')) return;
 
