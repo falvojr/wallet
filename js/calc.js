@@ -18,17 +18,13 @@ export function formatCompact(val) {
   return val.toFixed(0);
 }
 
-// Renda fixa e imóveis: amount é o valor declarado em BRL.
-// Reserva de valor sem cotação: amount é o valor declarado em BRL.
-// Demais: preço * quantidade, convertido via câmbio se necessário.
+// Valuation
+
 export function assetValueBRL(classKey, asset) {
   if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
 
   const p = state.prices[asset.id];
-
-  if (!p) {
-    return classKey === 'storeOfValue' ? asset.amount : null;
-  }
+  if (!p) return classKey === 'storeOfValue' ? asset.amount : null;
 
   if (p.currency === 'USD') return p.price * (state.rates.USDBRL || 0) * asset.amount;
   return p.price * asset.amount;
@@ -43,7 +39,6 @@ export function classTotalBRL(classKey) {
   return hasPrices ? total : null;
 }
 
-// Patrimônio total considera apenas classes visíveis
 export function portfolioTotalBRL() {
   let total = 0, partial = false;
   for (const key of visibleClassKeys()) {
@@ -54,7 +49,7 @@ export function portfolioTotalBRL() {
   return { total, partial };
 }
 
-// Metas e rebalanceamento
+// Targets & allocation
 
 export function isQuarantined(asset) {
   return asset.target === 0;
@@ -79,12 +74,11 @@ export function assetTargetPct(classKey, asset) {
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
-// Validação: soma das metas das classes visíveis
+// Allocation validation
+
 export function allocationTargetSum() {
   let sum = 0;
-  for (const key of visibleClassKeys()) {
-    sum += classTargetPct(key);
-  }
+  for (const key of visibleClassKeys()) sum += classTargetPct(key);
   return sum;
 }
 
@@ -95,12 +89,7 @@ export function allocationWarning() {
   return { sum: sum.toFixed(1), diff: diff.toFixed(1), over: sum > 100 };
 }
 
-// Heurística de rebalanceamento:
-// 1) Filtra classes visíveis com gap > threshold
-// 2) Threshold = max(0.5pp, 10% da meta)
-// 3) Limita classes recomendadas (máx 3)
-// 4) Dentro da classe, score = gap_ativo × gap_classe
-// 5) Limita ativos por classe (1 para <=4, 2 para 5-9, 3 para 10+)
+// Rebalancing heuristic (threshold-based greedy)
 
 const CLASS_THRESHOLD_MIN = 0.5;
 const CLASS_THRESHOLD_FACTOR = 0.1;
@@ -128,7 +117,6 @@ function classDeficitPct(classKey) {
 export function findMostDeficientClasses() {
   const results = [];
   for (const key of visibleClassKeys()) {
-    if (isClassHidden(key)) continue;
     if ((state.portfolio[key] || []).length === 0) continue;
     const gap = classDeficitPct(key);
     if (gap === null || gap < classThresholdPct(key)) continue;

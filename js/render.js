@@ -1,6 +1,6 @@
-import { state, CLASS_META, CLASS_KEYS, activeClassKeys, visibleClassKeys, isClassHidden, isBrQuoted, isUsQuoted } from './state.js';
+import { state, CLASS_META, CLASS_KEYS, activeClassKeys, visibleClassKeys, isClassHidden, isBrQuoted, isUsQuoted, pricesStale, pricesDateStr, hasCachedPrices } from './state.js';
 import {
-  formatBRL, formatQty, formatCompact,
+  formatBRL, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
   classTargetPct, classActualPct, isQuarantined,
   allocationWarning,
@@ -8,22 +8,26 @@ import {
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
-const SMART_BADGE_TITLE = 'Sugestão baseada no desvio para a alocação-alvo';
+const SMART_TITLE = 'Sugestão baseada no desvio para a alocação-alvo';
 
 function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
 
+function renderNotice(icon, text, variant = 'warning') {
+  return `
+    <div class="notice notice--${variant}">
+      <i data-lucide="${icon}" class="notice-icon"></i>
+      <span>${text}</span>
+    </div>`;
+}
+
 function renderAportarBadge() {
-  return ` <span class="badge badge--aportar" title="${SMART_BADGE_TITLE}"><i data-lucide="sparkles" style="width:9px;height:9px;vertical-align:-1px;margin-right:2px"></i>aportar</span>`;
+  return ` <span class="badge badge--aportar" title="${SMART_TITLE}"><i data-lucide="sparkles" class="badge-icon"></i>aportar</span>`;
 }
 
 function renderQuarantineBadge() {
-  return ' <span class="badge badge--ignorar">ignorar</span>';
-}
-
-function renderHiddenBadge() {
-  return ' <span class="badge badge--hidden">oculta</span>';
+  return ` <span class="badge badge--ignorar" title="Ativo em quarentena. Não recebe sugestão de aporte."><i data-lucide="circle-off" class="badge-icon"></i>ignorar</span>`;
 }
 
 function tickerUrl(classKey, tickerId) {
@@ -42,7 +46,6 @@ function tickerUrl(classKey, tickerId) {
 
 export function render() {
   const hasPortfolio = state.portfolio !== null;
-
   $('#emptyWelcome').hidden = hasPortfolio;
   $('#headerActions').hidden = !hasPortfolio;
 
@@ -89,66 +92,67 @@ function renderOverview() {
   const targetClasses = findMostDeficientClasses();
   const populatedKeys = CLASS_KEYS.filter(classHasAssets);
 
-  const chartData = populatedKeys
-    .filter(k => !isClassHidden(k))
-    .map(k => {
-      const total = classTotalBRL(k);
-      const count = state.portfolio[k].length;
-      return {
-        key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon,
-        value: total ?? count * 0.01,
-        count, hasPrices: total !== null, total,
-      };
-    });
+  const chartData = populatedKeys.map(k => {
+    const hidden = isClassHidden(k);
+    const total = classTotalBRL(k);
+    const count = state.portfolio[k].length;
+    return {
+      key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon,
+      value: hidden ? 0 : (total ?? count * 0.01),
+      count, hasPrices: total !== null, total, hidden,
+    };
+  });
 
-  let html = '<div class="overview-grid">';
+  const visibleChartData = chartData.filter(d => !d.hidden);
+  let html = '';
 
-  // Allocation warning
+  // Notices
   const warning = allocationWarning();
   if (warning) {
-    const icon = warning.over ? 'triangle-alert' : 'info';
-    html += `
-      <div class="allocation-warning">
-        <i data-lucide="${icon}" style="width:14px;height:14px;flex-shrink:0"></i>
-        <span>A soma das metas é <strong>${warning.sum}%</strong> (${warning.over ? 'acima' : 'abaixo'} de 100% por ${warning.diff}p.p.)</span>
-      </div>`;
+    const msg = warning.over
+      ? `As metas totalizam <strong>${warning.sum}%</strong>. Reduza ${warning.diff}p.p. para chegar a 100%.`
+      : `As metas totalizam <strong>${warning.sum}%</strong>. Faltam ${warning.diff}p.p. para chegar a 100%.`;
+    html += renderNotice('triangle-alert', msg, 'warning');
   }
 
+  if (hasCachedPrices() && pricesStale()) {
+    const dateStr = pricesDateStr();
+    html += renderNotice('clock', `Cotações desatualizadas (última sync: <strong>${dateStr}</strong>). Clique em <strong>Cotar</strong> para atualizar.`, 'info');
+  } else if (!hasCachedPrices()) {
+    html += renderNotice('clock', 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.', 'info');
+  }
+
+  html += '<div class="overview-grid">';
+
+  // Chart card with legend and hidden toggle
   html += '<div class="chart-card"><h2>Diversificação</h2>';
-  html += renderDonut(chartData);
+  html += renderDonut(visibleChartData);
   html += '<div class="chart-legend">';
   chartData.forEach(d => {
+    const hiddenCls = d.hidden ? 'legend-row--hidden' : '';
+    const eyeIcon = d.hidden ? 'eye-off' : 'eye';
     html += `
-      <div class="legend-row" data-goto="${d.key}">
-        <span class="legend-dot" style="background:${d.color}"></span>
-        <span class="legend-label">${d.label}</span>
-        <span class="legend-amount">${d.hasPrices ? formatBRL(d.total) : d.count + ' pos.'}</span>
+      <div class="legend-row ${hiddenCls}">
+        <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
+        <span class="legend-label" data-goto="${d.key}">${d.label}</span>
+        <span class="legend-amount ${d.hidden ? 'legend-amount--hidden' : ''}">${d.hasPrices ? formatBRL(d.total) : d.count + ' pos.'}</span>
+        <button class="legend-eye" data-toggle-hidden="${d.key}" title="${d.hidden ? 'Mostrar classe' : 'Ocultar classe'}">
+          <i data-lucide="${eyeIcon}"></i>
+        </button>
       </div>`;
   });
   html += '</div></div>';
 
+  // Summary cards (only visible classes)
   html += '<div class="summary-cards">';
-  populatedKeys.forEach(key => {
+  populatedKeys.filter(k => !isClassHidden(k)).forEach(key => {
     const meta = CLASS_META[key];
-    const hidden = isClassHidden(key);
-    const classTotal = hidden ? null : classTotalBRL(key);
-    const actual = hidden ? null : classActualPct(key);
+    const classTotal = classTotalBRL(key);
+    const actual = classActualPct(key);
     const target = classTargetPct(key);
-    const isTarget = !hidden && targetClasses.includes(key);
+    const isTarget = targetClasses.includes(key);
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
     const aportarHtml = isTarget ? renderAportarBadge() : '';
-
-    if (hidden) {
-      html += `
-        <div class="summary-card summary-card--hidden" data-class="${key}" data-goto="${key}">
-          <div class="summary-card-label">
-            <i data-lucide="${meta.icon}" class="summary-icon"></i>
-            ${meta.label}${renderHiddenBadge()}
-          </div>
-          <div class="summary-card-value summary-card-value--hidden">${classTotalBRL(key) !== null ? formatBRL(classTotalBRL(key)) : state.portfolio[key].length}</div>
-        </div>`;
-      return;
-    }
 
     let pctHtml = '';
     if (actual !== null) {
@@ -175,7 +179,7 @@ function renderOverview() {
 
 function renderDonut(segments) {
   const total = segments.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return '<p style="color:var(--text-muted);padding:20px;font-size:0.82rem">Sem dados</p>';
+  if (total === 0) return '<p style="color:var(--text-muted);padding:20px;font-size:0.85rem">Sem dados</p>';
 
   const R = 75, C = Math.PI * 2 * R;
   let offset = 0;
@@ -211,32 +215,23 @@ function renderAssetPanel(key) {
   const hidden = isClassHidden(key);
   const targetAssetIds = hidden ? [] : findMostDeficientAssets(key);
 
-  const eyeIcon = hidden ? 'eye-off' : 'eye';
-  const eyeTitle = hidden ? 'Mostrar classe no portfólio' : 'Ocultar classe do portfólio';
-
   let html = `
     <div class="asset-section-header">
       <h2 class="asset-section-title" style="color:${meta.color}">
         <i data-lucide="${meta.icon}" class="section-icon"></i> ${meta.label}
-        ${hidden ? renderHiddenBadge() : ''}
       </h2>
-      <button class="btn btn--icon toggle-hidden-btn" data-toggle-hidden="${key}" title="${eyeTitle}">
-        <i data-lucide="${eyeIcon}"></i>
-      </button>
-    </div>
-    <div class="edit-target-row">
+    </div>`;
+
+  if (hidden) {
+    html += renderNotice('eye-off', 'Classe oculta da Visão Geral. Valores não contabilizados no patrimônio e sem sugestões de aporte.', 'info');
+  }
+
+  html += `
+    <div class="class-target-row">
       <label>Meta da classe:</label>
       <input type="text" value="${classTargetPct(key).toFixed(0)}" data-class-target="${key}" inputmode="decimal">
       <span>% do portfólio</span>
     </div>`;
-
-  if (hidden) {
-    html += `
-      <div class="hidden-class-notice">
-        <i data-lucide="eye-off" style="width:16px;height:16px"></i>
-        <p>Classe oculta. Valores não contabilizados no patrimônio total e sem sugestões de aporte.</p>
-      </div>`;
-  }
 
   if (assets.length === 0) {
     html += `
@@ -256,8 +251,8 @@ function renderAssetPanel(key) {
         <th class="col-r">Preço</th>
         <th class="col-r">Hoje</th>
         <th class="col-r">Total</th>
-        <th class="col-r edit-th">Meta %</th>
-        <th class="edit-th"></th>
+        <th class="col-r">Meta %</th>
+        <th class="col-action"></th>
       </tr></thead>
       <tbody>`;
 
@@ -280,32 +275,39 @@ function renderAssetPanel(key) {
       }
     }
 
-    const rowClass = hidden ? 'row-hidden' : isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
+    const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
     const badgeHtml = isTarget ? renderAportarBadge() : quarantined ? renderQuarantineBadge() : '';
 
-    // External link for quoted tickers
     const url = tickerUrl(key, asset.id);
-    const tickerHtml = url
-      ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link" title="Ver no Google Finance">${asset.id}</a>`
-      : asset.id;
+    const noteEsc = asset.note ? asset.note.replace(/"/g, '&quot;') : '';
+    const noteAttr = asset.note ? ` title="${noteEsc}"` : '';
+    const noteClass = asset.note ? ' has-note' : '';
+
+    let tickerHtml;
+    if (url) {
+      tickerHtml = `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteAttr}>${asset.id}</a>`;
+    } else {
+      tickerHtml = `<span class="ticker-note${noteClass}" data-note-class="${key}" data-note-id="${asset.id}"${noteAttr}>${asset.id}</span>`;
+    }
 
     html += `
         <tr class="${rowClass}">
           <td class="td-ticker">${tickerHtml}${badgeHtml}</td>
-          <td class="td-r view-cell">${formatQty(asset.amount)}</td>
-          <td class="td-r edit-cell">
-            <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">
+          <td class="td-r">
+            <input class="inline-input inline-input--qty" type="text" value="${asset.amount}"
+              data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">
           </td>
           <td class="td-price">${priceStr}</td>
           <td class="td-change">${changeHtml}</td>
           <td class="td-value" style="color:${meta.color}">${value !== null ? formatBRL(value) : ''}</td>
-          <td class="td-r edit-cell">
-            <input type="text" value="${asset.target !== undefined ? asset.target : ''}"
+          <td class="td-r">
+            <input class="inline-input inline-input--target" type="text"
+              value="${asset.target !== undefined ? asset.target : ''}"
               data-class="${key}" data-idx="${idx}" data-field="target"
-              placeholder="auto" style="width:45px" inputmode="decimal" title="Meta % (0 = quarentena)">
+              placeholder="auto" inputmode="decimal" title="Meta % (0 = quarentena)">
           </td>
-          <td class="edit-cell">
-            <button class="edit-remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
+          <td class="td-action">
+            <button class="remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
               <i data-lucide="x" style="width:12px;height:12px"></i>
             </button>
           </td>

@@ -65,8 +65,6 @@ async function fetchUsQuote(ticker) {
   await new Promise(r => setTimeout(r, 120));
 }
 
-// Reserva de Valor: tenta AwesomeAPI como cripto ({TICKER}-BRL).
-// Se não encontrar, tenta Finnhub como ETF (GLD, SLV, etc).
 async function fetchStoreOfValueQuote(ticker) {
   const found = await tryAwesomeApiCrypto(ticker);
   if (!found) await tryFinnhubQuote(ticker);

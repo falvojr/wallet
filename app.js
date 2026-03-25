@@ -1,4 +1,4 @@
-import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, hasCachedPrices, loadTheme, toggleTheme, toggleClassHidden } from './js/state.js';
+import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, loadTheme, toggleTheme, toggleClassHidden, setAssetNote } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
 import { render } from './js/render.js';
 
@@ -25,41 +25,23 @@ function rerender() {
   bindPanelEvents();
 }
 
-// Price fetching with loading overlay
+// Auto-save with debounce
+let saveTimer = null;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    savePortfolio();
+    rerender();
+  }, 600);
+}
+
+// Price fetching (manual only)
 
 async function refreshPrices() {
   const success = await fetchAllPrices(showLoading);
   hideLoading();
   rerender();
   toast(success ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
-}
-
-// Edit mode
-
-function toggleEditMode() {
-  state.editMode = !state.editMode;
-  updateEditUI();
-  if (!state.editMode) {
-    savePortfolio();
-    rerender();
-    toast('Alterações salvas');
-  }
-}
-
-function updateEditUI() {
-  $('#app').classList.toggle('edit-mode', state.editMode);
-  $('#btnEdit').classList.toggle('btn--primary', state.editMode);
-
-  const label = $('#btnEdit').querySelector('.btn-label');
-  if (label) label.textContent = state.editMode ? 'Salvar' : 'Editar';
-
-  const svg = $('#btnEdit').querySelector('[data-lucide], svg');
-  if (svg) {
-    const icon = document.createElement('i');
-    icon.dataset.lucide = state.editMode ? 'check' : 'pencil';
-    svg.replaceWith(icon);
-    lucide.createIcons({ nodes: [icon.parentElement] });
-  }
 }
 
 // Add asset modal
@@ -81,14 +63,14 @@ function closeAddModal() {
 }
 
 function confirmAddAsset() {
-  const ticker = $('#newTicker').value.trim().toUpperCase();
+  const ticker = $('#newTicker').value.trim();
   const amount = parseFloat($('#newAmount').value.replace(',', '.'));
 
   if (!ticker) { $('#newTicker').focus(); return; }
   if (isNaN(amount) || amount <= 0) { $('#newAmount').focus(); return; }
 
   if ((state.portfolio[addTargetClass] || []).find(a => a.id === ticker)) {
-    toast(`${ticker} já existe`);
+    toast(ticker + ' já existe');
     return;
   }
 
@@ -104,7 +86,36 @@ function confirmAddAsset() {
   savePortfolio();
   closeAddModal();
   rerender();
-  toast(`${ticker} adicionado`);
+  toast(ticker + ' adicionado');
+}
+
+// Note modal (for assets without external link)
+
+let noteTargetClass = null;
+let noteTargetId = null;
+
+function openNoteModal(cls, id) {
+  noteTargetClass = cls;
+  noteTargetId = id;
+  const asset = state.portfolio[cls].find(a => a.id === id);
+  $('#noteAssetName').textContent = id;
+  $('#noteText').value = asset?.note || '';
+  $('#noteModal').classList.add('open');
+  setTimeout(() => $('#noteText').focus(), 100);
+}
+
+function closeNoteModal() {
+  $('#noteModal').classList.remove('open');
+  noteTargetClass = null;
+  noteTargetId = null;
+}
+
+function saveNote() {
+  if (noteTargetClass && noteTargetId) {
+    setAssetNote(noteTargetClass, noteTargetId, $('#noteText').value);
+    closeNoteModal();
+    rerender();
+  }
 }
 
 // Settings modal
@@ -137,7 +148,7 @@ function exportJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `portfolio_${out.syncedAt || 'export'}.json`;
+  a.download = 'portfolio_' + (out.syncedAt || 'export') + '.json';
   a.click();
   URL.revokeObjectURL(url);
   toast('JSON exportado');
@@ -153,7 +164,6 @@ function importJSON(file) {
 
       state.portfolio = data;
       state.activeTab = 'overview';
-      state.editMode = false;
       savePortfolio();
       rerender();
       hideLoading();
@@ -179,17 +189,18 @@ function bindPanelEvents() {
     btn.addEventListener('click', () => { state.activeTab = btn.dataset.tab; rerender(); })
   );
 
-  $$('.edit-cell input[data-field="amount"]').forEach(input =>
+  // Inline auto-save inputs
+  $$('.inline-input[data-field="amount"]').forEach(input =>
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val) && val >= 0) {
         state.portfolio[input.dataset.class][parseInt(input.dataset.idx)].amount = val;
-        savePortfolio();
+        scheduleSave();
       }
     })
   );
 
-  $$('.edit-cell input[data-field="target"]').forEach(input =>
+  $$('.inline-input[data-field="target"]').forEach(input =>
     input.addEventListener('change', () => {
       const idx = parseInt(input.dataset.idx);
       const raw = input.value.trim();
@@ -199,7 +210,7 @@ function bindPanelEvents() {
         const val = parseFloat(raw.replace(',', '.'));
         if (!isNaN(val) && val >= 0) state.portfolio[input.dataset.class][idx].target = val;
       }
-      savePortfolio();
+      scheduleSave();
     })
   );
 
@@ -215,17 +226,16 @@ function bindPanelEvents() {
     })
   );
 
-  $$('.edit-remove-btn').forEach(btn =>
+  $$('.remove-btn').forEach(btn =>
     btn.addEventListener('click', () => {
       const cls = btn.dataset.class;
       const idx = parseInt(btn.dataset.idx);
       const asset = state.portfolio[cls][idx];
-      if (confirm(`Remover ${asset.id}?`)) {
+      if (confirm('Remover ' + asset.id + '?')) {
         state.portfolio[cls].splice(idx, 1);
         savePortfolio();
-        render();
-        bindPanelEvents();
-        toast(`${asset.id} removido`);
+        rerender();
+        toast(asset.id + ' removido');
       }
     })
   );
@@ -234,12 +244,18 @@ function bindPanelEvents() {
     el.addEventListener('click', () => openAddModal(el.dataset.addClass))
   );
 
-  $$('.toggle-hidden-btn').forEach(btn =>
-    btn.addEventListener('click', () => {
-      const cls = btn.dataset.toggleHidden;
-      toggleClassHidden(cls);
+  // Hidden class toggle
+  $$('[data-toggle-hidden]').forEach(btn =>
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleClassHidden(btn.dataset.toggleHidden);
       rerender();
     })
+  );
+
+  // Note modal for non-linked tickers
+  $$('.ticker-note').forEach(el =>
+    el.addEventListener('click', () => openNoteModal(el.dataset.noteClass, el.dataset.noteId))
   );
 }
 
@@ -259,7 +275,6 @@ document.addEventListener('drop', e => {
 
 // Global event listeners
 
-$('#btnEdit').addEventListener('click', toggleEditMode);
 $('#btnExport').addEventListener('click', exportJSON);
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
@@ -277,15 +292,20 @@ $('#settingsCancel').addEventListener('click', closeSettings);
 $('#settingsSave').addEventListener('click', saveSettingsFromModal);
 $('#settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
 
+$('#noteCancel').addEventListener('click', closeNoteModal);
+$('#noteSave').addEventListener('click', saveNote);
+$('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
+
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
+$('#noteText').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); } });
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if ($('#addModal').classList.contains('open')) closeAddModal();
     else if ($('#settingsModal').classList.contains('open')) closeSettings();
-    else if (state.editMode) toggleEditMode();
+    else if ($('#noteModal').classList.contains('open')) closeNoteModal();
   }
 });
 
@@ -293,12 +313,10 @@ document.addEventListener('keydown', e => {
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-// Init
+// Init (offline-first: always use cached prices, never auto-fetch)
 
 loadTheme();
 loadSettings();
 loadPortfolio();
 loadCachedPrices();
 rerender();
-
-if (state.portfolio && hasApiTokens() && !hasCachedPrices()) refreshPrices();
