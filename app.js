@@ -1,4 +1,4 @@
-import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, hasCachedPrices, loadTheme, toggleTheme } from './js/state.js';
+import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, hasCachedPrices, loadTheme, toggleTheme, toggleClassHidden } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
 import { render } from './js/render.js';
 
@@ -130,6 +130,7 @@ function saveSettingsFromModal() {
 function exportJSON() {
   const out = { currency: state.portfolio.currency || 'BRL', syncedAt: state.portfolio.syncedAt };
   if (state.portfolio.classTargets) out.classTargets = state.portfolio.classTargets;
+  if (state.portfolio.hiddenClasses) out.hiddenClasses = state.portfolio.hiddenClasses;
   CLASS_KEYS.forEach(k => { out[k] = state.portfolio[k] || []; });
 
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
@@ -209,6 +210,7 @@ function bindPanelEvents() {
         if (!state.portfolio.classTargets) state.portfolio.classTargets = {};
         state.portfolio.classTargets[input.dataset.classTarget] = val;
         savePortfolio();
+        rerender();
       }
     })
   );
@@ -230,6 +232,14 @@ function bindPanelEvents() {
 
   $$('.add-row, .add-to-empty').forEach(el =>
     el.addEventListener('click', () => openAddModal(el.dataset.addClass))
+  );
+
+  $$('.toggle-hidden-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const cls = btn.dataset.toggleHidden;
+      toggleClassHidden(cls);
+      rerender();
+    })
   );
 }
 

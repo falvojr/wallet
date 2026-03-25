@@ -1,4 +1,4 @@
-import { state, cachePrices } from './state.js';
+import { state, cachePrices, markBrQuoted, markUsQuoted } from './state.js';
 
 let fetchingPrices = false;
 
@@ -47,6 +47,7 @@ async function fetchBrQuote(ticker) {
         currency: r.currency || 'BRL',
         change: r.regularMarketChangePercent,
       };
+      markBrQuoted(r.symbol);
     }
   } catch (e) { console.warn(`brapi (${ticker}):`, e); }
 }
@@ -58,6 +59,7 @@ async function fetchUsQuote(ticker) {
     const data = await res.json();
     if (data.c > 0) {
       state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
+      markUsQuoted(ticker);
     }
   } catch (e) { console.warn(`finnhub (${ticker}):`, e); }
   await new Promise(r => setTimeout(r, 120));
@@ -95,6 +97,7 @@ async function tryFinnhubQuote(ticker) {
     const data = await res.json();
     if (data.c > 0) {
       state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
+      markUsQuoted(ticker);
     }
   } catch (e) { console.warn(`finnhub fallback (${ticker}):`, e); }
   await new Promise(r => setTimeout(r, 120));

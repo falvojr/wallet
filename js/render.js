@@ -1,24 +1,43 @@
-import { state, CLASS_META, CLASS_KEYS, activeClassKeys } from './state.js';
+import { state, CLASS_META, CLASS_KEYS, activeClassKeys, visibleClassKeys, isClassHidden, isBrQuoted, isUsQuoted } from './state.js';
 import {
   formatBRL, formatQty, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
   classTargetPct, classActualPct, isQuarantined,
+  allocationWarning,
   findMostDeficientClasses, findMostDeficientAssets,
 } from './calc.js';
 
 const $ = (s) => document.querySelector(s);
-const SMART_BADGE_TITLE = 'Sugestão inteligente baseada no desvio para a alocação-alvo.';
+const SMART_BADGE_TITLE = 'Sugestão baseada no desvio para a alocação-alvo';
 
 function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
 
 function renderAportarBadge() {
-  return ` <span class="badge badge--aportar" title="${SMART_BADGE_TITLE}">aportar</span>`;
+  return ` <span class="badge badge--aportar" title="${SMART_BADGE_TITLE}"><i data-lucide="sparkles" style="width:9px;height:9px;vertical-align:-1px;margin-right:2px"></i>aportar</span>`;
 }
 
 function renderQuarantineBadge() {
   return ' <span class="badge badge--ignorar">ignorar</span>';
+}
+
+function renderHiddenBadge() {
+  return ' <span class="badge badge--hidden">oculta</span>';
+}
+
+function tickerUrl(classKey, tickerId) {
+  if (classKey === 'brStocks' || classKey === 'brFiis') {
+    if (isBrQuoted(tickerId) || state.prices[tickerId]) {
+      return `https://www.google.com/finance/quote/${tickerId}:BVMF`;
+    }
+  }
+  if (classKey === 'usStocks' || classKey === 'usReits') {
+    if (isUsQuoted(tickerId) || state.prices[tickerId]) {
+      return `https://www.google.com/finance/quote/${tickerId}:NYSE`;
+    }
+  }
+  return null;
 }
 
 export function render() {
@@ -40,16 +59,17 @@ export function render() {
 
 function renderTabs() {
   const tabs = [
-    { key: 'overview', label: 'Visão Geral', count: null },
+    { key: 'overview', label: 'Visão Geral', count: null, hidden: false },
     ...activeClassKeys().map(k => ({
       key: k,
       label: CLASS_META[k].label,
       count: (state.portfolio[k] || []).length,
+      hidden: isClassHidden(k),
     })),
   ];
 
   $('#tabNav').innerHTML = tabs.map(t => `
-    <button class="tab-btn ${t.key === state.activeTab ? 'active' : ''}" data-tab="${t.key}">
+    <button class="tab-btn ${t.key === state.activeTab ? 'active' : ''} ${t.hidden ? 'tab-hidden' : ''}" data-tab="${t.key}">
       ${t.label}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
     </button>
   `).join('');
@@ -69,17 +89,30 @@ function renderOverview() {
   const targetClasses = findMostDeficientClasses();
   const populatedKeys = CLASS_KEYS.filter(classHasAssets);
 
-  const chartData = populatedKeys.map(k => {
-    const total = classTotalBRL(k);
-    const count = state.portfolio[k].length;
-    return {
-      key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon,
-      value: total ?? count * 0.01,
-      count, hasPrices: total !== null, total,
-    };
-  });
+  const chartData = populatedKeys
+    .filter(k => !isClassHidden(k))
+    .map(k => {
+      const total = classTotalBRL(k);
+      const count = state.portfolio[k].length;
+      return {
+        key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon,
+        value: total ?? count * 0.01,
+        count, hasPrices: total !== null, total,
+      };
+    });
 
   let html = '<div class="overview-grid">';
+
+  // Allocation warning
+  const warning = allocationWarning();
+  if (warning) {
+    const icon = warning.over ? 'triangle-alert' : 'info';
+    html += `
+      <div class="allocation-warning">
+        <i data-lucide="${icon}" style="width:14px;height:14px;flex-shrink:0"></i>
+        <span>A soma das metas é <strong>${warning.sum}%</strong> (${warning.over ? 'acima' : 'abaixo'} de 100% por ${warning.diff}p.p.)</span>
+      </div>`;
+  }
 
   html += '<div class="chart-card"><h2>Diversificação</h2>';
   html += renderDonut(chartData);
@@ -97,12 +130,25 @@ function renderOverview() {
   html += '<div class="summary-cards">';
   populatedKeys.forEach(key => {
     const meta = CLASS_META[key];
-    const classTotal = classTotalBRL(key);
-    const actual = classActualPct(key);
+    const hidden = isClassHidden(key);
+    const classTotal = hidden ? null : classTotalBRL(key);
+    const actual = hidden ? null : classActualPct(key);
     const target = classTargetPct(key);
-    const isTarget = targetClasses.includes(key);
+    const isTarget = !hidden && targetClasses.includes(key);
     const barFill = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
     const aportarHtml = isTarget ? renderAportarBadge() : '';
+
+    if (hidden) {
+      html += `
+        <div class="summary-card summary-card--hidden" data-class="${key}" data-goto="${key}">
+          <div class="summary-card-label">
+            <i data-lucide="${meta.icon}" class="summary-icon"></i>
+            ${meta.label}${renderHiddenBadge()}
+          </div>
+          <div class="summary-card-value summary-card-value--hidden">${classTotalBRL(key) !== null ? formatBRL(classTotalBRL(key)) : state.portfolio[key].length}</div>
+        </div>`;
+      return;
+    }
 
     let pctHtml = '';
     if (actual !== null) {
@@ -162,19 +208,35 @@ function renderDonut(segments) {
 function renderAssetPanel(key) {
   const meta = CLASS_META[key];
   const assets = state.portfolio[key] || [];
-  const targetAssetIds = findMostDeficientAssets(key);
+  const hidden = isClassHidden(key);
+  const targetAssetIds = hidden ? [] : findMostDeficientAssets(key);
+
+  const eyeIcon = hidden ? 'eye-off' : 'eye';
+  const eyeTitle = hidden ? 'Mostrar classe no portfólio' : 'Ocultar classe do portfólio';
 
   let html = `
     <div class="asset-section-header">
       <h2 class="asset-section-title" style="color:${meta.color}">
         <i data-lucide="${meta.icon}" class="section-icon"></i> ${meta.label}
+        ${hidden ? renderHiddenBadge() : ''}
       </h2>
+      <button class="btn btn--icon toggle-hidden-btn" data-toggle-hidden="${key}" title="${eyeTitle}">
+        <i data-lucide="${eyeIcon}"></i>
+      </button>
     </div>
     <div class="edit-target-row">
       <label>Meta da classe:</label>
       <input type="text" value="${classTargetPct(key).toFixed(0)}" data-class-target="${key}" inputmode="decimal">
       <span>% do portfólio</span>
     </div>`;
+
+  if (hidden) {
+    html += `
+      <div class="hidden-class-notice">
+        <i data-lucide="eye-off" style="width:16px;height:16px"></i>
+        <p>Classe oculta. Valores não contabilizados no patrimônio total e sem sugestões de aporte.</p>
+      </div>`;
+  }
 
   if (assets.length === 0) {
     html += `
@@ -218,12 +280,18 @@ function renderAssetPanel(key) {
       }
     }
 
-    const rowClass = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
+    const rowClass = hidden ? 'row-hidden' : isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
     const badgeHtml = isTarget ? renderAportarBadge() : quarantined ? renderQuarantineBadge() : '';
+
+    // External link for quoted tickers
+    const url = tickerUrl(key, asset.id);
+    const tickerHtml = url
+      ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link" title="Ver no Google Finance">${asset.id}</a>`
+      : asset.id;
 
     html += `
         <tr class="${rowClass}">
-          <td class="td-ticker">${asset.id}${badgeHtml}</td>
+          <td class="td-ticker">${tickerHtml}${badgeHtml}</td>
           <td class="td-r view-cell">${formatQty(asset.amount)}</td>
           <td class="td-r edit-cell">
             <input type="text" value="${asset.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal">

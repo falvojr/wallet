@@ -1,4 +1,4 @@
-import { state, CLASS_KEYS, activeClassKeys } from './state.js';
+import { state, CLASS_KEYS, visibleClassKeys, isClassHidden } from './state.js';
 
 // Formatting
 
@@ -18,13 +18,9 @@ export function formatCompact(val) {
   return val.toFixed(0);
 }
 
-// Conversão para BRL:
-// BR: preço direto. US: preço * câmbio USD/BRL.
-// BTC: taxa BTC/BRL * qtd. Renda fixa e imóveis: amount já é o valor em BRL.
-
 // Renda fixa e imóveis: amount é o valor declarado em BRL.
-// Reserva de valor sem cotação (ex: dinheiro em espécie): amount é o valor declarado em BRL.
-// Demais classes: preço * quantidade, convertido via câmbio se necessário.
+// Reserva de valor sem cotação: amount é o valor declarado em BRL.
+// Demais: preço * quantidade, convertido via câmbio se necessário.
 export function assetValueBRL(classKey, asset) {
   if (classKey === 'fixedIncome' || classKey === 'realEstate') return asset.amount;
 
@@ -47,9 +43,10 @@ export function classTotalBRL(classKey) {
   return hasPrices ? total : null;
 }
 
+// Patrimônio total considera apenas classes visíveis
 export function portfolioTotalBRL() {
   let total = 0, partial = false;
-  for (const key of CLASS_KEYS) {
+  for (const key of visibleClassKeys()) {
     const val = classTotalBRL(key);
     if (val !== null) total += val;
     else if ((state.portfolio[key] || []).length > 0) partial = true;
@@ -57,13 +54,7 @@ export function portfolioTotalBRL() {
   return { total, partial };
 }
 
-// Metas e rebalanceamento:
-// classTargets[key] = % desejado do portfólio total.
-// asset.target = % desejado dentro da classe. 0 = quarentena.
-// Heurística: threshold-based greedy rebalancing.
-// 1) só recomenda classes abaixo da meta por uma banda mínima
-// 2) dentro da classe, prioriza ativos mais subalocados
-// 3) limita a quantidade de sugestões por classe para evitar ruído visual
+// Metas e rebalanceamento
 
 export function isQuarantined(asset) {
   return asset.target === 0;
@@ -72,7 +63,7 @@ export function isQuarantined(asset) {
 export function classTargetPct(classKey) {
   const targets = state.portfolio.classTargets || {};
   if (targets[classKey] !== undefined) return targets[classKey];
-  const active = activeClassKeys();
+  const active = visibleClassKeys();
   return active.length > 0 ? 100 / active.length : 0;
 }
 
@@ -87,6 +78,29 @@ export function assetTargetPct(classKey, asset) {
   const activeCount = (state.portfolio[classKey] || []).filter(a => !isQuarantined(a)).length;
   return activeCount > 0 ? 100 / activeCount : 0;
 }
+
+// Validação: soma das metas das classes visíveis
+export function allocationTargetSum() {
+  let sum = 0;
+  for (const key of visibleClassKeys()) {
+    sum += classTargetPct(key);
+  }
+  return sum;
+}
+
+export function allocationWarning() {
+  const sum = allocationTargetSum();
+  const diff = Math.abs(sum - 100);
+  if (diff < 0.1) return null;
+  return { sum: sum.toFixed(1), diff: diff.toFixed(1), over: sum > 100 };
+}
+
+// Heurística de rebalanceamento:
+// 1) Filtra classes visíveis com gap > threshold
+// 2) Threshold = max(0.5pp, 10% da meta)
+// 3) Limita classes recomendadas (máx 3)
+// 4) Dentro da classe, score = gap_ativo × gap_classe
+// 5) Limita ativos por classe (1 para <=4, 2 para 5-9, 3 para 10+)
 
 const CLASS_THRESHOLD_MIN = 0.5;
 const CLASS_THRESHOLD_FACTOR = 0.1;
@@ -113,7 +127,8 @@ function classDeficitPct(classKey) {
 
 export function findMostDeficientClasses() {
   const results = [];
-  for (const key of activeClassKeys()) {
+  for (const key of visibleClassKeys()) {
+    if (isClassHidden(key)) continue;
     if ((state.portfolio[key] || []).length === 0) continue;
     const gap = classDeficitPct(key);
     if (gap === null || gap < classThresholdPct(key)) continue;
@@ -125,6 +140,8 @@ export function findMostDeficientClasses() {
 }
 
 export function findMostDeficientAssets(classKey) {
+  if (isClassHidden(classKey)) return [];
+
   const assets = actionableAssets(classKey);
   const classTotal = classTotalBRL(classKey);
   const classGap = classDeficitPct(classKey);

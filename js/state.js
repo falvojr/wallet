@@ -15,6 +15,16 @@ export const CLASS_META = {
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
+// Tickers cotados via brapi.dev (B3)
+const BR_QUOTED = new Set();
+// Tickers cotados via Finnhub
+const US_QUOTED = new Set();
+
+export function markBrQuoted(ticker) { BR_QUOTED.add(ticker); }
+export function markUsQuoted(ticker) { US_QUOTED.add(ticker); }
+export function isBrQuoted(ticker) { return BR_QUOTED.has(ticker); }
+export function isUsQuoted(ticker) { return US_QUOTED.has(ticker); }
+
 export const state = {
   portfolio: null,
   settings: { brapiToken: '', finnhubToken: '' },
@@ -63,8 +73,25 @@ export function cachePrices() {
   }));
 }
 
+export function isClassHidden(classKey) {
+  return !!(state.portfolio?.hiddenClasses?.[classKey]);
+}
+
+export function toggleClassHidden(classKey) {
+  if (!state.portfolio) return;
+  if (!state.portfolio.hiddenClasses) state.portfolio.hiddenClasses = {};
+  state.portfolio.hiddenClasses[classKey] = !state.portfolio.hiddenClasses[classKey];
+  if (!state.portfolio.hiddenClasses[classKey]) delete state.portfolio.hiddenClasses[classKey];
+  savePortfolio();
+}
+
 export function activeClassKeys() {
   return CLASS_KEYS;
+}
+
+// Classes visíveis (não ocultas) para cálculos de patrimônio e rebalanceamento
+export function visibleClassKeys() {
+  return CLASS_KEYS.filter(k => !isClassHidden(k));
 }
 
 export function hasApiTokens() {

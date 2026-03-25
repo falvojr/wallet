@@ -29,6 +29,9 @@ npx serve .
 - **Cotações automáticas** para Ações BR, FIIs, Ações US, REITs, Cripto, Moedas e ETFs
 - **Rebalanceamento inteligente**: tag `APORTAR` indica classes e ativos mais defasados em relação à meta
 - **Quarentena**: meta 0% exclui o ativo das sugestões de aporte
+- **Classe oculta**: ícone de olho permite ocultar classes inteiras do cálculo de patrimônio
+- **Validação de alocação**: aviso quando metas não somam 100%
+- **Links externos**: tickers cotados linkam para Google Finance
 - **Tema** claro/escuro
 - **Offline-first** via Service Worker
 
@@ -42,8 +45,8 @@ npx serve .
 ├── 📄 style.css             → Estilos (mobile-first + tema claro/escuro)
 ├── 📄 app.js                → Entry point (eventos, modais, import/export)
 ├── 📁 js/
-│   ├── 📄 state.js          → Estado global, persistência, tema
-│   ├── 📄 calc.js           → Cálculos, metas, rebalanceamento
+│   ├── 📄 state.js          → Estado global, persistência, tema, visibilidade
+│   ├── 📄 calc.js           → Cálculos, metas, rebalanceamento, validação
 │   ├── 📄 api.js            → brapi.dev, Finnhub, AwesomeAPI
 │   └── 📄 render.js         → Renderização do DOM
 ├── 📄 sw.js                 → Service Worker
@@ -62,6 +65,7 @@ npx serve .
     "brStocks": 25, "brFiis": 10, "usStocks": 25,
     "usReits": 10, "fixedIncome": 15, "storeOfValue": 5, "realEstate": 10
   },
+  "hiddenClasses": {},
   "brStocks": [
     { "id": "WEGE3", "amount": 400 },
     { "id": "MGLU3", "amount": 105, "target": 0 }
@@ -88,6 +92,8 @@ npx serve .
 | `target` | `number?` | Meta % dentro da classe. Omitido = igual. `0` = quarentena |
 
 `classTargets` define a % desejada de cada classe no portfólio. Omitido = distribuição igual.
+
+`hiddenClasses` armazena classes ocultas (excluídas do patrimônio total e rebalanceamento).
 
 ---
 
@@ -119,8 +125,16 @@ A solução usa uma heurística offline de **threshold-based greedy rebalancing*
 3. Dentro da classe, os ativos elegíveis são ordenados pelo score `gap do ativo × gap da classe`
 4. O limite de sugestões por classe é adaptativo: até 4 ativos elegíveis = 1 sugestão; de 5 a 9 = 2; 10+ = 3
 5. Ativos em **quarentena** (`target: 0`) são ignorados no cálculo
+6. Classes **ocultas** são excluídas do cálculo de patrimônio total e de recomendações
 
 Objetivo: priorizar os ativos e classes mais subalocados, reduzindo ruído visual e microajustes.
+
+---
+
+## Visibilidade de classes
+
+- **Ocultar** (ícone de olho na aba da classe): exclui do patrimônio total, do gráfico de diversificação e das sugestões de aporte. O card no overview fica com opacity reduzida e valor riscado. A tab permanece visível (com opacity reduzida).
+- **Quarentena** (`target: 0` no ativo): o ativo permanece no patrimônio total, mas não recebe sugestão de aporte.
 
 ---
 
