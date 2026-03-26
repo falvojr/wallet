@@ -112,7 +112,7 @@ function renderOverview() {
   html += '<div class="overview-grid">';
 
   // Chart card
-  html += '<div class="chart-card"><h2>Diversificação</h2>';
+  html += '<div class="chart-card">';
   html += renderDonut(chartData.filter(d => !d.hidden));
   html += '<div class="chart-legend">';
   chartData.forEach(d => {
