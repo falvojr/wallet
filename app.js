@@ -1,6 +1,6 @@
 import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, loadTheme, toggleTheme, toggleClassHidden, setAssetNote } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
-import { render } from './js/render.js';
+import { render, destroyChart } from './js/render.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -21,11 +21,11 @@ function showLoading(text) {
 function hideLoading() { $('#loadingOverlay').hidden = true; }
 
 function rerender() {
+  destroyChart();
   render();
   bindPanelEvents();
 }
 
-// Auto-save with debounce
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
@@ -187,7 +187,6 @@ function bindPanelEvents() {
     btn.addEventListener('click', () => { state.activeTab = btn.dataset.tab; rerender(); })
   );
 
-  // Inline asset inputs (auto-save)
   $$('.inline-input[data-field="amount"]').forEach(input =>
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
@@ -212,7 +211,6 @@ function bindPanelEvents() {
     })
   );
 
-  // Class target inputs (in summary cards and asset panels)
   $$('input[data-class-target]').forEach(input => {
     input.addEventListener('click', e => e.stopPropagation());
     input.addEventListener('change', () => {
@@ -278,7 +276,7 @@ $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
-$('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
+$('#btnTheme').addEventListener('click', () => { toggleTheme(); destroyChart(); rerender(); });
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
@@ -308,7 +306,6 @@ document.addEventListener('keydown', e => {
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-// Init (offline-first)
 loadTheme();
 loadSettings();
 loadPortfolio();

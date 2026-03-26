@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holding-v9';
+const CACHE_NAME = 'holding-v10';
 
 self.addEventListener('install', e => {
   e.waitUntil(

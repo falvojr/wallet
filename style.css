@@ -96,19 +96,17 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
 .tab-panel.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Chart card (full-width, horizontal on desktop) */
+/* Overview sidebar grid */
+.overview-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+
+/* Chart card */
 .chart-card {
   background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg);
-  padding: 18px; margin-bottom: 16px;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 14px;
 }
-.chart-card-main { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.chart-card-main h2 { font-family: var(--font-h); font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; align-self: flex-start; }
-.chart-card-legend { width: 100%; }
+.chart-card h2 { font-family: var(--font-h); font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; align-self: flex-start; }
 .donut-wrap { position: relative; width: 180px; height: 180px; }
-.donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.donut-wrap svg circle { cursor: pointer; transition: opacity var(--ease); }
-.donut-wrap svg circle:hover { opacity: 1 !important; }
+.donut-wrap canvas { width: 100% !important; height: 100% !important; }
 .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
 .donut-center .total-label { font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .donut-center .total-value { font-family: var(--font-h); font-size: 1.15rem; font-weight: 700; }
@@ -179,7 +177,7 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
 .asset-section-title { font-family: var(--font-h); font-size: 1.05rem; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .section-icon { width: 18px; height: 18px; }
 
-/* Ticker links and notes */
+/* Ticker */
 .ticker-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--border-focus); transition: all var(--ease); }
 .ticker-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
 .ticker-note { cursor: pointer; border-bottom: 1px dotted transparent; transition: all var(--ease); }
@@ -218,7 +216,6 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
 .inline-input--qty { width: 90px; }
 .inline-input--target { width: 52px; }
 
-/* Remove button */
 .remove-btn {
   width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid transparent; border-radius: var(--r-sm);
@@ -227,7 +224,6 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
 }
 .remove-btn:hover { opacity: 1; background: rgba(251,113,133,0.1); border-color: rgba(251,113,133,0.3); color: #fb7185; }
 
-/* Add row */
 .add-row td { padding: 8px 10px; text-align: center; cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; transition: all var(--ease); }
 .add-row:hover td { background: var(--bg-hover); color: var(--text-secondary); }
 
@@ -254,12 +250,10 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
 .field-link:hover { opacity: 1; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 
-/* Drop zone */
+/* Drop zone, toast */
 .drop-zone { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(11,14,20,0.92); align-items: center; justify-content: center; pointer-events: none; }
 .drop-zone.visible { display: flex; pointer-events: all; }
 .drop-zone-inner { border: 2px dashed var(--accent); border-radius: var(--r-lg); padding: 40px; text-align: center; color: var(--accent); font-family: var(--font-h); font-size: 1rem; font-weight: 600; }
-
-/* Toast */
 .toast-container { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 6px; align-items: center; }
 .toast { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 16px; font-size: 0.8rem; font-weight: 600; color: var(--text-primary); box-shadow: 0 6px 20px rgba(0,0,0,0.4); animation: toastIn 250ms ease, toastOut 250ms ease 2.5s forwards; white-space: nowrap; }
 @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -283,23 +277,22 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
   .app-container { padding: 0 24px 100px; max-width: 1280px; }
   .header-inner { padding: 0 24px; max-width: 1280px; }
 
-  /* Chart card horizontal */
-  .chart-card { flex-direction: row; align-items: flex-start; gap: 28px; padding: 22px 28px; }
-  .chart-card-main { flex-shrink: 0; }
-  .chart-card-legend { flex: 1; padding-top: 6px; }
-  .donut-wrap { width: 200px; height: 200px; }
-  .donut-center .total-value { font-size: 1.25rem; }
+  /* Sidebar layout */
+  .overview-grid { grid-template-columns: 280px 1fr; align-items: start; }
+  .summary-cards { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
-  /* Cards 3-col */
-  .summary-cards { grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .summary-card { padding: 14px 16px; }
   .summary-card-label { font-size: 0.72rem; }
-  .summary-card-value { font-size: 1.2rem; }
+  .summary-card-value { font-size: 1.15rem; }
   .summary-card-meta { font-size: 0.75rem; }
   .summary-card-target { font-size: 0.75rem; width: 32px; }
 
-  .legend-row { font-size: 0.82rem; padding: 6px 0; }
-  .legend-amount { font-size: 0.82rem; }
+  .chart-card { padding: 20px; }
+  .donut-wrap { width: 190px; height: 190px; }
+  .donut-center .total-value { font-size: 1.2rem; }
+
+  .legend-row { font-size: 0.8rem; padding: 5px 0; }
+  .legend-amount { font-size: 0.8rem; }
   .asset-table td, .asset-table thead th { padding: 10px 14px; }
   .asset-table td { font-size: 0.85rem; }
   .td-ticker { font-size: 0.9rem; }
@@ -316,10 +309,14 @@ body { font-family: var(--font-b); background: var(--bg-root); color: var(--text
   .app-container { max-width: 1440px; padding: 0 32px 100px; }
   .header-inner { max-width: 1440px; padding: 0 32px; }
   .header-brand h1 { font-size: 1.4rem; }
-  .chart-card { padding: 24px 32px; gap: 36px; }
-  .donut-wrap { width: 220px; height: 220px; }
-  .donut-center .total-value { font-size: 1.35rem; }
-  .summary-card-value { font-size: 1.3rem; }
+
+  .overview-grid { grid-template-columns: 320px 1fr; gap: 20px; }
+  .summary-cards { grid-template-columns: repeat(3, 1fr); }
+
+  .summary-card-value { font-size: 1.25rem; }
+  .donut-wrap { width: 210px; height: 210px; }
+  .donut-center .total-value { font-size: 1.3rem; }
+  .chart-card { padding: 24px; }
   .inline-input--qty { width: 110px; }
   .asset-table td { font-size: 0.88rem; }
   .td-ticker { font-size: 0.95rem; }
