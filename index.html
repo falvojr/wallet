@@ -12,29 +12,18 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 </head>
 <body>
-
   <header class="app-header">
     <div class="header-inner">
       <div class="header-brand"><h1>Minha Holding</h1></div>
       <div class="header-actions" id="headerActions" hidden>
-        <button class="btn" id="btnSettings" title="Configurações de API">
-          <i data-lucide="settings"></i>
-        </button>
-        <button class="btn" id="btnTheme" title="Alternar tema">
-          <i data-lucide="sun-moon"></i>
-        </button>
-        <button class="btn" id="btnImport" title="Importar JSON">
-          <i data-lucide="download"></i>
-        </button>
-        <button class="btn" id="btnExport" title="Exportar JSON">
-          <i data-lucide="upload"></i>
-        </button>
+        <button class="btn" id="btnSettings" title="Configurações de API"><i data-lucide="settings"></i></button>
+        <button class="btn" id="btnTheme" title="Alternar tema"><i data-lucide="sun-moon"></i></button>
+        <button class="btn" id="btnImport" title="Importar JSON"><i data-lucide="download"></i></button>
+        <button class="btn" id="btnExport" title="Exportar JSON"><i data-lucide="upload"></i></button>
         <button class="btn btn--primary" id="btnPrices" title="Atualizar cotações">
-          <i data-lucide="refresh-cw"></i>
-          <span class="btn-label">Cotar</span>
+          <i data-lucide="refresh-cw"></i><span class="btn-label">Cotar</span>
         </button>
       </div>
     </div>
@@ -52,73 +41,50 @@
   </main>
 
   <div class="loading-overlay" id="loadingOverlay" hidden>
-    <div class="loading-content">
-      <div class="loading-spinner"></div>
-      <p class="loading-text" id="loadingText">Carregando...</p>
+    <div class="loading-content"><div class="loading-spinner"></div>
+    <p class="loading-text" id="loadingText">Carregando...</p></div>
+  </div>
+
+  <div class="modal-overlay" id="addModal"><div class="modal">
+    <h3>Adicionar Ativo</h3>
+    <div class="modal-field"><label for="newTicker">Nome / Ticker</label>
+      <input type="text" id="newTicker" placeholder="Ex: PETR4, CDB Inter" autocomplete="off"></div>
+    <div class="modal-field"><label for="newAmount">Quantidade ou valor (R$)</label>
+      <input type="text" id="newAmount" placeholder="Ex: 100" inputmode="decimal" autocomplete="off"></div>
+    <div class="modal-field"><label for="newTarget">Meta % (dentro da classe)</label>
+      <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal" autocomplete="off"></div>
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel">Cancelar</button>
+      <button class="btn btn--primary" id="modalConfirm">Adicionar</button>
     </div>
-  </div>
+  </div></div>
 
-  <div class="modal-overlay" id="addModal">
-    <div class="modal">
-      <h3>Adicionar Ativo</h3>
-      <div class="modal-field">
-        <label for="newTicker">Nome / Ticker</label>
-        <input type="text" id="newTicker" placeholder="Ex: PETR4, CDB Inter" autocomplete="off">
-      </div>
-      <div class="modal-field">
-        <label for="newAmount">Quantidade ou valor (R$)</label>
-        <input type="text" id="newAmount" placeholder="Ex: 100" inputmode="decimal" autocomplete="off">
-      </div>
-      <div class="modal-field">
-        <label for="newTarget">Meta % (dentro da classe)</label>
-        <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal" autocomplete="off">
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="modalCancel">Cancelar</button>
-        <button class="btn btn--primary" id="modalConfirm">Adicionar</button>
-      </div>
+  <div class="modal-overlay" id="noteModal"><div class="modal">
+    <h3>Comentário</h3>
+    <p class="modal-hint">Nota sobre <strong id="noteAssetName"></strong></p>
+    <div class="modal-field"><textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn" id="noteCancel">Cancelar</button>
+      <button class="btn btn--primary" id="noteSave">Salvar</button>
     </div>
-  </div>
+  </div></div>
 
-  <div class="modal-overlay" id="noteModal">
-    <div class="modal">
-      <h3>Comentário</h3>
-      <p class="modal-hint">Nota sobre <strong id="noteAssetName"></strong></p>
-      <div class="modal-field">
-        <textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI"></textarea>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="noteCancel">Cancelar</button>
-        <button class="btn btn--primary" id="noteSave">Salvar</button>
-      </div>
+  <div class="modal-overlay" id="settingsModal"><div class="modal modal--wide">
+    <h3>Tokens de API</h3>
+    <p class="modal-hint">Tokens gratuitos para cotações em tempo real.</p>
+    <div class="modal-field"><label for="brapiToken">brapi.dev (Ações / FIIs)</label>
+      <input type="text" id="brapiToken" placeholder="Crie grátis em brapi.dev/dashboard" autocomplete="off">
+      <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
+    <div class="modal-field"><label for="finnhubToken">Finnhub (Stocks / REITs)</label>
+      <input type="text" id="finnhubToken" placeholder="Crie grátis em finnhub.io" autocomplete="off">
+      <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
+    <div class="modal-actions">
+      <button class="btn" id="settingsCancel">Cancelar</button>
+      <button class="btn btn--primary" id="settingsSave">Salvar</button>
     </div>
-  </div>
+  </div></div>
 
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal modal--wide">
-      <h3>Tokens de API</h3>
-      <p class="modal-hint">Tokens gratuitos para cotações em tempo real.</p>
-      <div class="modal-field">
-        <label for="brapiToken">brapi.dev (Ações / FIIs)</label>
-        <input type="text" id="brapiToken" placeholder="Crie grátis em brapi.dev/dashboard" autocomplete="off">
-        <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener">Criar conta &rarr;</a>
-      </div>
-      <div class="modal-field">
-        <label for="finnhubToken">Finnhub (Stocks / REITs)</label>
-        <input type="text" id="finnhubToken" placeholder="Crie grátis em finnhub.io" autocomplete="off">
-        <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">Criar conta &rarr;</a>
-      </div>
-      <div class="modal-actions">
-        <button class="btn" id="settingsCancel">Cancelar</button>
-        <button class="btn btn--primary" id="settingsSave">Salvar</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="drop-zone" id="dropZone">
-    <div class="drop-zone-inner">Solte o arquivo JSON aqui</div>
-  </div>
-
+  <div class="drop-zone" id="dropZone"><div class="drop-zone-inner">Solte o arquivo JSON aqui</div></div>
   <div class="toast-container" id="toastContainer"></div>
   <input type="file" id="fileInput" accept=".json" hidden>
   <script type="module" src="app.js"></script>

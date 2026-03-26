@@ -9,8 +9,6 @@ import {
 
 const $ = s => document.querySelector(s);
 
-let donutChart = null;
-
 function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
@@ -52,7 +50,6 @@ export function render() {
   renderTabs();
   renderPanels();
   lucide.createIcons();
-  renderDonutChart();
 }
 
 function renderTabs() {
@@ -112,24 +109,12 @@ function renderOverview() {
       'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.', 'info');
   }
 
-  // Sidebar layout: chart + cards
   html += '<div class="overview-grid">';
 
   // Chart card (sidebar)
-  const { total: ptotal, partial } = portfolioTotalBRL();
-  const hasValue = ptotal > 0;
-  html += `<div class="chart-card">
-    <h2>Diversificação</h2>
-    <div class="donut-wrap">
-      <canvas id="donutCanvas"></canvas>
-      <div class="donut-center">
-        <div class="total-label">${hasValue ? 'Patrimônio' : 'Posições'}</div>
-        <div class="total-value">${hasValue ? formatCompact(ptotal) : chartData.reduce((s, d) => s + d.count, 0)}</div>
-        ${hasValue && partial ? '<div class="total-sub">(parcial)</div>' : ''}
-      </div>
-    </div>
-    <div class="chart-legend">`;
-
+  html += '<div class="chart-card"><h2>Diversificação</h2>';
+  html += renderDonut(chartData.filter(d => !d.hidden));
+  html += '<div class="chart-legend">';
   chartData.forEach(d => {
     const hCls = d.hidden ? 'legend-row--hidden' : '';
     const eyeIcon = d.hidden ? 'eye-off' : 'eye';
@@ -182,81 +167,36 @@ function renderOverview() {
   return html;
 }
 
-function renderDonutChart() {
-  const canvas = document.getElementById('donutCanvas');
-  if (!canvas) return;
+function renderDonut(segments) {
+  const total = segments.reduce((s, d) => s + d.value, 0);
+  if (total === 0) return '<p class="donut-empty">Sem dados</p>';
 
-  const populatedKeys = CLASS_KEYS.filter(classHasAssets);
-  const visible = populatedKeys.filter(k => !isClassHidden(k));
+  const R = 75, C = Math.PI * 2 * R;
+  let offset = 0;
 
-  const labels = [];
-  const values = [];
-  const colors = [];
-
-  visible.forEach(k => {
-    const total = classTotalBRL(k);
-    const count = state.portfolio[k].length;
-    labels.push(CLASS_META[k].label);
-    values.push(total ?? count * 0.01);
-    colors.push(CLASS_META[k].color);
+  const arcs = segments.map(d => {
+    const pct = ((d.value / total) * 100).toFixed(1);
+    const dash = (d.value / total) * C;
+    const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
+      stroke-width="22" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}" opacity="0.88">
+      <title>${d.label}: ${formatBRL(d.value)} (${pct}%)</title>
+    </circle>`;
+    offset += dash;
+    return arc;
   });
 
-  if (donutChart) {
-    donutChart.data.labels = labels;
-    donutChart.data.datasets[0].data = values;
-    donutChart.data.datasets[0].backgroundColor = colors;
-    donutChart.update('none');
-    return;
-  }
+  const { total: ptotal, partial } = portfolioTotalBRL();
+  const hasValue = ptotal > 0;
 
-  const isDark = document.documentElement.dataset.theme !== 'light';
-
-  donutChart = new Chart(canvas, {
-    type: 'doughnut',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: colors,
-        borderWidth: 0,
-        hoverBorderWidth: 2,
-        hoverBorderColor: isDark ? '#e4e7ef' : '#1a1d26',
-        hoverOffset: 6,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '65%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: isDark ? '#1a1f2e' : '#ffffff',
-          titleColor: isDark ? '#e4e7ef' : '#1a1d26',
-          bodyColor: isDark ? '#9ca0b4' : '#5c6070',
-          borderColor: isDark ? '#252b3b' : '#d4d8e0',
-          borderWidth: 1,
-          cornerRadius: 8,
-          padding: 10,
-          titleFont: { family: "'Outfit', sans-serif", weight: 600, size: 13 },
-          bodyFont: { family: "'Plus Jakarta Sans', sans-serif", size: 12 },
-          callbacks: {
-            label: ctx => {
-              const val = ctx.parsed;
-              const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0';
-              return ` ${val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}  (${pct}%)`;
-            },
-          },
-        },
-      },
-      animation: { duration: 400, easing: 'easeOutQuart' },
-    },
-  });
-}
-
-export function destroyChart() {
-  if (donutChart) { donutChart.destroy(); donutChart = null; }
+  return `
+    <div class="donut-wrap">
+      <svg viewBox="0 0 200 200">${arcs.join('')}</svg>
+      <div class="donut-center">
+        <div class="total-label">${hasValue ? 'Patrimônio' : 'Posições'}</div>
+        <div class="total-value">${hasValue ? formatCompact(ptotal) : segments.reduce((s, d) => s + d.count, 0)}</div>
+        ${hasValue && partial ? '<div class="total-sub">(parcial)</div>' : ''}
+      </div>
+    </div>`;
 }
 
 function renderAssetPanel(key) {

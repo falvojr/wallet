@@ -1,6 +1,6 @@
 import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, loadTheme, toggleTheme, toggleClassHidden, setAssetNote } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
-import { render, destroyChart } from './js/render.js';
+import { render } from './js/render.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -21,7 +21,6 @@ function showLoading(text) {
 function hideLoading() { $('#loadingOverlay').hidden = true; }
 
 function rerender() {
-  destroyChart();
   render();
   bindPanelEvents();
 }
@@ -29,10 +28,7 @@ function rerender() {
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    savePortfolio();
-    rerender();
-  }, 600);
+  saveTimer = setTimeout(() => { savePortfolio(); rerender(); }, 600);
 }
 
 async function refreshPrices() {
@@ -42,7 +38,7 @@ async function refreshPrices() {
   toast(success ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
 }
 
-// Add asset modal
+// Modals
 
 let addTargetClass = null;
 
@@ -87,10 +83,7 @@ function confirmAddAsset() {
   toast(ticker + ' adicionado');
 }
 
-// Note modal
-
-let noteTargetClass = null;
-let noteTargetId = null;
+let noteTargetClass = null, noteTargetId = null;
 
 function openNoteModal(cls, id) {
   noteTargetClass = cls;
@@ -104,8 +97,7 @@ function openNoteModal(cls, id) {
 
 function closeNoteModal() {
   $('#noteModal').classList.remove('open');
-  noteTargetClass = null;
-  noteTargetId = null;
+  noteTargetClass = noteTargetId = null;
 }
 
 function saveNoteFromModal() {
@@ -115,8 +107,6 @@ function saveNoteFromModal() {
     rerender();
   }
 }
-
-// Settings modal
 
 function openSettings() {
   $('#brapiToken').value = state.settings.brapiToken || '';
@@ -159,14 +149,12 @@ function importJSON(file) {
     try {
       const data = JSON.parse(e.target.result);
       if (!CLASS_KEYS.some(k => Array.isArray(data[k]))) throw new Error('Formato inválido');
-
       state.portfolio = data;
       state.activeTab = 'overview';
       savePortfolio();
       rerender();
       hideLoading();
       toast('Carteira importada');
-
       if (hasApiTokens()) refreshPrices();
     } catch (err) {
       hideLoading();
@@ -258,7 +246,6 @@ function bindPanelEvents() {
 // Drag and Drop
 
 let dragCounter = 0;
-
 document.addEventListener('dragenter', e => { e.preventDefault(); dragCounter++; $('#dropZone').classList.add('visible'); });
 document.addEventListener('dragleave', e => { e.preventDefault(); if (--dragCounter <= 0) { dragCounter = 0; $('#dropZone').classList.remove('visible'); } });
 document.addEventListener('dragover', e => e.preventDefault());
@@ -276,7 +263,7 @@ $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
-$('#btnTheme').addEventListener('click', () => { toggleTheme(); destroyChart(); rerender(); });
+$('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
