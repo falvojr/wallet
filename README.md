@@ -1,143 +1,89 @@
 # Minha Holding
 
-Dashboard pessoal para carteira de investimentos Buy and Hold.
+Dashboard pessoal para carteira de investimentos Buy and Hold. Funciona 100% no navegador, sem backend, sem cadastro. Seus dados ficam apenas no seu dispositivo.
 
-PWA feito com HTML, CSS e JS puros. Sem backend. Roda no GitHub Pages. Funciona offline.
-
-> Esta solução é uma interpretação pessoal da estratégia de Buy and Hold, influenciada por investidores e educadores como [Bastter](https://bastter.com), [Fabio Faria](https://www.youtube.com/@canaldoholder), [Gustavo Cerbasi](https://www.youtube.com/@gustavocerbasi), [Eduardo Cavalcanti](https://www.youtube.com/@eduardocavalcanti) e [Arthur Asvid](https://www.youtube.com/@CanaldoASVID).
+> Interpretação pessoal da estratégia de Buy and Hold, influenciada por [Bastter](https://bastter.com), [Fabio Faria](https://www.youtube.com/@canaldoholder), [Gustavo Cerbasi](https://www.youtube.com/@gustavocerbasi), [Eduardo Cavalcanti](https://www.youtube.com/@eduardocavalcanti) e [Arthur Asvid](https://www.youtube.com/@CanaldoASVID).
 
 ---
 
-## Como usar
+## Começando
 
-```bash
-# 1. Fork + GitHub Pages (Settings > Pages > main)
-# 2. Ou local:
-npx serve .
-```
+1. Acesse **[falvojr.github.io/wallet](https://falvojr.github.io/wallet)**
+2. Crie seu `portfolio.json` seguindo o modelo abaixo e importe (ou arraste) na tela
+3. Em ⚙️, adicione tokens gratuitos do [brapi.dev](https://brapi.dev) e/ou [Finnhub](https://finnhub.io) para cotações
+4. Clique em **Cotar** para buscar preços (ficam em cache por 24h)
 
-1. Importe seu `portfolio.json` (drag & drop ou botão)
-2. Configure tokens gratuitos de API em ⚙️ ([brapi.dev](https://brapi.dev) + [Finnhub](https://finnhub.io))
-3. Clique em "Cotar" para atualizar preços
-4. Edite ativos e metas, exporte o JSON atualizado
+Tudo é salvo localmente no navegador. Para fazer backup, exporte o JSON.
+
+> Quer rodar sua própria cópia? Faça fork e ative GitHub Pages, ou rode `npx serve .` localmente.
 
 ---
 
-## O que faz
-
-- **Visão geral** com gráfico de diversificação e patrimônio total em BRL
-- **Cotações automáticas** para Ações BR, FIIs, Ações US, REITs, Cripto, Moedas e ETFs
-- **Rebalanceamento inteligente**: tag `APORTAR` indica classes e ativos mais defasados em relação à meta
-- **Quarentena**: meta 0% exclui o ativo das sugestões de aporte
-- **Classe oculta**: ícone de olho permite ocultar classes inteiras do cálculo de patrimônio
-- **Validação de alocação**: aviso quando metas não somam 100%
-- **Links externos**: tickers cotados linkam para Google Finance
-- **Tema** claro/escuro
-- **Offline-first** via Service Worker
-
----
-
-## Estrutura
-
-```
-📁 minha-holding/
-├── 📄 index.html           → Página principal
-├── 📄 style.css             → Estilos (mobile-first + tema claro/escuro)
-├── 📄 app.js                → Entry point (eventos, modais, import/export)
-├── 📁 js/
-│   ├── 📄 state.js          → Estado global, persistência, tema, visibilidade
-│   ├── 📄 calc.js           → Cálculos, metas, rebalanceamento, validação
-│   ├── 📄 api.js            → brapi.dev, Finnhub, AwesomeAPI
-│   └── 📄 render.js         → Renderização do DOM
-├── 📄 sw.js                 → Service Worker
-├── 📄 manifest.json         → PWA manifest
-└── 📄 portfolio.json        → Exemplo de carteira
-```
-
----
-
-## Formato do JSON
+## Modelo do JSON
 
 ```json
 {
-  "currency": "BRL",
   "classTargets": {
     "brStocks": 25, "brFiis": 10, "usStocks": 25,
-    "usReits": 10, "fixedIncome": 15, "storeOfValue": 5, "realEstate": 10
+    "usReits": 10, "fixedIncome": 20, "storeOfValue": 10, "assets": 0
   },
-  "hiddenClasses": {},
   "brStocks": [
     { "id": "WEGE3", "amount": 400 },
-    { "id": "MGLU3", "amount": 105, "target": 0 }
+    { "id": "MGLU3", "amount": 100, "target": 0 }
   ],
-  "storeOfValue": [
-    { "id": "BTC", "amount": 0.5 },
-    { "id": "USD", "amount": 1000 },
-    { "id": "GLD", "amount": 10 },
-    { "id": "OURO FISICO", "amount": 25000 }
+  "brFiis": [
+    { "id": "HGLG11", "amount": 55 }
+  ],
+  "usStocks": [
+    { "id": "AAPL", "amount": 15 },
+    { "id": "NVDA", "amount": 100 }
+  ],
+  "usReits": [
+    { "id": "O", "amount": 30 }
   ],
   "fixedIncome": [
-    { "id": "TESOURO SELIC", "amount": 50000 },
-    { "id": "RESERVA (BRL)", "amount": 5000 }
+    { "id": "CDB Nubank", "amount": 200000, "note": "Vence em 2029" },
+    { "id": "Tesouro Selic", "amount": 50000 }
+  ],
+  "storeOfValue": [
+    { "id": "BTC", "amount": 0.21, "target": 95, "note": "Bitcoin" },
+    { "id": "GLD", "amount": 1, "target": 5 }
+  ],
+  "assets": [
+    { "id": "Apartamento", "amount": 205000 },
+    { "id": "Carro", "amount": 90000 }
   ]
 }
 ```
 
-### Campos
+**Classes disponíveis:** `brStocks` (Ações), `brFiis` (FIIs), `usStocks` (Stocks), `usReits` (REITs), `fixedIncome` (Renda Fixa), `storeOfValue` (Reserva de Valor), `assets` (Bens).
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | `string` | Ticker, código de moeda ou nome livre |
-| `amount` | `number` | Quantidade (cotas) ou valor em BRL (renda fixa, imóveis, espécie) |
-| `target` | `number?` | Meta % dentro da classe. Omitido = igual. `0` = quarentena |
+**Campos de cada ativo:**
 
-`classTargets` define a % desejada de cada classe no portfólio. Omitido = distribuição igual.
-
-`hiddenClasses` armazena classes ocultas (excluídas do patrimônio total e rebalanceamento).
-
----
-
-## Ativos suportados
-
-| Classe | Exemplo | Cotação | Nota |
-|--------|---------|---------|------|
-| Ações BR | `WEGE3` | brapi.dev | Ticker B3 |
-| FIIs | `HGLG11` | brapi.dev | Ticker B3 |
-| Ações US | `AAPL` | Finnhub | Ticker NYSE/NASDAQ |
-| REITs | `O` | Finnhub | Ticker NYSE/NASDAQ |
-| Reserva de Valor | `BTC`, `ETH` | AwesomeAPI | Cripto (par `{ID}-BRL`) |
-| Reserva de Valor | `USD`, `EUR` | AwesomeAPI | Moeda estrangeira em espécie |
-| Reserva de Valor | `GLD`, `SLV` | Finnhub | ETFs (fallback automático) |
-| Reserva de Valor | `OURO FISICO` | -- | Nome livre, `amount` = valor em BRL |
-| Renda Fixa | `CDB INTER` | -- | Nome livre, `amount` = valor em BRL |
-| Imóveis | `APT CENTRO` | -- | Nome livre, `amount` = valor em BRL |
-
-> Ativos sem cotação disponível usam `amount` como valor declarado em BRL (Renda Fixa, Imóveis e Reserva de Valor).
+| Campo | Descrição |
+|-------|-----------|
+| `id` | Ticker (ex: WEGE3, AAPL) ou nome livre (ex: Tesouro Selic) |
+| `amount` | Quantidade de cotas, ou valor em R$ para renda fixa e bens |
+| `target` | Meta % dentro da classe. Deixe vazio para distribuir igual, ou 0 para quarentena |
+| `note` | Comentário pessoal (aparece ao clicar no nome do ativo) |
 
 ---
 
-## Regras de rebalanceamento
+## Como funciona o rebalanceamento
 
-A solução usa uma heurística offline de **threshold-based greedy rebalancing**:
+A tag **aportar** aparece nas classes e ativos onde faz mais sentido aportar, com base na diferença entre a alocação atual e a meta definida.
 
-1. A tag `APORTAR` aparece apenas em classes **abaixo da meta** por uma banda mínima
-2. A banda mínima da classe é `max(0,5 p.p., 10% da meta da classe)`
-3. Dentro da classe, os ativos elegíveis são ordenados pelo score `gap do ativo × gap da classe`
-4. O limite de sugestões por classe é adaptativo: até 4 ativos elegíveis = 1 sugestão; de 5 a 9 = 2; 10+ = 3
-5. Ativos em **quarentena** (`target: 0`) são ignorados no cálculo
-6. Classes **ocultas** são excluídas do cálculo de patrimônio total e de recomendações
+1. Se uma classe está abaixo da meta por uma margem relevante, ela recebe **aportar**
+2. Dentro da classe, os ativos mais distantes da meta individual são priorizados
+3. O número de sugestões é limitado (1 a 3) para manter a tela limpa
+4. Ativos em quarentena (meta 0%) e classes ocultas são ignorados
 
-Objetivo: priorizar os ativos e classes mais subalocados, reduzindo ruído visual e microajustes.
+O objetivo é apontar rapidamente onde o portfólio está mais desbalanceado, não dizer exatamente quanto aportar.
 
 ---
 
-## Visibilidade de classes
+## Tecnologias e referências
 
-- **Ocultar** (ícone de olho na aba da classe): exclui do patrimônio total, do gráfico de diversificação e das sugestões de aporte. O card no overview fica com opacity reduzida e valor riscado. A tab permanece visível (com opacity reduzida).
-- **Quarentena** (`target: 0` no ativo): o ativo permanece no patrimônio total, mas não recebe sugestão de aporte.
-
----
-
-## Tecnologias
+Feito com HTML, CSS e JS puros. Sem frameworks, sem backend. Funciona offline via Service Worker.
 
 [Lucide Icons](https://lucide.dev) · [Google Fonts](https://fonts.google.com) · [brapi.dev](https://brapi.dev) · [Finnhub](https://finnhub.io) · [AwesomeAPI](https://docs.awesomeapi.com.br)

@@ -124,8 +124,6 @@ function saveSettingsFromModal() {
   toast('Configurações salvas');
 }
 
-// Import / Export
-
 function exportJSON() {
   const out = { currency: state.portfolio.currency || 'BRL', syncedAt: state.portfolio.syncedAt };
   if (state.portfolio.classTargets) out.classTargets = state.portfolio.classTargets;

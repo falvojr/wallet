@@ -1,18 +1,18 @@
-import { state, cachePrices, markBrQuoted, markUsQuoted } from './state.js';
+import { state, cachePrices, markBrQuoted } from './state.js';
 
-let fetchingPrices = false;
+let fetching = false;
 
 export async function fetchAllPrices(onProgress) {
-  if (fetchingPrices || !state.portfolio) return;
-  fetchingPrices = true;
+  if (fetching || !state.portfolio) return;
+  fetching = true;
 
   const brTickers = [...(state.portfolio.brStocks || []), ...(state.portfolio.brFiis || [])].map(a => a.id);
   const usTickers = [...(state.portfolio.usStocks || []), ...(state.portfolio.usReits || [])].map(a => a.id);
   const sovTickers = (state.portfolio.storeOfValue || []).map(a => a.id);
-  const totalSteps = brTickers.length + usTickers.length + sovTickers.length + 1;
+  const total = brTickers.length + usTickers.length + sovTickers.length + 1;
   let step = 0;
 
-  const progress = label => onProgress?.(`${label} (${++step}/${totalSteps})`);
+  const progress = label => onProgress?.(`${label} (${++step}/${total})`);
 
   try {
     progress('Câmbio');
@@ -26,7 +26,7 @@ export async function fetchAllPrices(onProgress) {
     console.error('fetchAllPrices:', err);
     return false;
   } finally {
-    fetchingPrices = false;
+    fetching = false;
   }
 }
 
@@ -59,21 +59,19 @@ async function fetchUsQuote(ticker) {
     const data = await res.json();
     if (data.c > 0) {
       state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
-      markUsQuoted(ticker);
     }
   } catch (e) { console.warn(`finnhub (${ticker}):`, e); }
   await new Promise(r => setTimeout(r, 120));
 }
 
 async function fetchStoreOfValueQuote(ticker) {
-  const found = await tryAwesomeApiCrypto(ticker);
-  if (!found) await tryFinnhubQuote(ticker);
+  if (await tryAwesomeApi(ticker)) return;
+  await fetchUsQuote(ticker);
 }
 
-async function tryAwesomeApiCrypto(ticker) {
+async function tryAwesomeApi(ticker) {
   try {
-    const pair = `${ticker}-BRL`;
-    const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${pair}`);
+    const res = await fetch(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
     const data = await res.json();
     const key = `${ticker}BRL`;
     if (data[key]) {
@@ -86,17 +84,4 @@ async function tryAwesomeApiCrypto(ticker) {
     }
   } catch {}
   return false;
-}
-
-async function tryFinnhubQuote(ticker) {
-  if (!state.settings.finnhubToken) return;
-  try {
-    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${state.settings.finnhubToken}`);
-    const data = await res.json();
-    if (data.c > 0) {
-      state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
-      markUsQuoted(ticker);
-    }
-  } catch (e) { console.warn(`finnhub fallback (${ticker}):`, e); }
-  await new Promise(r => setTimeout(r, 120));
 }
