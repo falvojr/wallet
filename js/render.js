@@ -1,4 +1,4 @@
-import { state, CLASS_META, CLASS_KEYS, activeClassKeys, visibleClassKeys, isClassHidden, isBrQuoted, isUsQuoted, pricesStale, pricesDateStr, hasCachedPrices } from './state.js';
+import { state, CLASS_META, CLASS_KEYS, activeClassKeys, isClassHidden, isBrQuoted, pricesStale, pricesDateStr, hasCachedPrices } from './state.js';
 import {
   formatBRL, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
@@ -13,27 +13,25 @@ function classHasAssets(key) {
   return (state.portfolio[key] || []).length > 0;
 }
 
-function renderNotice(icon, text, variant = 'warning') {
+function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}">
-    <i data-lucide="${icon}" class="notice-icon"></i>
-    <span>${text}</span>
-  </div>`;
+    <i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span></div>`;
 }
 
-function badge(cls, icon, label, title) {
+function badgeHtml(cls, icon, label, title) {
   return ` <span class="badge badge--${cls}" title="${title}"><i data-lucide="${icon}" class="badge-icon"></i>${label}</span>`;
 }
 
-const renderAportarBadge = () => badge('aportar', 'sparkles', 'aportar', 'Sugestão baseada no desvio para a alocação-alvo');
-const renderQuarantineBadge = () => badge('ignorar', 'star-off', 'ignorar', 'Em quarentena. Não recebe sugestão de aporte.');
+const aportarBadge = () => badgeHtml('aportar', 'sparkles', 'aportar', 'Sugestão de aporte baseada no desvio para a meta');
+const ignorarBadge = () => badgeHtml('ignorar', 'circle-pause', 'ignorar', 'Em quarentena: excluído das sugestões de aporte');
 
 function tickerUrl(classKey, tickerId) {
   const p = state.prices[tickerId];
   if ((classKey === 'brStocks' || classKey === 'brFiis') && (isBrQuoted(tickerId) || p)) {
     return `https://www.google.com/finance/quote/${tickerId}:BVMF`;
   }
-  if ((classKey === 'usStocks' || classKey === 'usReits') && (isUsQuoted(tickerId) || p)) {
-    return `https://www.google.com/finance/quote/${tickerId}:NYSE`;
+  if ((classKey === 'usStocks' || classKey === 'usReits') && p) {
+    return `https://finance.yahoo.com/quote/${tickerId}`;
   }
   return null;
 }
@@ -67,8 +65,7 @@ function renderTabs() {
   $('#tabNav').innerHTML = tabs.map(t => `
     <button class="tab-btn ${t.key === state.activeTab ? 'active' : ''} ${t.hidden ? 'tab-hidden' : ''}" data-tab="${t.key}">
       ${t.label}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
-    </button>
-  `).join('');
+    </button>`).join('');
 }
 
 function renderPanels() {
@@ -98,28 +95,28 @@ function renderOverview() {
 
   let html = '';
 
-  // Notices
   const warning = allocationWarning();
   if (warning) {
-    html += renderNotice('triangle-alert',
+    html += notice('triangle-alert',
       `As metas somam <strong>${warning.sum}%</strong>, mas deveriam totalizar 100%.`, 'warning');
   }
 
   if (hasCachedPrices() && pricesStale()) {
-    html += renderNotice('clock',
+    html += notice('clock',
       `Cotações desatualizadas (sync: <strong>${pricesDateStr()}</strong>). Clique em <strong>Cotar</strong> para atualizar.`, 'info');
   } else if (!hasCachedPrices()) {
-    html += renderNotice('clock',
+    html += notice('clock',
       'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.', 'info');
   }
 
-  html += '<div class="overview-layout">';
-
-  // Chart card
-  const visibleChartData = chartData.filter(d => !d.hidden);
-  html += '<div class="chart-card"><h2>Diversificação</h2>';
-  html += renderDonut(visibleChartData);
-  html += '<div class="chart-legend">';
+  // Chart card (full-width, horizontal on desktop)
+  const visibleData = chartData.filter(d => !d.hidden);
+  html += '<div class="chart-card">';
+  html += '<div class="chart-card-main">';
+  html += '<h2>Diversificação</h2>';
+  html += renderDonut(visibleData);
+  html += '</div>';
+  html += '<div class="chart-card-legend">';
   chartData.forEach(d => {
     const hCls = d.hidden ? 'legend-row--hidden' : '';
     const eyeIcon = d.hidden ? 'eye-off' : 'eye';
@@ -128,7 +125,7 @@ function renderOverview() {
         <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
         <span class="legend-label" data-goto="${d.key}">${d.label}</span>
         <span class="legend-amount ${d.hidden ? 'legend-amount--hidden' : ''}">${d.hasPrices ? formatBRL(d.total) : d.count + ' pos.'}</span>
-        <button class="legend-eye" data-toggle-hidden="${d.key}" title="${d.hidden ? 'Mostrar classe' : 'Ocultar classe'}">
+        <button class="legend-eye" data-toggle-hidden="${d.key}" title="${d.hidden ? 'Reativar classe na visão geral' : 'Ocultar classe da visão geral'}">
           <i data-lucide="${eyeIcon}"></i>
         </button>
       </div>`;
@@ -150,34 +147,31 @@ function renderOverview() {
         <div class="summary-card-head">
           <span class="summary-card-label" data-goto="${key}">
             <i data-lucide="${meta.icon}" class="summary-icon"></i>
-            ${meta.label}${isTarget ? renderAportarBadge() : ''}
+            ${meta.label}${isTarget ? aportarBadge() : ''}
           </span>
         </div>
         <div class="summary-card-value" data-goto="${key}">
           ${classTotal !== null ? formatBRL(classTotal) : state.portfolio[key].length + ' ativos'}
         </div>
-        <div class="summary-card-footer">
-          <div class="summary-card-bar">
-            <div class="summary-card-bar-fill" style="width:${pct}%"></div>
-          </div>
-          <div class="summary-card-meta">
-            ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : ''}
-            <span class="summary-card-target-wrap">
-              meta <input class="summary-card-target" type="text" value="${target.toFixed(0)}"
-                data-class-target="${key}" inputmode="decimal">%
-            </span>
-          </div>
+        <div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>
+        <div class="summary-card-meta">
+          ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : ''}
+          <span class="summary-card-target-wrap" title="Clique para editar a meta desta classe">
+            meta
+            <input class="summary-card-target" type="text" value="${target.toFixed(0)}"
+              data-class-target="${key}" inputmode="decimal" title="Editar meta da classe">%
+          </span>
         </div>
       </div>`;
   });
-  html += '</div></div>';
+  html += '</div>';
 
   return html;
 }
 
 function renderDonut(segments) {
   const total = segments.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return '<p style="color:var(--text-muted);padding:20px;font-size:0.85rem">Sem dados</p>';
+  if (total === 0) return '<p class="donut-empty">Sem dados</p>';
 
   const R = 75, C = Math.PI * 2 * R;
   let offset = 0;
@@ -187,8 +181,7 @@ function renderDonut(segments) {
     const dash = (d.value / total) * C;
     const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
       stroke-width="22" stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset}" opacity="0.88">
-      <title>${d.label}: ${pct}%</title>
-    </circle>`;
+      <title>${d.label}: ${pct}%</title></circle>`;
     offset += dash;
     return arc;
   });
@@ -221,7 +214,7 @@ function renderAssetPanel(key) {
     </div>`;
 
   if (hidden) {
-    html += renderNotice('eye-off', 'Classe oculta da Visão Geral. Valores não contabilizados no patrimônio e sem sugestões de aporte.', 'info');
+    html += notice('eye-off', 'Classe oculta da Visão Geral. Valores não contabilizados no patrimônio e sem sugestões de aporte.', 'info');
   }
 
   if (assets.length === 0) {
@@ -230,13 +223,12 @@ function renderAssetPanel(key) {
     return html;
   }
 
-  html += `
-    <div class="table-wrap"><table class="asset-table">
-      <thead><tr>
-        <th>Nome</th><th class="col-r">Qtd</th><th class="col-r">Preço</th>
-        <th class="col-r">Hoje</th><th class="col-r">Total</th>
-        <th class="col-r">Meta %</th><th class="col-action"></th>
-      </tr></thead><tbody>`;
+  html += `<div class="table-wrap"><table class="asset-table">
+    <thead><tr>
+      <th>Nome</th><th class="col-r">Qtd</th><th class="col-r">Preço</th>
+      <th class="col-r">Hoje</th><th class="col-r">Total</th>
+      <th class="col-r">Meta %</th><th class="col-action"></th>
+    </tr></thead><tbody>`;
 
   assets.forEach((asset, idx) => {
     const isTarget = targetAssetIds.includes(asset.id);
@@ -258,7 +250,7 @@ function renderAssetPanel(key) {
     }
 
     const rowCls = isTarget ? 'row-target' : quarantined ? 'row-quarantine' : '';
-    const badgeHtml = isTarget ? renderAportarBadge() : quarantined ? renderQuarantineBadge() : '';
+    const bdg = isTarget ? aportarBadge() : quarantined ? ignorarBadge() : '';
 
     const url = tickerUrl(key, asset.id);
     const noteEsc = asset.note ? asset.note.replace(/"/g, '&quot;') : '';
@@ -270,7 +262,7 @@ function renderAssetPanel(key) {
       : `<span class="ticker-note${noteCls}" data-note-class="${key}" data-note-id="${asset.id}"${noteAttr}>${asset.id}</span>`;
 
     html += `<tr class="${rowCls}">
-      <td class="td-ticker">${tickerHtml}${badgeHtml}</td>
+      <td class="td-ticker">${tickerHtml}${bdg}</td>
       <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${asset.amount}"
         data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal"></td>
       <td class="td-price">${priceStr}</td>
@@ -279,8 +271,8 @@ function renderAssetPanel(key) {
       <td class="td-r"><input class="inline-input inline-input--target" type="text"
         value="${asset.target !== undefined ? asset.target : ''}"
         data-class="${key}" data-idx="${idx}" data-field="target"
-        placeholder="auto" inputmode="decimal" title="Meta % (0 = quarentena)"></td>
-      <td class="td-action"><button class="remove-btn" data-class="${key}" data-idx="${idx}" title="Remover">
+        placeholder="auto" inputmode="decimal" title="Meta % dentro da classe (0 = quarentena, vazio = distribuição igual)"></td>
+      <td class="td-action"><button class="remove-btn" data-class="${key}" data-idx="${idx}" title="Remover ${asset.id} da carteira">
         <i data-lucide="x" style="width:12px;height:12px"></i></button></td>
     </tr>`;
   });
