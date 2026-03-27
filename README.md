@@ -13,13 +13,15 @@ Dashboard pessoal para carteira de investimentos Buy and Hold. Funciona 100% no 
 3. Em ⚙️, adicione tokens gratuitos do [brapi.dev](https://brapi.dev) e/ou [Finnhub](https://finnhub.io) para cotações;
 4. Clique em **Cotar** para buscar preços (ficam em cache por 24h).
 
-Tudo é salvo localmente no navegador. Para fazer backup, exporte o JSON.
+Tudo é salvo localmente no navegador. Para backup, exporte o JSON.
 
 > Quer rodar sua própria cópia? Faça fork e ative GitHub Pages, ou rode `npx serve .` localmente.
 
 ---
 
 ## Modelo do JSON
+
+Cada classe tem um `target` (meta % do portfólio) e seus `items`:
 
 ```json
 {
@@ -69,38 +71,36 @@ Tudo é salvo localmente no navegador. Para fazer backup, exporte o JSON.
 }
 ```
 
-**Classes disponíveis:** `brStocks` (Ações), `brFiis` (FIIs), `usStocks` (Stocks), `usReits` (REITs), `fixedIncome` (Renda Fixa), `storeOfValue` (Reserva de Valor), `assets` (Bens).
-
-Cada classe tem um `target` (meta % do portfólio) e seus `items` (ativos):
+**Classes disponíveis:** `brStocks` (Ações), `brFiis` (FIIs), `usStocks` (Stocks), `usReits` (REITs), `fixedIncome` (Renda Fixa), `storeOfValue` (Reserva de Valor) e `assets` (Bens).
 
 | Campo | Descrição |
 |-------|-----------|
-| `id` | Ticker (ex: WEGE3, AAPL) ou nome livre (ex: Tesouro Selic) |
+| `id` | Ticker (ex: `WEGE3`, `AAPL`) ou nome livre (ex: `Tesouro Selic`) |
 | `amount` | Quantidade de cotas, ou valor em R$ para renda fixa e bens |
-| `target` | Meta % dentro da classe. Deixe vazio para distribuir igual, ou 0 para quarentena |
+| `target` | Meta % dentro da classe (vazio = distribuição igual, `0` = quarentena) |
 | `note` | Comentário pessoal (aparece ao clicar no nome do ativo) |
 
 ---
 
-## Como funciona o rebalanceamento
+## Rebalanceamento
 
-A tag `APORTAR` aparece nas classes e ativos onde faz mais sentido aportar, com base na diferença entre a alocação atual e a meta definida.
+A tag `APORTAR` aparece nas classes e ativos com maior necessidade de aporte, com base na diferença entre a alocação atual e a meta:
 
-1. Se uma classe está abaixo da meta por uma margem relevante, ela recebe `APORTAR`;
+1. Classes abaixo da meta por uma margem relevante recebem `APORTAR`;
 2. Dentro da classe, os ativos mais distantes da meta individual são priorizados;
 3. O número de sugestões é limitado (1 a 3) para manter a tela limpa;
-4. Ativos em quarentena (meta 0% = tag `IGNORAR`) não são consideradas no rebalanceamento e classes ocultas não somam ao patrimônio.
+4. Ativos em quarentena (tag `IGNORAR`) e classes ocultas são desconsiderados.
 
-O objetivo é apontar rapidamente onde o portfólio está mais desbalanceado, não dizer exatamente quanto aportar.
+O objetivo é apontar onde o portfólio está mais desbalanceado, não dizer exatamente quanto aportar.
 
 ---
 
-## Tecnologias e referências
+## Tecnologias
 
 Feito com HTML, CSS e JS puros. Sem frameworks, sem backend. Funciona offline via Service Worker.
 
-1. [Lucide Icons](https://lucide.dev)
-2. [Google Fonts](https://fonts.google.com)
-3. [brapi.dev](https://brapi.dev)
-4. [Finnhub](https://finnhub.io)
-5. [AwesomeAPI](https://docs.awesomeapi.com.br)
+- [Lucide Icons](https://lucide.dev): ícones;
+- [Google Fonts](https://fonts.google.com): tipografia (Outfit + Plus Jakarta Sans);
+- [brapi.dev](https://brapi.dev): cotações B3 (Ações e FIIs);
+- [Finnhub](https://finnhub.io): cotações US (Stocks e REITs);
+- [AwesomeAPI](https://docs.awesomeapi.com.br): câmbio e criptomoedas.

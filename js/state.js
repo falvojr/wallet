@@ -28,20 +28,17 @@ export const state = {
   activeTab: 'overview',
 };
 
-// Access helpers
+// Data access
 
 export function classItems(key) {
-  const cls = state.portfolio?.[key];
-  return Array.isArray(cls) ? cls : cls?.items || [];
+  return state.portfolio?.[key]?.items || [];
 }
 
 export function classTarget(key) {
-  const cls = state.portfolio?.[key];
-  if (cls?.target !== undefined) return cls.target;
-  // Legacy fallback
-  const targets = state.portfolio?.classTargets;
-  if (targets?.[key] !== undefined) return targets[key];
-  return null;
+  const t = state.portfolio?.[key]?.target;
+  if (t !== undefined) return t;
+  const visible = visibleClassKeys();
+  return visible.length > 0 ? 100 / visible.length : 0;
 }
 
 export function setClassTarget(key, value) {
@@ -49,42 +46,25 @@ export function setClassTarget(key, value) {
   state.portfolio[key].target = value;
 }
 
-export function addAssetToClass(key, asset) {
+export function addItem(key, item) {
   if (!state.portfolio[key]) state.portfolio[key] = { items: [] };
-  if (!state.portfolio[key].items) state.portfolio[key].items = [];
-  state.portfolio[key].items.push(asset);
+  state.portfolio[key].items.push(item);
 }
 
-// Portfolio persistence
-
-function migratePortfolio(data) {
-  // realEstate -> assets
-  if (data.realEstate && !data.assets) {
-    data.assets = data.realEstate;
-    delete data.realEstate;
-    if (data.hiddenClasses?.realEstate) {
-      data.hiddenClasses.assets = true;
-      delete data.hiddenClasses.realEstate;
-    }
-  }
-
-  // Flat arrays -> { target, items } structure
-  for (const key of CLASS_KEYS) {
-    if (Array.isArray(data[key])) {
-      const target = data.classTargets?.[key];
-      data[key] = { items: data[key] };
-      if (target !== undefined) data[key].target = target;
-    }
-  }
-  delete data.classTargets;
-
-  return data;
+export function setItemNote(key, id, note) {
+  const item = classItems(key).find(a => a.id === id);
+  if (!item) return;
+  if (note.trim()) item.note = note.trim();
+  else delete item.note;
+  savePortfolio();
 }
+
+// Persistence
 
 export function loadPortfolio() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state.portfolio = migratePortfolio(JSON.parse(raw));
+    if (raw) state.portfolio = JSON.parse(raw);
   } catch { state.portfolio = null; }
 }
 
@@ -94,7 +74,7 @@ export function savePortfolio() {
 }
 
 export function importPortfolio(data) {
-  state.portfolio = migratePortfolio(data);
+  state.portfolio = data;
   state.activeTab = 'overview';
   savePortfolio();
 }
@@ -106,8 +86,6 @@ export function exportPortfolio() {
   return out;
 }
 
-// Settings
-
 export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -118,8 +96,6 @@ export function loadSettings() {
 export function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
 }
-
-// Prices
 
 export function loadCachedPrices() {
   try {
@@ -150,17 +126,17 @@ export function pricesDateStr() {
   });
 }
 
-// Hidden classes
+// Visibility
 
-export function isClassHidden(classKey) {
-  return !!(state.portfolio?.hiddenClasses?.[classKey]);
+export function isClassHidden(key) {
+  return !!(state.portfolio?.hiddenClasses?.[key]);
 }
 
-export function toggleClassHidden(classKey) {
+export function toggleClassHidden(key) {
   if (!state.portfolio) return;
   if (!state.portfolio.hiddenClasses) state.portfolio.hiddenClasses = {};
-  state.portfolio.hiddenClasses[classKey] = !state.portfolio.hiddenClasses[classKey];
-  if (!state.portfolio.hiddenClasses[classKey]) delete state.portfolio.hiddenClasses[classKey];
+  state.portfolio.hiddenClasses[key] = !state.portfolio.hiddenClasses[key];
+  if (!state.portfolio.hiddenClasses[key]) delete state.portfolio.hiddenClasses[key];
   savePortfolio();
 }
 
@@ -174,16 +150,6 @@ export function hasApiTokens() {
 
 export function hasCachedPrices() {
   return Object.keys(state.prices).length > 0;
-}
-
-// Asset notes
-
-export function setAssetNote(classKey, assetId, note) {
-  const asset = classItems(classKey).find(a => a.id === assetId);
-  if (!asset) return;
-  if (note.trim()) asset.note = note.trim();
-  else delete asset.note;
-  savePortfolio();
 }
 
 // Theme
