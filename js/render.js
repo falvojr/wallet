@@ -1,4 +1,4 @@
-import { state, CLASS_META, CLASS_KEYS, visibleClassKeys, isClassHidden, isBrQuoted, pricesStale, pricesDateStr, hasCachedPrices } from './state.js';
+import { state, CLASS_META, CLASS_KEYS, visibleClassKeys, isClassHidden, isBrQuoted, pricesStale, pricesDateStr, hasCachedPrices, classItems } from './state.js';
 import {
   formatBRL, formatCompact,
   assetValueBRL, classTotalBRL, portfolioTotalBRL,
@@ -9,8 +9,8 @@ import {
 
 const $ = s => document.querySelector(s);
 
-function hasAssets(key) {
-  return (state.portfolio[key] || []).length > 0;
+function hasItems(key) {
+  return classItems(key).length > 0;
 }
 
 function notice(icon, text, variant = 'warning') {
@@ -57,7 +57,7 @@ function renderTabs() {
     { key: 'overview', label: 'Visão Geral', count: null, hidden: false },
     ...CLASS_KEYS.map(k => ({
       key: k, label: CLASS_META[k].label,
-      count: (state.portfolio[k] || []).length,
+      count: classItems(k).length,
       hidden: isClassHidden(k),
     })),
   ];
@@ -80,16 +80,16 @@ function panelWrap(key, content) {
 
 function renderOverview() {
   const deficientClasses = findMostDeficientClasses();
-  const populated = CLASS_KEYS.filter(hasAssets);
+  const populated = CLASS_KEYS.filter(hasItems);
 
   const chartData = populated.map(k => {
     const hidden = isClassHidden(k);
     const total = classTotalBRL(k);
-    const count = state.portfolio[k].length;
+    const items = classItems(k);
     return {
       key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon,
-      value: hidden ? 0 : (total ?? count * 0.01),
-      count, hasPrices: total !== null, total, hidden,
+      value: hidden ? 0 : (total ?? items.length * 0.01),
+      count: items.length, hasPrices: total !== null, total, hidden,
     };
   });
 
@@ -150,7 +150,7 @@ function renderOverview() {
           </span>
         </div>
         <div class="summary-card-value" data-goto="${key}">
-          ${classTotal !== null ? formatBRL(classTotal) : state.portfolio[key].length + ' ativos'}
+          ${classTotal !== null ? formatBRL(classTotal) : classItems(key).length + ' ativos'}
         </div>
         <div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>
         <div class="summary-card-meta">
@@ -202,7 +202,7 @@ function renderDonut(segments) {
 
 function renderAssetPanel(key) {
   const meta = CLASS_META[key];
-  const assets = state.portfolio[key] || [];
+  const items = classItems(key);
   const hidden = isClassHidden(key);
   const deficientAssets = hidden ? [] : findMostDeficientAssets(key);
 
@@ -217,7 +217,7 @@ function renderAssetPanel(key) {
     html += notice('eye-off', 'Classe oculta. Valores não contabilizados no patrimônio e sem sugestões de aporte.', 'info');
   }
 
-  if (assets.length === 0) {
+  if (items.length === 0) {
     html += `<div class="empty-class"><p>Nenhum ativo nesta classe.</p>
       <button class="btn btn--primary add-to-empty" data-add-class="${key}">+ Adicionar ativo</button></div>`;
     return html;
@@ -230,7 +230,7 @@ function renderAssetPanel(key) {
       <th class="col-r">Meta %</th><th class="col-action"></th>
     </tr></thead><tbody>`;
 
-  assets.forEach((asset, idx) => {
+  items.forEach((asset, idx) => {
     const isDeficient = deficientAssets.includes(asset.id);
     const quarantined = isQuarantined(asset);
     const p = state.prices[asset.id];

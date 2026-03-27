@@ -1,4 +1,4 @@
-import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, loadTheme, toggleTheme, toggleClassHidden, setAssetNote } from './js/state.js';
+import { state, savePortfolio, saveSettings, loadPortfolio, loadSettings, loadCachedPrices, CLASS_KEYS, hasApiTokens, loadTheme, toggleTheme, toggleClassHidden, setAssetNote, classItems, addAssetToClass, setClassTarget, importPortfolio, exportPortfolio } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
 import { render } from './js/render.js';
 
@@ -63,7 +63,7 @@ function confirmAddAsset() {
   if (!ticker) { $('#newTicker').focus(); return; }
   if (isNaN(amount) || amount <= 0) { $('#newAmount').focus(); return; }
 
-  if ((state.portfolio[addTargetClass] || []).find(a => a.id === ticker)) {
+  if (classItems(addTargetClass).find(a => a.id === ticker)) {
     toast(ticker + ' já existe');
     return;
   }
@@ -75,8 +75,7 @@ function confirmAddAsset() {
     if (!isNaN(val) && val >= 0) newAsset.target = val;
   }
 
-  if (!state.portfolio[addTargetClass]) state.portfolio[addTargetClass] = [];
-  state.portfolio[addTargetClass].push(newAsset);
+  addAssetToClass(addTargetClass, newAsset);
   savePortfolio();
   closeAddModal();
   rerender();
@@ -88,7 +87,7 @@ let noteTargetClass = null, noteTargetId = null;
 function openNoteModal(cls, id) {
   noteTargetClass = cls;
   noteTargetId = id;
-  const asset = state.portfolio[cls]?.find(a => a.id === id);
+  const asset = classItems(cls).find(a => a.id === id);
   $('#noteAssetName').textContent = id;
   $('#noteText').value = asset?.note || '';
   $('#noteModal').classList.add('open');
@@ -124,12 +123,8 @@ function saveSettingsFromModal() {
   toast('Configurações salvas');
 }
 
-function exportJSON() {
-  const out = { currency: state.portfolio.currency || 'BRL', syncedAt: state.portfolio.syncedAt };
-  if (state.portfolio.classTargets) out.classTargets = state.portfolio.classTargets;
-  if (state.portfolio.hiddenClasses) out.hiddenClasses = state.portfolio.hiddenClasses;
-  CLASS_KEYS.forEach(k => { out[k] = state.portfolio[k] || []; });
-
+function doExport() {
+  const out = exportPortfolio();
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -140,16 +135,16 @@ function exportJSON() {
   toast('JSON exportado');
 }
 
-function importJSON(file) {
+function doImport(file) {
   showLoading('Importando carteira...');
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!CLASS_KEYS.some(k => Array.isArray(data[k]))) throw new Error('Formato inválido');
-      state.portfolio = data;
-      state.activeTab = 'overview';
-      savePortfolio();
+      if (!CLASS_KEYS.some(k => Array.isArray(data[k]) || Array.isArray(data[k]?.items))) {
+        throw new Error('Formato inválido');
+      }
+      importPortfolio(data);
       rerender();
       hideLoading();
       toast('Carteira importada');
@@ -177,7 +172,7 @@ function bindPanelEvents() {
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val) && val >= 0) {
-        state.portfolio[input.dataset.class][parseInt(input.dataset.idx)].amount = val;
+        classItems(input.dataset.class)[parseInt(input.dataset.idx)].amount = val;
         scheduleSave();
       }
     })
@@ -186,12 +181,13 @@ function bindPanelEvents() {
   $$('.inline-input[data-field="target"]').forEach(input =>
     input.addEventListener('change', () => {
       const idx = parseInt(input.dataset.idx);
+      const items = classItems(input.dataset.class);
       const raw = input.value.trim();
       if (raw === '') {
-        delete state.portfolio[input.dataset.class][idx].target;
+        delete items[idx].target;
       } else {
         const val = parseFloat(raw.replace(',', '.'));
-        if (!isNaN(val) && val >= 0) state.portfolio[input.dataset.class][idx].target = val;
+        if (!isNaN(val) && val >= 0) items[idx].target = val;
       }
       scheduleSave();
     })
@@ -202,8 +198,7 @@ function bindPanelEvents() {
     input.addEventListener('change', () => {
       const val = parseFloat(input.value.replace(',', '.'));
       if (!isNaN(val) && val >= 0) {
-        if (!state.portfolio.classTargets) state.portfolio.classTargets = {};
-        state.portfolio.classTargets[input.dataset.classTarget] = val;
+        setClassTarget(input.dataset.classTarget, val);
         savePortfolio();
         rerender();
       }
@@ -214,9 +209,10 @@ function bindPanelEvents() {
     btn.addEventListener('click', () => {
       const cls = btn.dataset.class;
       const idx = parseInt(btn.dataset.idx);
-      const asset = state.portfolio[cls][idx];
+      const items = classItems(cls);
+      const asset = items[idx];
       if (confirm('Remover ' + asset.id + '?')) {
-        state.portfolio[cls].splice(idx, 1);
+        items.splice(idx, 1);
         savePortfolio();
         rerender();
         toast(asset.id + ' removido');
@@ -250,19 +246,19 @@ document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => {
   e.preventDefault(); dragCounter = 0; $('#dropZone').classList.remove('visible');
   const file = e.dataTransfer.files[0];
-  if (file?.name.endsWith('.json')) importJSON(file);
+  if (file?.name.endsWith('.json')) doImport(file);
   else toast('Apenas arquivos .json');
 });
 
 // Global listeners
 
-$('#btnExport').addEventListener('click', exportJSON);
+$('#btnExport').addEventListener('click', doExport);
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
-$('#fileInput').addEventListener('change', e => { if (e.target.files[0]) importJSON(e.target.files[0]); e.target.value = ''; });
+$('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
 $('#modalConfirm').addEventListener('click', confirmAddAsset);

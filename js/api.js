@@ -1,4 +1,4 @@
-import { state, cachePrices, markBrQuoted } from './state.js';
+import { state, cachePrices, markBrQuoted, classItems } from './state.js';
 
 let fetching = false;
 
@@ -6,9 +6,9 @@ export async function fetchAllPrices(onProgress) {
   if (fetching || !state.portfolio) return;
   fetching = true;
 
-  const brTickers = [...(state.portfolio.brStocks || []), ...(state.portfolio.brFiis || [])].map(a => a.id);
-  const usTickers = [...(state.portfolio.usStocks || []), ...(state.portfolio.usReits || [])].map(a => a.id);
-  const sovTickers = (state.portfolio.storeOfValue || []).map(a => a.id);
+  const brTickers = [...classItems('brStocks'), ...classItems('brFiis')].map(a => a.id);
+  const usTickers = [...classItems('usStocks'), ...classItems('usReits')].map(a => a.id);
+  const sovTickers = classItems('storeOfValue').map(a => a.id);
   const total = brTickers.length + usTickers.length + sovTickers.length + 1;
   let step = 0;
 

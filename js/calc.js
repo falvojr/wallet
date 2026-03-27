@@ -1,4 +1,4 @@
-import { state, CLASS_KEYS, visibleClassKeys, isClassHidden } from './state.js';
+import { state, CLASS_KEYS, visibleClassKeys, isClassHidden, classItems, classTarget } from './state.js';
 
 export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -20,7 +20,7 @@ export function assetValueBRL(classKey, asset) {
 
 export function classTotalBRL(classKey) {
   let total = 0, hasPrices = false;
-  for (const asset of state.portfolio[classKey] || []) {
+  for (const asset of classItems(classKey)) {
     const val = assetValueBRL(classKey, asset);
     if (val !== null) { total += val; hasPrices = true; }
   }
@@ -32,7 +32,7 @@ export function portfolioTotalBRL() {
   for (const key of visibleClassKeys()) {
     const val = classTotalBRL(key);
     if (val !== null) total += val;
-    else if ((state.portfolio[key] || []).length > 0) partial = true;
+    else if (classItems(key).length > 0) partial = true;
   }
   return { total, partial };
 }
@@ -42,8 +42,8 @@ export function isQuarantined(asset) {
 }
 
 export function classTargetPct(classKey) {
-  const targets = state.portfolio.classTargets || {};
-  if (targets[classKey] !== undefined) return targets[classKey];
+  const t = classTarget(classKey);
+  if (t !== null) return t;
   const visible = visibleClassKeys();
   return visible.length > 0 ? 100 / visible.length : 0;
 }
@@ -56,7 +56,7 @@ export function classActualPct(classKey) {
 
 export function assetTargetPct(classKey, asset) {
   if (asset.target !== undefined) return asset.target;
-  const active = (state.portfolio[classKey] || []).filter(a => !isQuarantined(a)).length;
+  const active = classItems(classKey).filter(a => !isQuarantined(a)).length;
   return active > 0 ? 100 / active : 0;
 }
 
@@ -90,7 +90,7 @@ function recLimit(count) {
 export function findMostDeficientClasses() {
   const results = [];
   for (const key of visibleClassKeys()) {
-    if ((state.portfolio[key] || []).length === 0) continue;
+    if (classItems(key).length === 0) continue;
     const gap = classDeficit(key);
     if (gap === null || gap < classThreshold(key)) continue;
     results.push({ key, gap });
@@ -102,13 +102,13 @@ export function findMostDeficientClasses() {
 
 export function findMostDeficientAssets(classKey) {
   if (isClassHidden(classKey)) return [];
-  const assets = (state.portfolio[classKey] || []).filter(a => !isQuarantined(a));
+  const items = classItems(classKey).filter(a => !isQuarantined(a));
   const total = classTotalBRL(classKey);
   const gap = classDeficit(classKey);
-  if (!total || total <= 0 || assets.length < 2 || !gap || gap < classThreshold(classKey)) return [];
+  if (!total || total <= 0 || items.length < 2 || !gap || gap < classThreshold(classKey)) return [];
 
   const scored = [];
-  for (const asset of assets) {
+  for (const asset of items) {
     const val = assetValueBRL(classKey, asset);
     if (val === null) continue;
     const assetGap = Math.max(0, assetTargetPct(classKey, asset) - (val / total) * 100);
@@ -116,5 +116,5 @@ export function findMostDeficientAssets(classKey) {
   }
 
   scored.sort((a, b) => b.score - a.score || b.gap - a.gap);
-  return scored.slice(0, recLimit(assets.length)).map(r => r.id);
+  return scored.slice(0, recLimit(items.length)).map(r => r.id);
 }
