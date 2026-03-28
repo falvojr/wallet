@@ -1,23 +1,21 @@
-import { state, cachePrices, markBrQuoted, classItems } from './state.js';
+import { portfolio, prices, settings } from './state.js';
 
 const FINNHUB_DELAY_MS = 120;
+const TICKER_RE = /^[A-Z0-9.]{1,10}$/;
 
 let fetching = false;
 
 export async function fetchAllPrices(onProgress) {
-  if (fetching || !state.portfolio) return false;
-  if (!state.settings.brapiToken && !state.settings.finnhubToken) return false;
+  if (fetching || !portfolio.loaded || !settings.hasTokens) return false;
   fetching = true;
 
-  const br  = [...classItems('brStocks'), ...classItems('brFiis')].map(a => a.id);
-  const us  = [...classItems('usStocks'), ...classItems('usReits')].map(a => a.id);
-  const sov = classItems('storeOfValue').map(a => a.id);
+  const br  = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
+  const us  = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
+  const sov = portfolio.items('storeOfValue').map(a => a.id);
 
   let step = 0;
   const total = br.length + us.length + sov.length + 1;
   const progress = label => onProgress?.(`${label} (${++step}/${total})`);
-
-  const pricesBefore = Object.keys(state.prices).length;
 
   try {
     progress('Câmbio');
@@ -26,9 +24,8 @@ export async function fetchAllPrices(onProgress) {
     for (const t of us)  { progress(t); await fetchUsQuote(t); }
     for (const t of sov) { progress(t); await fetchSovQuote(t); }
 
-    const fetched = Object.keys(state.prices).length > pricesBefore;
-    if (fetched) cachePrices();
-    return fetched;
+    if (prices.hasData) prices.save();
+    return prices.hasData;
   } catch (err) {
     console.error('fetchAllPrices:', err);
     return false;
@@ -39,21 +36,21 @@ export async function fetchAllPrices(onProgress) {
 
 async function fetchExchangeRates() {
   const data = await fetchJson('https://economia.awesomeapi.com.br/json/last/USD-BRL');
-  if (data?.USDBRL) state.rates.USDBRL = parseFloat(data.USDBRL.bid);
+  if (data?.USDBRL) prices.usdBrl = parseFloat(data.USDBRL.bid);
 }
 
 async function fetchBrQuote(ticker) {
-  if (!state.settings.brapiToken) return;
+  if (!settings.brapiToken) return;
   try {
-    const data = await fetchJson(`https://brapi.dev/api/quote/${ticker}?token=${state.settings.brapiToken}`);
+    const data = await fetchJson(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
     const r = data?.results?.[0];
     if (r) {
-      state.prices[r.symbol] = {
+      prices.set(r.symbol, {
         price:    r.regularMarketPrice,
         currency: r.currency || 'BRL',
         change:   r.regularMarketChangePercent,
-      };
-      markBrQuoted(r.symbol);
+      });
+      prices.markBrQuoted(r.symbol);
     }
   } catch (e) {
     console.warn(`brapi (${ticker}):`, e);
@@ -61,11 +58,11 @@ async function fetchBrQuote(ticker) {
 }
 
 async function fetchUsQuote(ticker) {
-  if (!state.settings.finnhubToken) return;
+  if (!settings.finnhubToken) return;
   try {
-    const data = await fetchJson(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${state.settings.finnhubToken}`);
+    const data = await fetchJson(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${settings.finnhubToken}`);
     if (data?.c > 0) {
-      state.prices[ticker] = { price: data.c, currency: 'USD', change: data.dp };
+      prices.set(ticker, { price: data.c, currency: 'USD', change: data.dp });
     }
   } catch (e) {
     console.warn(`finnhub (${ticker}):`, e);
@@ -73,17 +70,28 @@ async function fetchUsQuote(ticker) {
   await delay(FINNHUB_DELAY_MS);
 }
 
+/**
+ * Fetches store-of-value quotes using a two-step fallback:
+ * 1. AwesomeAPI for crypto/currencies (BTC, ETH, etc.) — returns BRL directly.
+ * 2. Finnhub for US-traded assets (GLD, IAU, etc.) — returns USD.
+ *
+ * Free-text entries (e.g. "Reais em Espécie") are skipped entirely
+ * to avoid unnecessary network errors.
+ */
 async function fetchSovQuote(ticker) {
+  if (!TICKER_RE.test(ticker)) return;
+
   const data = await fetchJsonSoft(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
   const entry = data?.[`${ticker}BRL`];
   if (entry) {
-    state.prices[ticker] = {
-      price:    parseFloat(entry.bid),
+    prices.set(ticker, {
+      price:  parseFloat(entry.bid),
       currency: 'BRL',
-      change:   parseFloat(entry.pctChange),
-    };
+      change: parseFloat(entry.pctChange),
+    });
     return;
   }
+
   await fetchUsQuote(ticker);
 }
 
@@ -93,7 +101,7 @@ async function fetchJson(url) {
   return res.json();
 }
 
-/** Like fetchJson but returns null on failure instead of throwing — used for expected fallbacks. */
+/** Like fetchJson but returns null on failure — used for expected fallbacks. */
 async function fetchJsonSoft(url) {
   try {
     const res = await fetch(url);

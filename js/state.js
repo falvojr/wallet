@@ -2,160 +2,162 @@ const STORAGE_KEY  = 'holding_portfolio';
 const SETTINGS_KEY = 'holding_settings';
 const PRICES_KEY   = 'holding_prices';
 const PRICES_TTL   = 24 * 60 * 60 * 1000;
+const THEME_KEY    = 'holding_theme';
 
 export const CLASS_META = {
-  brStocks:     { label: 'Ações',            color: '#4ade80', icon: 'trending-up'  },
-  brFiis:       { label: 'FIIs',             color: '#22d3ee', icon: 'building-2'   },
-  usStocks:     { label: 'Stocks',           color: '#818cf8', icon: 'globe'         },
-  usReits:      { label: 'REITs',            color: '#c084fc', icon: 'landmark'      },
-  fixedIncome:  { label: 'Renda Fixa',       color: '#fbbf24', icon: 'shield'        },
-  storeOfValue: { label: 'Reserva de Valor', color: '#fb923c', icon: 'bitcoin'       },
-  assets:       { label: 'Bens',             color: '#f472b6', icon: 'home'          },
+  brStocks:     { label: 'Ações',            color: '#4ade80', icon: 'trending-up' },
+  brFiis:       { label: 'FIIs',             color: '#22d3ee', icon: 'building-2'  },
+  usStocks:     { label: 'Stocks',           color: '#818cf8', icon: 'globe'       },
+  usReits:      { label: 'REITs',            color: '#c084fc', icon: 'landmark'    },
+  fixedIncome:  { label: 'Renda Fixa',       color: '#fbbf24', icon: 'shield'      },
+  storeOfValue: { label: 'Reserva de Valor', color: '#fb923c', icon: 'bitcoin'     },
+  assets:       { label: 'Bens',             color: '#f472b6', icon: 'home'        },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
-const BR_QUOTED = new Set();
-export const markBrQuoted = ticker => BR_QUOTED.add(ticker);
-export const isBrQuoted   = ticker => BR_QUOTED.has(ticker);
+export class Portfolio {
+  #data = null;
 
-export const state = {
-  portfolio: null,
-  settings:  { brapiToken: '', finnhubToken: '' },
-  prices: {},
-  rates:  {},
-  pricesTimestamp: null,
-  activeTab: 'overview',
-};
+  get loaded() { return this.#data !== null; }
 
-export function classItems(key) {
-  return state.portfolio?.[key]?.items ?? [];
-}
+  items(key) { return this.#data?.[key]?.items ?? []; }
 
-export function classTarget(key) {
-  const stored = state.portfolio?.[key]?.target;
-  if (stored !== undefined) return stored;
-  const visibleCount = CLASS_KEYS.filter(k => !isClassHidden(k)).length;
-  return visibleCount > 0 ? 100 / visibleCount : 0;
-}
+  target(key) {
+    const stored = this.#data?.[key]?.target;
+    if (stored !== undefined) return stored;
+    const count = this.visibleKeys().length;
+    return count > 0 ? 100 / count : 0;
+  }
 
-export function setClassTarget(key, value) {
-  if (!state.portfolio[key]) state.portfolio[key] = { items: [] };
-  state.portfolio[key].target = value;
-}
+  setTarget(key, value) {
+    this.#ensure(key);
+    this.#data[key].target = value;
+  }
 
-export function addItem(key, item) {
-  if (!state.portfolio[key]) state.portfolio[key] = { items: [] };
-  state.portfolio[key].items.push(item);
-}
+  addItem(key, item) {
+    this.#ensure(key);
+    this.#data[key].items.push(item);
+  }
 
-export function setItemNote(key, id, note) {
-  const item = classItems(key).find(a => a.id === id);
-  if (!item) return;
-  const trimmed = note.trim();
-  if (trimmed) item.note = trimmed;
-  else delete item.note;
-  savePortfolio();
-}
+  setItemNote(key, id, note) {
+    const item = this.items(key).find(a => a.id === id);
+    if (!item) return;
+    const trimmed = note.trim();
+    if (trimmed) item.note = trimmed;
+    else delete item.note;
+    this.save();
+  }
 
-export function loadPortfolio() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state.portfolio = JSON.parse(raw);
-  } catch {
-    state.portfolio = null;
+  isHidden(key) { return !!(this.#data?.hiddenClasses?.[key]); }
+
+  toggleHidden(key) {
+    if (!this.#data) return;
+    this.#data.hiddenClasses ??= {};
+    if (this.#data.hiddenClasses[key]) delete this.#data.hiddenClasses[key];
+    else this.#data.hiddenClasses[key] = true;
+    this.save();
+  }
+
+  visibleKeys() { return CLASS_KEYS.filter(k => !this.isHidden(k)); }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) this.#data = JSON.parse(raw);
+    } catch { this.#data = null; }
+  }
+
+  save() {
+    this.#data.syncedAt = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.#data));
+  }
+
+  import(data) {
+    this.#data = data;
+    this.save();
+  }
+
+  export() {
+    const out = { syncedAt: this.#data.syncedAt };
+    if (this.#data.hiddenClasses) out.hiddenClasses = this.#data.hiddenClasses;
+    CLASS_KEYS.forEach(k => { if (this.#data[k]) out[k] = this.#data[k]; });
+    return out;
+  }
+
+  #ensure(key) {
+    this.#data[key] ??= { items: [] };
   }
 }
 
-export function savePortfolio() {
-  state.portfolio.syncedAt = new Date().toISOString().slice(0, 10);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.portfolio));
+export class PriceCache {
+  #prices = {};
+  #rates = {};
+  #timestamp = null;
+  #brQuoted = new Set();
+
+  get(id) { return this.#prices[id] ?? null; }
+
+  set(id, data) { this.#prices[id] = data; }
+
+  get usdBrl() { return this.#rates.USDBRL ?? 0; }
+  set usdBrl(val) { this.#rates.USDBRL = val; }
+
+  markBrQuoted(ticker) { this.#brQuoted.add(ticker); }
+  isBrQuoted(ticker) { return this.#brQuoted.has(ticker); }
+
+  get hasData() { return Object.keys(this.#prices).length > 0; }
+
+  get stale() {
+    return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false;
+  }
+
+  get dateStr() {
+    if (!this.#timestamp) return null;
+    return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  load() {
+    try {
+      const data = JSON.parse(localStorage.getItem(PRICES_KEY));
+      if (data) {
+        this.#prices    = data.prices ?? {};
+        this.#rates     = data.rates  ?? {};
+        this.#timestamp = data.ts     ?? null;
+      }
+    } catch { /* no cached prices */ }
+  }
+
+  save() {
+    this.#timestamp = Date.now();
+    localStorage.setItem(PRICES_KEY, JSON.stringify({
+      ts: this.#timestamp, prices: this.#prices, rates: this.#rates,
+    }));
+  }
 }
 
-export function importPortfolio(data) {
-  state.portfolio = data;
-  state.activeTab = 'overview';
-  savePortfolio();
-}
+export class Settings {
+  brapiToken = '';
+  finnhubToken = '';
 
-export function exportPortfolio() {
-  const out = { syncedAt: state.portfolio.syncedAt };
-  if (state.portfolio.hiddenClasses) out.hiddenClasses = state.portfolio.hiddenClasses;
-  CLASS_KEYS.forEach(k => { if (state.portfolio[k]) out[k] = state.portfolio[k]; });
-  return out;
-}
+  get hasTokens() { return !!(this.brapiToken || this.finnhubToken); }
 
-export function loadSettings() {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) state.settings = JSON.parse(raw);
-  } catch { /* keep defaults */ }
-}
+  load() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (raw) Object.assign(this, JSON.parse(raw));
+    } catch { /* keep defaults */ }
+  }
 
-export function saveSettings() {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+  save() {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      brapiToken: this.brapiToken, finnhubToken: this.finnhubToken,
+    }));
+  }
 }
-
-export function loadCachedPrices() {
-  try {
-    const data = JSON.parse(localStorage.getItem(PRICES_KEY));
-    if (data) {
-      state.prices          = data.prices ?? {};
-      state.rates           = data.rates  ?? {};
-      state.pricesTimestamp = data.ts     ?? null;
-    }
-  } catch { /* no cached prices */ }
-}
-
-export function cachePrices() {
-  state.pricesTimestamp = Date.now();
-  localStorage.setItem(PRICES_KEY, JSON.stringify({
-    ts:     state.pricesTimestamp,
-    prices: state.prices,
-    rates:  state.rates,
-  }));
-}
-
-export function pricesStale() {
-  return state.pricesTimestamp
-    ? Date.now() - state.pricesTimestamp > PRICES_TTL
-    : false;
-}
-
-export function pricesDateStr() {
-  if (!state.pricesTimestamp) return null;
-  return new Date(state.pricesTimestamp).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-export function isClassHidden(key) {
-  return !!(state.portfolio?.hiddenClasses?.[key]);
-}
-
-export function toggleClassHidden(key) {
-  if (!state.portfolio) return;
-  if (!state.portfolio.hiddenClasses) state.portfolio.hiddenClasses = {};
-  const current = state.portfolio.hiddenClasses[key];
-  if (current) delete state.portfolio.hiddenClasses[key];
-  else state.portfolio.hiddenClasses[key] = true;
-  savePortfolio();
-}
-
-export function visibleClassKeys() {
-  return CLASS_KEYS.filter(k => !isClassHidden(k));
-}
-
-export function hasApiTokens() {
-  return !!(state.settings.brapiToken || state.settings.finnhubToken);
-}
-
-export function hasCachedPrices() {
-  return Object.keys(state.prices).length > 0;
-}
-
-const THEME_KEY = 'holding_theme';
 
 export function loadTheme() {
   document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'dark';
@@ -166,3 +168,10 @@ export function toggleTheme() {
   document.documentElement.dataset.theme = next;
   localStorage.setItem(THEME_KEY, next);
 }
+
+export const portfolio = new Portfolio();
+export const prices   = new PriceCache();
+export const settings = new Settings();
+
+export let activeTab = 'overview';
+export function setActiveTab(tab) { activeTab = tab; }

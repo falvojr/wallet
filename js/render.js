@@ -1,8 +1,4 @@
-import {
-  state, CLASS_META, CLASS_KEYS, visibleClassKeys,
-  isClassHidden, isBrQuoted, pricesStale, pricesDateStr,
-  hasCachedPrices, classItems,
-} from './state.js';
+import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab } from './state.js';
 import {
   formatBRL, formatCompact, assetValueBRL, classTotalBRL, portfolioTotalBRL,
   classTargetPct, classActualPct, isQuarantined, allocationWarning,
@@ -10,12 +6,9 @@ import {
 } from './calc.js';
 
 const $ = s => document.querySelector(s);
-
 const createIcons = () => { if (typeof lucide !== 'undefined') lucide.createIcons(); };
-const hasItems    = key => classItems(key).length > 0;
-const countLabel  = n   => `${n} ativo${n !== 1 ? 's' : ''}`;
+const countLabel  = n => `${n} ativo${n !== 1 ? 's' : ''}`;
 
-/** Escapes HTML special characters to prevent XSS in template literals. */
 function escapeHtml(str) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return String(str).replace(/[&<>"']/g, c => map[c]);
@@ -37,8 +30,8 @@ const aportarBadge = () => badge('aportar', 'sparkles', 'aportar', 'Maior necess
 const ignorarBadge = () => badge('ignorar', 'circle-pause', 'ignorar', 'Em quarentena');
 
 function tickerUrl(key, id) {
-  const p = state.prices[id];
-  if ((key === 'brStocks' || key === 'brFiis') && (isBrQuoted(id) || p))
+  const p = prices.get(id);
+  if ((key === 'brStocks' || key === 'brFiis') && (prices.isBrQuoted(id) || p))
     return `https://www.google.com/finance/quote/${encodeURIComponent(id)}:BVMF`;
   if ((key === 'usStocks' || key === 'usReits') && p)
     return `https://finance.yahoo.com/quote/${encodeURIComponent(id)}`;
@@ -46,7 +39,7 @@ function tickerUrl(key, id) {
 }
 
 export function render() {
-  const has = state.portfolio !== null;
+  const has = portfolio.loaded;
   $('#emptyWelcome').hidden = has;
   $('#headerActions').hidden = !has;
 
@@ -67,21 +60,21 @@ function renderTabs() {
     { key: 'overview', label: 'Visão Geral', count: null, hidden: false },
     ...CLASS_KEYS.map(k => ({
       key: k, label: CLASS_META[k].label,
-      count: classItems(k).length,
-      hidden: isClassHidden(k),
+      count: portfolio.items(k).length,
+      hidden: portfolio.isHidden(k),
     })),
   ];
 
   $('#tabNav').innerHTML = tabs.map(t => `
-    <button class="tab-btn${t.key === state.activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}"
-      data-tab="${t.key}" aria-current="${t.key === state.activeTab ? 'page' : 'false'}">
+    <button class="tab-btn${t.key === activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}"
+      data-tab="${t.key}" aria-current="${t.key === activeTab ? 'page' : 'false'}">
       ${escapeHtml(t.label)}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
     </button>`).join('');
 }
 
 function renderPanels() {
   const wrap = (key, content) =>
-    `<div class="tab-panel${key === state.activeTab ? ' active' : ''}" data-panel="${key}"
+    `<div class="tab-panel${key === activeTab ? ' active' : ''}" data-panel="${key}"
       role="tabpanel">${content}</div>`;
 
   $('#panels').innerHTML =
@@ -91,16 +84,16 @@ function renderPanels() {
 
 function renderOverview() {
   const defClasses = deficientClasses();
-  const populated  = CLASS_KEYS.filter(hasItems);
+  const populated  = CLASS_KEYS.filter(k => portfolio.items(k).length > 0);
 
   const chartData = populated.map(k => {
-    const hidden  = isClassHidden(k);
-    const total   = classTotalBRL(k);
-    const count   = classItems(k).length;
+    const hidden = portfolio.isHidden(k);
+    const total  = classTotalBRL(k);
+    const count  = portfolio.items(k).length;
     return {
       key: k, label: CLASS_META[k].label,
       color: CLASS_META[k].color, icon: CLASS_META[k].icon,
-      value:     hidden ? 0 : (total ?? count * 0.01),
+      value: hidden ? 0 : (total ?? count * 0.01),
       count, hasPrices: total !== null, total, hidden,
     };
   });
@@ -111,9 +104,9 @@ function renderOverview() {
   if (warning)
     html += notice('triangle-alert', `As metas somam <strong>${warning.sum}%</strong>, mas deveriam totalizar 100%.`);
 
-  if (hasCachedPrices() && pricesStale())
-    html += notice('clock', `Cotações desatualizadas (${pricesDateStr()}). Atualize em <strong>Cotar</strong>.`, 'info');
-  else if (!hasCachedPrices())
+  if (prices.hasData && prices.stale)
+    html += notice('clock', `Cotações desatualizadas (${prices.dateStr}). Atualize em <strong>Cotar</strong>.`, 'info');
+  else if (!prices.hasData)
     html += notice('clock', 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.', 'info');
 
   html += `<div class="overview-grid">
@@ -122,7 +115,7 @@ function renderOverview() {
       <div class="chart-legend">${chartData.map(renderLegendRow).join('')}</div>
     </div>
     <div class="summary-cards">
-      ${populated.filter(k => !isClassHidden(k)).map(k => renderSummaryCard(k, defClasses)).join('')}
+      ${populated.filter(k => !portfolio.isHidden(k)).map(k => renderSummaryCard(k, defClasses)).join('')}
     </div>
   </div>`;
 
@@ -161,7 +154,7 @@ function renderSummaryCard(key, defClasses) {
       </span>
     </div>
     <div class="summary-card-value" data-goto="${key}">
-      ${total !== null ? formatBRL(total) : countLabel(classItems(key).length)}
+      ${total !== null ? formatBRL(total) : countLabel(portfolio.items(key).length)}
     </div>
     <div class="summary-card-bar" role="progressbar"
       aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
@@ -191,7 +184,7 @@ function renderDonut(segments) {
     const pct  = ((d.value / total) * 100).toFixed(1);
     const dash = (d.value / total) * circumference;
     descriptions.push(`${d.label}: ${pct}%`);
-    const arc  = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
+    const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
       stroke-width="22" stroke-dasharray="${dash} ${circumference - dash}"
       stroke-dashoffset="${-offset}" opacity="0.88">
       <title>${escapeHtml(d.label)}: ${formatBRL(d.value)} (${pct}%)</title>
@@ -217,9 +210,9 @@ function renderDonut(segments) {
 }
 
 function renderClassPanel(key) {
-  const meta  = CLASS_META[key];
-  const items = classItems(key);
-  const hidden = isClassHidden(key);
+  const meta   = CLASS_META[key];
+  const items  = portfolio.items(key);
+  const hidden = portfolio.isHidden(key);
 
   let html = `<h2 class="sr-only">${escapeHtml(meta.label)}</h2>`;
 
@@ -258,7 +251,7 @@ function renderClassPanel(key) {
 function renderAssetRow(key, item, idx, meta, defItems) {
   const isDef       = defItems.includes(item.id);
   const quarantined = isQuarantined(item);
-  const p           = state.prices[item.id];
+  const p           = prices.get(item.id);
   const value       = assetValueBRL(key, item);
   const safeId      = escapeHtml(item.id);
 
@@ -300,7 +293,6 @@ function renderAssetRow(key, item, idx, meta, defItems) {
   </tr>`;
 }
 
-/** Returns formatted price string and change badge HTML for a table cell. */
 function formatPriceCell(key, item, p) {
   let priceStr = '', changeHtml = '';
 
