@@ -7,6 +7,10 @@ import {
 
 const $ = s => document.querySelector(s);
 
+function createIcons() {
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
 function hasItems(key) { return classItems(key).length > 0; }
 
 function notice(icon, text, variant = 'warning') {
@@ -29,15 +33,17 @@ function tickerUrl(key, id) {
   return null;
 }
 
+function countLabel(n) { return n + ' ativo' + (n !== 1 ? 's' : ''); }
+
 export function render() {
   const has = state.portfolio !== null;
   $('#emptyWelcome').hidden = has;
   $('#headerActions').hidden = !has;
-  if (!has) { $('#tabNav').innerHTML = ''; $('#panels').innerHTML = ''; return; }
+  if (!has) { $('#tabNav').innerHTML = ''; $('#panels').innerHTML = ''; createIcons(); return; }
 
   renderTabs();
   renderPanels();
-  lucide.createIcons();
+  createIcons();
 }
 
 function renderTabs() {
@@ -88,7 +94,7 @@ function renderOverview() {
     html += `<div class="legend-row ${d.hidden ? 'legend-row--hidden' : ''}">
       <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
       <span class="legend-label" data-goto="${d.key}">${d.label}</span>
-      <span class="legend-amount ${d.hidden ? 'legend-amount--hidden' : ''}">${d.hasPrices ? formatBRL(d.total) : d.count + ' pos.'}</span>
+      <span class="legend-amount ${d.hidden ? 'legend-amount--hidden' : ''}">${d.hasPrices ? formatBRL(d.total) : countLabel(d.count)}</span>
       <button class="legend-eye" data-toggle-hidden="${d.key}" title="${d.hidden ? 'Reativar classe' : 'Ocultar classe'}"><i data-lucide="${eye}"></i></button>
     </div>`;
   });
@@ -103,7 +109,7 @@ function renderOverview() {
     html += `<div class="summary-card" style="--card-color:${m.color}">
       <div class="summary-card-head"><span class="summary-card-label" data-goto="${key}">
         <i data-lucide="${m.icon}" class="summary-icon"></i>${m.label}${isDef ? aportarBadge() : ''}</span></div>
-      <div class="summary-card-value" data-goto="${key}">${total !== null ? formatBRL(total) : classItems(key).length + ' ativos'}</div>
+      <div class="summary-card-value" data-goto="${key}">${total !== null ? formatBRL(total) : countLabel(classItems(key).length)}</div>
       <div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>
       <div class="summary-card-meta">
         ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : ''}
@@ -138,8 +144,8 @@ function renderDonut(segments) {
 
   return `<div class="donut-wrap"><svg viewBox="0 0 200 200">${arcs.join('')}</svg>
     <div class="donut-center">
-      <div class="total-label">${hasVal ? 'Patrimônio' : 'Posições'}</div>
-      <div class="total-value">${hasVal ? formatCompact(ptotal) : segments.reduce((s, d) => s + d.count, 0)}</div>
+      <div class="total-label">${hasVal ? 'Patrimônio' : 'Total'}</div>
+      <div class="total-value">${hasVal ? formatCompact(ptotal) : segments.reduce((s, d) => s + d.count, 0) + ' ativos'}</div>
       ${hasVal && partial ? '<div class="total-sub">(parcial)</div>' : ''}
     </div></div>`;
 }

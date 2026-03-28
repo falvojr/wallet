@@ -3,7 +3,8 @@ import { state, cachePrices, markBrQuoted, classItems } from './state.js';
 let fetching = false;
 
 export async function fetchAllPrices(onProgress) {
-  if (fetching || !state.portfolio) return;
+  if (fetching || !state.portfolio) return false;
+  if (!state.settings.brapiToken && !state.settings.finnhubToken) return false;
   fetching = true;
 
   const br = [...classItems('brStocks'), ...classItems('brFiis')].map(a => a.id);
@@ -11,6 +12,7 @@ export async function fetchAllPrices(onProgress) {
   const sov = classItems('storeOfValue').map(a => a.id);
   const total = br.length + us.length + sov.length + 1;
   let step = 0;
+  const pricesBefore = Object.keys(state.prices).length;
   const progress = label => onProgress?.(`${label} (${++step}/${total})`);
 
   try {
@@ -19,8 +21,10 @@ export async function fetchAllPrices(onProgress) {
     for (const t of br)  { progress(t); await fetchBrQuote(t); }
     for (const t of us)  { progress(t); await fetchUsQuote(t); }
     for (const t of sov) { progress(t); await fetchSovQuote(t); }
-    cachePrices();
-    return true;
+
+    const fetched = Object.keys(state.prices).length > pricesBefore;
+    if (fetched) cachePrices();
+    return fetched;
   } catch (err) {
     console.error('fetchAllPrices:', err);
     return false;

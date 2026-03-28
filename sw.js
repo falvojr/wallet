@@ -1,5 +1,9 @@
-const CACHE_NAME = 'holding-v15';
-const APP_FILES = ['./index.html', './style.css', './app.js', './js/state.js', './js/calc.js', './js/api.js', './js/render.js', './manifest.json'];
+const CACHE_NAME = 'holding-v16';
+const APP_FILES = [
+  './index.html', './style.css', './app.js',
+  './js/state.js', './js/calc.js', './js/api.js', './js/render.js',
+  './manifest.json',
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => Promise.allSettled(APP_FILES.map(u => c.add(new Request(u))))));
@@ -16,10 +20,15 @@ self.addEventListener('fetch', e => {
   if (/brapi\.dev|finnhub\.io|awesomeapi/.test(e.request.url)) return;
 
   e.respondWith(
-    fetch(e.request).then(res => {
-      const clone = res.clone();
-      caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-      return res;
-    }).catch(() => caches.match(e.request))
+    caches.match(e.request).then(cached => {
+      const networkFetch = fetch(e.request).then(res => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || networkFetch;
+    })
   );
 });

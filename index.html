@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <header class="app-header">
@@ -55,8 +55,7 @@
       <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal" autocomplete="off"></div>
     <div class="modal-actions">
       <button class="btn" id="modalCancel">Cancelar</button>
-      <button class="btn btn--primary" id="modalConfirm">Adicionar</button>
-    </div>
+      <button class="btn btn--primary" id="modalConfirm">Adicionar</button></div>
   </div></div>
 
   <div class="modal-overlay" id="noteModal"><div class="modal">
@@ -65,8 +64,7 @@
     <div class="modal-field"><textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI"></textarea></div>
     <div class="modal-actions">
       <button class="btn" id="noteCancel">Cancelar</button>
-      <button class="btn btn--primary" id="noteSave">Salvar</button>
-    </div>
+      <button class="btn btn--primary" id="noteSave">Salvar</button></div>
   </div></div>
 
   <div class="modal-overlay" id="settingsModal"><div class="modal modal--wide">
@@ -80,8 +78,7 @@
       <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
     <div class="modal-actions">
       <button class="btn" id="settingsCancel">Cancelar</button>
-      <button class="btn btn--primary" id="settingsSave">Salvar</button>
-    </div>
+      <button class="btn btn--primary" id="settingsSave">Salvar</button></div>
   </div></div>
 
   <div class="drop-zone" id="dropZone"><div class="drop-zone-inner">Solte o arquivo JSON aqui</div></div>

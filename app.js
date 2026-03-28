@@ -25,6 +25,7 @@ function scheduleSave() {
 }
 
 async function refreshPrices() {
+  if (!hasApiTokens()) { toast('Configure os tokens de API em ⚙️'); return; }
   const ok = await fetchAllPrices(showLoading);
   hideLoading(); rerender();
   toast(ok ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
@@ -164,7 +165,7 @@ $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnSettings').addEventListener('click', openSettings);
-$('#btnTheme').addEventListener('click', () => { toggleTheme(); lucide.createIcons(); });
+$('#btnTheme').addEventListener('click', () => { toggleTheme(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
