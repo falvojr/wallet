@@ -1,4 +1,4 @@
-import { CLASS_KEYS, portfolio, settings, setActiveTab, loadTheme, toggleTheme } from './js/state.js';
+import { CLASS_KEYS, portfolio, prices, settings, setActiveTab, loadTheme, toggleTheme } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
 import { render } from './js/render.js';
 

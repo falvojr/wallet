@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holding-v21';
+const CACHE_NAME = 'holding';
 const APP_FILES = [
   './index.html', './style.css', './app.js',
   './js/state.js', './js/calc.js', './js/api.js', './js/render.js',
@@ -21,14 +21,11 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.match(e.request).then(cached => {
-      const networkFetch = fetch(e.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
-        }
+      const fresh = fetch(e.request).then(res => {
+        if (res.ok) caches.open(CACHE_NAME).then(c => c.put(e.request, res.clone()));
         return res;
       }).catch(() => cached);
-      return cached || networkFetch;
+      return cached || fresh;
     })
   );
 });
