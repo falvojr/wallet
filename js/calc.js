@@ -6,27 +6,31 @@ export function formatBRL(val) {
 
 export function formatCompact(val) {
   if (val >= 1_000_000) return (val / 1_000_000).toFixed(1) + 'M';
-  if (val >= 1_000) return (val / 1_000).toFixed(1) + 'K';
+  if (val >= 1_000)     return (val / 1_000).toFixed(1) + 'K';
   return val.toFixed(0);
 }
 
+/** Returns asset value in BRL, or null if price is unavailable. */
 export function assetValueBRL(key, asset) {
   if (key === 'fixedIncome' || key === 'assets') return asset.amount;
+
   const p = state.prices[asset.id];
   if (!p) return key === 'storeOfValue' ? asset.amount : null;
   if (p.currency === 'USD') return p.price * (state.rates.USDBRL || 0) * asset.amount;
   return p.price * asset.amount;
 }
 
+/** Returns total class value in BRL, or null if no priced items exist. */
 export function classTotalBRL(key) {
-  let total = 0, has = false;
+  let total = 0, hasValue = false;
   for (const item of classItems(key)) {
     const val = assetValueBRL(key, item);
-    if (val !== null) { total += val; has = true; }
+    if (val !== null) { total += val; hasValue = true; }
   }
-  return has ? total : null;
+  return hasValue ? total : null;
 }
 
+/** Returns total portfolio value and whether it is partial (some prices missing). */
 export function portfolioTotalBRL() {
   let total = 0, partial = false;
   for (const key of visibleClassKeys()) {
@@ -37,36 +41,28 @@ export function portfolioTotalBRL() {
   return { total, partial };
 }
 
-export function isQuarantined(item) {
-  return item.target === 0;
-}
-
-export function classTargetPct(key) {
-  return getClassTarget(key);
-}
+export const isQuarantined    = item => item.target === 0;
+export const classTargetPct   = key  => getClassTarget(key);
 
 export function classActualPct(key) {
-  const val = classTotalBRL(key);
-  const { total } = portfolioTotalBRL();
+  const val           = classTotalBRL(key);
+  const { total }     = portfolioTotalBRL();
   return val !== null && total > 0 ? (val / total) * 100 : null;
 }
 
 export function itemTargetPct(key, item) {
   if (item.target !== undefined) return item.target;
-  const active = classItems(key).filter(a => !isQuarantined(a)).length;
-  return active > 0 ? 100 / active : 0;
+  const activeCount = classItems(key).filter(a => !isQuarantined(a)).length;
+  return activeCount > 0 ? 100 / activeCount : 0;
 }
 
+/** Returns a warning if class targets don't add up to ~100%. */
 export function allocationWarning() {
-  let sum = 0;
-  for (const key of visibleClassKeys()) sum += classTargetPct(key);
-  if (Math.abs(sum - 100) < 0.1) return null;
-  return { sum: Math.round(sum) };
+  const sum = visibleClassKeys().reduce((acc, key) => acc + classTargetPct(key), 0);
+  return Math.abs(sum - 100) < 0.1 ? null : { sum: Math.round(sum) };
 }
 
-// Rebalancing
-
-const THRESHOLD_MIN = 0.5;
+const THRESHOLD_MIN    = 0.5;
 const THRESHOLD_FACTOR = 0.1;
 
 function classThreshold(key) {
@@ -78,30 +74,35 @@ function classDeficit(key) {
   return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
 }
 
+/** Max number of "aportar" suggestions based on item count. */
 function recLimit(count) {
   if (count >= 10) return 3;
-  if (count >= 5) return 2;
+  if (count >= 5)  return 2;
   return count >= 2 ? 1 : 0;
 }
 
+/** Classes with the largest allocation deficit (up to 3). */
 export function deficientClasses() {
-  const results = [];
+  const deficits = [];
   for (const key of visibleClassKeys()) {
     if (classItems(key).length === 0) continue;
     const gap = classDeficit(key);
     if (gap === null || gap < classThreshold(key)) continue;
-    results.push({ key, gap });
+    deficits.push({ key, gap });
   }
-  results.sort((a, b) => b.gap - a.gap);
-  const limit = results.length >= 4 ? 3 : results.length >= 2 ? 2 : 1;
-  return results.slice(0, limit).map(r => r.key);
+  deficits.sort((a, b) => b.gap - a.gap);
+  const limit = deficits.length >= 4 ? 3 : deficits.length >= 2 ? 2 : 1;
+  return deficits.slice(0, limit).map(r => r.key);
 }
 
+/** Items within a class with the largest allocation deficit. */
 export function deficientItems(key) {
   if (isClassHidden(key)) return [];
+
   const items = classItems(key).filter(a => !isQuarantined(a));
   const total = classTotalBRL(key);
-  const gap = classDeficit(key);
+  const gap   = classDeficit(key);
+
   if (!total || total <= 0 || items.length < 2 || !gap || gap < classThreshold(key)) return [];
 
   const scored = [];

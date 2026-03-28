@@ -1,44 +1,44 @@
-const STORAGE_KEY = 'holding_portfolio';
+const STORAGE_KEY  = 'holding_portfolio';
 const SETTINGS_KEY = 'holding_settings';
-const PRICES_KEY = 'holding_prices';
-const PRICES_TTL = 24 * 60 * 60 * 1000;
+const PRICES_KEY   = 'holding_prices';
+const PRICES_TTL   = 24 * 60 * 60 * 1000;
 
 export const CLASS_META = {
-  brStocks:     { label: 'Ações',            color: '#34d399', icon: 'trending-up' },
-  brFiis:       { label: 'FIIs',             color: '#22d3ee', icon: 'building-2' },
-  usStocks:     { label: 'Stocks',           color: '#818cf8', icon: 'globe' },
-  usReits:      { label: 'REITs',            color: '#c084fc', icon: 'landmark' },
-  fixedIncome:  { label: 'Renda Fixa',       color: '#fbbf24', icon: 'shield' },
-  storeOfValue: { label: 'Reserva de Valor', color: '#f97316', icon: 'bitcoin' },
-  assets:       { label: 'Bens',             color: '#fb7185', icon: 'home' },
+  brStocks:     { label: 'Ações',            color: '#4ade80', icon: 'trending-up'  },
+  brFiis:       { label: 'FIIs',             color: '#22d3ee', icon: 'building-2'   },
+  usStocks:     { label: 'Stocks',           color: '#818cf8', icon: 'globe'         },
+  usReits:      { label: 'REITs',            color: '#c084fc', icon: 'landmark'      },
+  fixedIncome:  { label: 'Renda Fixa',       color: '#fbbf24', icon: 'shield'        },
+  storeOfValue: { label: 'Reserva de Valor', color: '#fb923c', icon: 'bitcoin'       },
+  assets:       { label: 'Bens',             color: '#f472b6', icon: 'home'          },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
+// Tracks tickers confirmed quoted by brapi (used for external link routing)
 const BR_QUOTED = new Set();
-export function markBrQuoted(ticker) { BR_QUOTED.add(ticker); }
-export function isBrQuoted(ticker) { return BR_QUOTED.has(ticker); }
+export const markBrQuoted = ticker => BR_QUOTED.add(ticker);
+export const isBrQuoted   = ticker => BR_QUOTED.has(ticker);
 
 export const state = {
   portfolio: null,
-  settings: { brapiToken: '', finnhubToken: '' },
+  settings:  { brapiToken: '', finnhubToken: '' },
   prices: {},
-  rates: {},
+  rates:  {},
   pricesTimestamp: null,
   activeTab: 'overview',
 };
 
-// Data access
-
 export function classItems(key) {
-  return state.portfolio?.[key]?.items || [];
+  return state.portfolio?.[key]?.items ?? [];
 }
 
 export function classTarget(key) {
-  const t = state.portfolio?.[key]?.target;
-  if (t !== undefined) return t;
-  const visible = visibleClassKeys();
-  return visible.length > 0 ? 100 / visible.length : 0;
+  const stored = state.portfolio?.[key]?.target;
+  if (stored !== undefined) return stored;
+  // Fallback: equal share among visible classes (avoid recursion via CLASS_KEYS filter)
+  const visibleCount = CLASS_KEYS.filter(k => !isClassHidden(k)).length;
+  return visibleCount > 0 ? 100 / visibleCount : 0;
 }
 
 export function setClassTarget(key, value) {
@@ -54,18 +54,19 @@ export function addItem(key, item) {
 export function setItemNote(key, id, note) {
   const item = classItems(key).find(a => a.id === id);
   if (!item) return;
-  if (note.trim()) item.note = note.trim();
+  const trimmed = note.trim();
+  if (trimmed) item.note = trimmed;
   else delete item.note;
   savePortfolio();
 }
-
-// Persistence
 
 export function loadPortfolio() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) state.portfolio = JSON.parse(raw);
-  } catch { state.portfolio = null; }
+  } catch {
+    state.portfolio = null;
+  }
 }
 
 export function savePortfolio() {
@@ -90,7 +91,7 @@ export function loadSettings() {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) state.settings = JSON.parse(raw);
-  } catch {}
+  } catch { /* keep defaults */ }
 }
 
 export function saveSettings() {
@@ -101,32 +102,35 @@ export function loadCachedPrices() {
   try {
     const data = JSON.parse(localStorage.getItem(PRICES_KEY));
     if (data) {
-      state.prices = data.prices || {};
-      state.rates = data.rates || {};
-      state.pricesTimestamp = data.ts || null;
+      state.prices          = data.prices ?? {};
+      state.rates           = data.rates  ?? {};
+      state.pricesTimestamp = data.ts     ?? null;
     }
-  } catch {}
+  } catch { /* no cached prices */ }
 }
 
 export function cachePrices() {
   state.pricesTimestamp = Date.now();
   localStorage.setItem(PRICES_KEY, JSON.stringify({
-    ts: state.pricesTimestamp, prices: state.prices, rates: state.rates,
+    ts:     state.pricesTimestamp,
+    prices: state.prices,
+    rates:  state.rates,
   }));
 }
 
 export function pricesStale() {
-  return state.pricesTimestamp ? Date.now() - state.pricesTimestamp > PRICES_TTL : false;
+  return state.pricesTimestamp
+    ? Date.now() - state.pricesTimestamp > PRICES_TTL
+    : false;
 }
 
 export function pricesDateStr() {
   if (!state.pricesTimestamp) return null;
   return new Date(state.pricesTimestamp).toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   });
 }
-
-// Visibility
 
 export function isClassHidden(key) {
   return !!(state.portfolio?.hiddenClasses?.[key]);
@@ -135,8 +139,9 @@ export function isClassHidden(key) {
 export function toggleClassHidden(key) {
   if (!state.portfolio) return;
   if (!state.portfolio.hiddenClasses) state.portfolio.hiddenClasses = {};
-  state.portfolio.hiddenClasses[key] = !state.portfolio.hiddenClasses[key];
-  if (!state.portfolio.hiddenClasses[key]) delete state.portfolio.hiddenClasses[key];
+  const current = state.portfolio.hiddenClasses[key];
+  if (current) delete state.portfolio.hiddenClasses[key];
+  else state.portfolio.hiddenClasses[key] = true;
   savePortfolio();
 }
 
@@ -152,8 +157,6 @@ export function hasCachedPrices() {
   return Object.keys(state.prices).length > 0;
 }
 
-// Theme
-
 const THEME_KEY = 'holding_theme';
 
 export function loadTheme() {
@@ -161,7 +164,7 @@ export function loadTheme() {
 }
 
 export function toggleTheme() {
-  const next = (document.documentElement.dataset.theme || 'dark') === 'dark' ? 'light' : 'dark';
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
   localStorage.setItem(THEME_KEY, next);
 }
