@@ -15,7 +15,6 @@ export const CLASS_META = {
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
-// Tracks tickers confirmed quoted by brapi (used for external link routing)
 const BR_QUOTED = new Set();
 export const markBrQuoted = ticker => BR_QUOTED.add(ticker);
 export const isBrQuoted   = ticker => BR_QUOTED.has(ticker);
@@ -36,7 +35,6 @@ export function classItems(key) {
 export function classTarget(key) {
   const stored = state.portfolio?.[key]?.target;
   if (stored !== undefined) return stored;
-  // Fallback: equal share among visible classes (avoid recursion via CLASS_KEYS filter)
   const visibleCount = CLASS_KEYS.filter(k => !isClassHidden(k)).length;
   return visibleCount > 0 ? 100 / visibleCount : 0;
 }

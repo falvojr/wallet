@@ -13,36 +13,87 @@ function toast(msg) {
   setTimeout(() => el.remove(), 3000);
 }
 
-function showLoading(text) { $('#loadingText').textContent = text; $('#loadingOverlay').hidden = false; }
-function hideLoading() { $('#loadingOverlay').hidden = true; }
+function showLoading(text) {
+  const overlay = $('#loadingOverlay');
+  $('#loadingText').textContent = text;
+  overlay.hidden = false;
+  overlay.setAttribute('aria-hidden', 'false');
+}
 
-function rerender() { render(); bindPanelEvents(); }
+function hideLoading() {
+  const overlay = $('#loadingOverlay');
+  overlay.hidden = true;
+  overlay.setAttribute('aria-hidden', 'true');
+}
 
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => { savePortfolio(); rerender(); }, 600);
+  saveTimer = setTimeout(() => { savePortfolio(); render(); }, 600);
 }
 
 async function refreshPrices() {
   if (!hasApiTokens()) { toast('Configure os tokens de API em ⚙️'); return; }
   const ok = await fetchAllPrices(showLoading);
-  hideLoading(); rerender();
+  hideLoading(); render();
   toast(ok ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
 }
 
-// Modals
+/* Focus trap: keeps Tab cycling inside an open modal. */
+function trapFocus(modal) {
+  const focusable = modal.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
+  if (focusable.length === 0) return;
+  const first = focusable[0];
+  const last  = focusable[focusable.length - 1];
 
+  const handler = e => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  modal.addEventListener('keydown', handler);
+  modal._focusTrap = handler;
+}
+
+function releaseFocus(modal) {
+  if (modal._focusTrap) {
+    modal.removeEventListener('keydown', modal._focusTrap);
+    delete modal._focusTrap;
+  }
+}
+
+/* Modal helpers */
+let previousFocus = null;
+
+function openModal(id, focusSelector) {
+  previousFocus = document.activeElement;
+  const modal = $(id);
+  modal.classList.add('open');
+  trapFocus(modal);
+  if (focusSelector) setTimeout(() => $(focusSelector)?.focus(), 100);
+}
+
+function closeModal(id) {
+  const modal = $(id);
+  modal.classList.remove('open');
+  releaseFocus(modal);
+  previousFocus?.focus();
+  previousFocus = null;
+}
+
+/* Add asset modal */
 let addTargetClass = null;
 
 function openAddModal(cls) {
   addTargetClass = cls;
   $('#newTicker').value = ''; $('#newAmount').value = ''; $('#newTarget').value = '';
-  $('#addModal').classList.add('open');
-  setTimeout(() => $('#newTicker').focus(), 100);
+  openModal('#addModal', '#newTicker');
 }
 
-function closeAddModal() { $('#addModal').classList.remove('open'); addTargetClass = null; }
+function closeAddModal() { closeModal('#addModal'); addTargetClass = null; }
 
 function confirmAddAsset() {
   const id = $('#newTicker').value.trim();
@@ -56,10 +107,11 @@ function confirmAddAsset() {
   if (raw !== '') { const v = parseFloat(raw.replace(',', '.')); if (!isNaN(v) && v >= 0) item.target = v; }
 
   addItem(addTargetClass, item);
-  savePortfolio(); closeAddModal(); rerender();
+  savePortfolio(); closeAddModal(); render();
   toast(id + ' adicionado');
 }
 
+/* Note modal */
 let noteClass = null, noteId = null;
 
 function openNoteModal(cls, id) {
@@ -67,23 +119,23 @@ function openNoteModal(cls, id) {
   const item = classItems(cls).find(a => a.id === id);
   $('#noteAssetName').textContent = id;
   $('#noteText').value = item?.note || '';
-  $('#noteModal').classList.add('open');
-  setTimeout(() => $('#noteText').focus(), 100);
+  openModal('#noteModal', '#noteText');
 }
 
-function closeNoteModal() { $('#noteModal').classList.remove('open'); noteClass = noteId = null; }
+function closeNoteModal() { closeModal('#noteModal'); noteClass = noteId = null; }
 
 function saveNote() {
-  if (noteClass && noteId) { setItemNote(noteClass, noteId, $('#noteText').value); closeNoteModal(); rerender(); }
+  if (noteClass && noteId) { setItemNote(noteClass, noteId, $('#noteText').value); closeNoteModal(); render(); }
 }
 
+/* Settings modal */
 function openSettings() {
   $('#brapiToken').value = state.settings.brapiToken || '';
   $('#finnhubToken').value = state.settings.finnhubToken || '';
-  $('#settingsModal').classList.add('open');
+  openModal('#settingsModal', '#brapiToken');
 }
 
-function closeSettings() { $('#settingsModal').classList.remove('open'); }
+function closeSettings() { closeModal('#settingsModal'); }
 
 function saveSettingsModal() {
   state.settings.brapiToken = $('#brapiToken').value.trim();
@@ -91,6 +143,7 @@ function saveSettingsModal() {
   saveSettings(); closeSettings(); toast('Configurações salvas');
 }
 
+/* Export / Import */
 function doExport() {
   const out = exportPortfolio();
   const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
@@ -107,59 +160,92 @@ function doImport(file) {
     try {
       const data = JSON.parse(e.target.result);
       if (!CLASS_KEYS.some(k => data[k]?.items)) throw new Error('Formato inválido');
-      importPortfolio(data); rerender(); hideLoading(); toast('Carteira importada');
+      importPortfolio(data); render(); hideLoading(); toast('Carteira importada');
       if (hasApiTokens()) refreshPrices();
     } catch (err) { hideLoading(); toast('Erro: ' + err.message); }
   };
   reader.readAsText(file);
 }
 
-// Events
+/* Event delegation on #panels — avoids rebinding after every render */
+$('#panels').addEventListener('click', e => {
+  const target = e.target.closest('[data-goto]');
+  if (target) { state.activeTab = target.dataset.goto; render(); return; }
 
-function bindPanelEvents() {
-  $$('[data-goto]').forEach(el => el.addEventListener('click', () => { state.activeTab = el.dataset.goto; rerender(); }));
-  $$('[data-tab]').forEach(el => el.addEventListener('click', () => { state.activeTab = el.dataset.tab; rerender(); }));
+  const addBtn = e.target.closest('.add-row, .add-to-empty');
+  if (addBtn) { openAddModal(addBtn.dataset.addClass); return; }
 
-  $$('.inline-input[data-field="amount"]').forEach(input => input.addEventListener('change', () => {
+  const removeBtn = e.target.closest('.remove-btn');
+  if (removeBtn) {
+    const items = classItems(removeBtn.dataset.class);
+    const idx = parseInt(removeBtn.dataset.idx);
+    const item = items[idx];
+    if (confirm('Remover ' + item.id + '?')) {
+      items.splice(idx, 1); savePortfolio(); render();
+      toast(item.id + ' removido');
+    }
+    return;
+  }
+
+  const toggleBtn = e.target.closest('[data-toggle-hidden]');
+  if (toggleBtn) { e.stopPropagation(); toggleClassHidden(toggleBtn.dataset.toggleHidden); render(); return; }
+
+  const noteEl = e.target.closest('.ticker-note');
+  if (noteEl) { openNoteModal(noteEl.dataset.noteClass, noteEl.dataset.noteId); return; }
+});
+
+$('#panels').addEventListener('change', e => {
+  const input = e.target.closest('.inline-input');
+  if (!input) return;
+
+  if (input.dataset.field === 'amount') {
     const val = parseFloat(input.value.replace(',', '.'));
-    if (!isNaN(val) && val >= 0) { classItems(input.dataset.class)[parseInt(input.dataset.idx)].amount = val; scheduleSave(); }
-  }));
+    if (!isNaN(val) && val >= 0) {
+      classItems(input.dataset.class)[parseInt(input.dataset.idx)].amount = val;
+      scheduleSave();
+    }
+    return;
+  }
 
-  $$('.inline-input[data-field="target"]').forEach(input => input.addEventListener('change', () => {
-    const items = classItems(input.dataset.class), idx = parseInt(input.dataset.idx), raw = input.value.trim();
+  if (input.dataset.field === 'target') {
+    const items = classItems(input.dataset.class);
+    const idx = parseInt(input.dataset.idx);
+    const raw = input.value.trim();
     if (raw === '') delete items[idx].target;
     else { const val = parseFloat(raw.replace(',', '.')); if (!isNaN(val) && val >= 0) items[idx].target = val; }
     scheduleSave();
-  }));
+    return;
+  }
 
-  $$('input[data-class-target]').forEach(input => {
-    input.addEventListener('click', e => e.stopPropagation());
-    input.addEventListener('change', () => {
-      const val = parseFloat(input.value.replace(',', '.'));
-      if (!isNaN(val) && val >= 0) { setClassTarget(input.dataset.classTarget, val); savePortfolio(); rerender(); }
-    });
-  });
+  const classTarget = e.target.closest('[data-class-target]');
+  if (classTarget) {
+    const val = parseFloat(classTarget.value.replace(',', '.'));
+    if (!isNaN(val) && val >= 0) {
+      setClassTarget(classTarget.dataset.classTarget, val);
+      savePortfolio(); render();
+    }
+  }
+});
 
-  $$('.remove-btn').forEach(btn => btn.addEventListener('click', () => {
-    const items = classItems(btn.dataset.class), idx = parseInt(btn.dataset.idx), item = items[idx];
-    if (confirm('Remover ' + item.id + '?')) { items.splice(idx, 1); savePortfolio(); rerender(); toast(item.id + ' removido'); }
-  }));
+/* Prevent class-target click from propagating to card navigation */
+$('#panels').addEventListener('click', e => {
+  if (e.target.closest('[data-class-target]')) e.stopPropagation();
+});
 
-  $$('.add-row, .add-to-empty').forEach(el => el.addEventListener('click', () => openAddModal(el.dataset.addClass)));
-  $$('[data-toggle-hidden]').forEach(btn => btn.addEventListener('click', e => { e.stopPropagation(); toggleClassHidden(btn.dataset.toggleHidden); rerender(); }));
-  $$('.ticker-note').forEach(el => el.addEventListener('click', () => openNoteModal(el.dataset.noteClass, el.dataset.noteId)));
-}
+/* Tab navigation — delegated */
+$('#tabNav').addEventListener('click', e => {
+  const btn = e.target.closest('[data-tab]');
+  if (btn) { state.activeTab = btn.dataset.tab; render(); }
+});
 
-// Drag & Drop
-
+/* Drag & Drop */
 let dragN = 0;
 document.addEventListener('dragenter', e => { e.preventDefault(); dragN++; $('#dropZone').classList.add('visible'); });
 document.addEventListener('dragleave', e => { e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); } });
 document.addEventListener('dragover', e => e.preventDefault());
 document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else toast('Apenas arquivos .json'); });
 
-// Global listeners
-
+/* Global button listeners */
 $('#btnExport').addEventListener('click', doExport);
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
@@ -168,6 +254,7 @@ $('#btnSettings').addEventListener('click', openSettings);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
+/* Modal button listeners */
 $('#modalCancel').addEventListener('click', closeAddModal);
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#addModal').addEventListener('click', e => { if (e.target.id === 'addModal') closeAddModal(); });
@@ -178,6 +265,7 @@ $('#noteCancel').addEventListener('click', closeNoteModal);
 $('#noteSave').addEventListener('click', saveNote);
 $('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
 
+/* Modal keyboard shortcuts */
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
@@ -191,6 +279,8 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* Service Worker */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-loadTheme(); loadSettings(); loadPortfolio(); loadCachedPrices(); rerender();
+/* Init */
+loadTheme(); loadSettings(); loadPortfolio(); loadCachedPrices(); render();

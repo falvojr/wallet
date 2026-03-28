@@ -1,6 +1,5 @@
 import { state, cachePrices, markBrQuoted, classItems } from './state.js';
 
-// Finnhub free tier: ~1 req/s sustained — 120ms gap keeps us safe
 const FINNHUB_DELAY_MS = 120;
 
 let fetching = false;
@@ -75,7 +74,6 @@ async function fetchUsQuote(ticker) {
 }
 
 async function fetchSovQuote(ticker) {
-  // Try AwesomeAPI first (direct BRL price), fall back to Finnhub (USD)
   try {
     const data = await fetchJson(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
     const entry = data?.[`${ticker}BRL`];

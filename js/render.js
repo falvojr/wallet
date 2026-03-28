@@ -15,6 +15,12 @@ const createIcons = () => { if (typeof lucide !== 'undefined') lucide.createIcon
 const hasItems    = key => classItems(key).length > 0;
 const countLabel  = n   => `${n} ativo${n !== 1 ? 's' : ''}`;
 
+/** Escapes HTML special characters to prevent XSS in template literals. */
+function escapeHtml(str) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(str).replace(/[&<>"']/g, c => map[c]);
+}
+
 function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}">
     <i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span>
@@ -33,9 +39,9 @@ const ignorarBadge = () => badge('ignorar', 'circle-pause', 'ignorar', 'Em quare
 function tickerUrl(key, id) {
   const p = state.prices[id];
   if ((key === 'brStocks' || key === 'brFiis') && (isBrQuoted(id) || p))
-    return `https://www.google.com/finance/quote/${id}:BVMF`;
+    return `https://www.google.com/finance/quote/${encodeURIComponent(id)}:BVMF`;
   if ((key === 'usStocks' || key === 'usReits') && p)
-    return `https://finance.yahoo.com/quote/${id}`;
+    return `https://finance.yahoo.com/quote/${encodeURIComponent(id)}`;
   return null;
 }
 
@@ -67,14 +73,16 @@ function renderTabs() {
   ];
 
   $('#tabNav').innerHTML = tabs.map(t => `
-    <button class="tab-btn${t.key === state.activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}" data-tab="${t.key}">
-      ${t.label}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
+    <button class="tab-btn${t.key === state.activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}"
+      data-tab="${t.key}" aria-current="${t.key === state.activeTab ? 'page' : 'false'}">
+      ${escapeHtml(t.label)}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
     </button>`).join('');
 }
 
 function renderPanels() {
   const wrap = (key, content) =>
-    `<div class="tab-panel${key === state.activeTab ? ' active' : ''}" data-panel="${key}">${content}</div>`;
+    `<div class="tab-panel${key === state.activeTab ? ' active' : ''}" data-panel="${key}"
+      role="tabpanel">${content}</div>`;
 
   $('#panels').innerHTML =
     wrap('overview', renderOverview()) +
@@ -123,13 +131,16 @@ function renderOverview() {
 
 function renderLegendRow(d) {
   const eye = d.hidden ? 'eye-off' : 'eye';
+  const action = d.hidden ? 'Reativar' : 'Ocultar';
   return `<div class="legend-row${d.hidden ? ' legend-row--hidden' : ''}">
     <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
-    <span class="legend-label" data-goto="${d.key}">${d.label}</span>
+    <span class="legend-label" data-goto="${d.key}">${escapeHtml(d.label)}</span>
     <span class="legend-amount${d.hidden ? ' legend-amount--hidden' : ''}">
       ${d.hasPrices ? formatBRL(d.total) : countLabel(d.count)}
     </span>
-    <button class="legend-eye" data-toggle-hidden="${d.key}" title="${d.hidden ? 'Reativar' : 'Ocultar'} classe">
+    <button class="legend-eye" data-toggle-hidden="${d.key}"
+      title="${action} classe ${escapeHtml(d.label)}"
+      aria-label="${action} classe ${escapeHtml(d.label)}">
       <i data-lucide="${eye}"></i>
     </button>
   </div>`;
@@ -146,20 +157,23 @@ function renderSummaryCard(key, defClasses) {
   return `<div class="summary-card" style="--card-color:${m.color}">
     <div class="summary-card-head">
       <span class="summary-card-label" data-goto="${key}">
-        <i data-lucide="${m.icon}" class="summary-icon"></i>${m.label}${isDef ? aportarBadge() : ''}
+        <i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(m.label)}${isDef ? aportarBadge() : ''}
       </span>
     </div>
     <div class="summary-card-value" data-goto="${key}">
       ${total !== null ? formatBRL(total) : countLabel(classItems(key).length)}
     </div>
-    <div class="summary-card-bar">
+    <div class="summary-card-bar" role="progressbar"
+      aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
+      aria-label="Alocação de ${escapeHtml(m.label)}: ${actual !== null ? actual.toFixed(1) : 0}% de ${target.toFixed(0)}%">
       <div class="summary-card-bar-fill" style="width:${pct}%"></div>
     </div>
     <div class="summary-card-meta">
       ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>'}
       <span class="summary-card-target-wrap">meta
         <input class="summary-card-target" type="text" value="${target.toFixed(0)}"
-          data-class-target="${key}" inputmode="decimal" title="Meta da classe (%)">%
+          data-class-target="${key}" inputmode="decimal"
+          title="Meta da classe (%)" aria-label="Meta de ${escapeHtml(m.label)} (%)">%
       </span>
     </div>
   </div>`;
@@ -171,13 +185,16 @@ function renderDonut(segments) {
 
   const R = 75, circumference = Math.PI * 2 * R;
   let offset = 0;
+
+  const descriptions = [];
   const arcs = segments.map(d => {
     const pct  = ((d.value / total) * 100).toFixed(1);
     const dash = (d.value / total) * circumference;
+    descriptions.push(`${d.label}: ${pct}%`);
     const arc  = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}"
       stroke-width="22" stroke-dasharray="${dash} ${circumference - dash}"
       stroke-dashoffset="${-offset}" opacity="0.88">
-      <title>${d.label}: ${formatBRL(d.value)} (${pct}%)</title>
+      <title>${escapeHtml(d.label)}: ${formatBRL(d.value)} (${pct}%)</title>
     </circle>`;
     offset += dash;
     return arc;
@@ -185,9 +202,10 @@ function renderDonut(segments) {
 
   const { total: ptotal, partial } = portfolioTotalBRL();
   const hasVal = ptotal > 0;
+  const ariaLabel = `Distribuição do portfólio: ${descriptions.join(', ')}`;
 
   return `<div class="donut-wrap">
-    <svg viewBox="0 0 200 200">${arcs.join('')}</svg>
+    <svg viewBox="0 0 200 200" role="img" aria-label="${escapeHtml(ariaLabel)}">${arcs.join('')}</svg>
     <div class="donut-center">
       <div class="total-label">${hasVal ? 'Patrimônio' : 'Total'}</div>
       <div class="total-value">
@@ -205,7 +223,7 @@ function renderClassPanel(key) {
 
   let html = `<div class="asset-section-header">
     <h2 class="asset-section-title" style="color:${meta.color}">
-      <i data-lucide="${meta.icon}" class="section-icon"></i>${meta.label}
+      <i data-lucide="${meta.icon}" class="section-icon"></i>${escapeHtml(meta.label)}
     </h2>
   </div>`;
 
@@ -230,7 +248,7 @@ function renderClassPanel(key) {
       <th class="col-r">Hoje</th>
       <th class="col-r">Total</th>
       <th class="col-r">Meta %</th>
-      <th class="col-action"></th>
+      <th class="col-action"><span class="sr-only">Ações</span></th>
     </tr></thead>
     <tbody>
       ${items.map((item, idx) => renderAssetRow(key, item, idx, meta, defItems)).join('')}
@@ -246,14 +264,15 @@ function renderAssetRow(key, item, idx, meta, defItems) {
   const quarantined = isQuarantined(item);
   const p           = state.prices[item.id];
   const value       = assetValueBRL(key, item);
+  const safeId      = escapeHtml(item.id);
 
   const { priceStr, changeHtml } = formatPriceCell(key, item, p);
 
-  const url      = tickerUrl(key, item.id);
-  const noteAttr = item.note ? ` title="${item.note.replace(/"/g, '&quot;')}"` : '';
-  const ticker   = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteAttr}>${item.id}</a>`
-    : `<span class="ticker-note${item.note ? ' has-note' : ''}" data-note-class="${key}" data-note-id="${item.id}"${noteAttr}>${item.id}</span>`;
+  const url = tickerUrl(key, item.id);
+  const noteAttr = item.note ? ` title="${escapeHtml(item.note)}"` : '';
+  const ticker = url
+    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteAttr}>${safeId}</a>`
+    : `<span class="ticker-note${item.note ? ' has-note' : ''}" data-note-class="${key}" data-note-id="${safeId}"${noteAttr}>${safeId}</span>`;
 
   const rowClass = isDef ? 'row-target' : quarantined ? 'row-quarantine' : '';
 
@@ -264,7 +283,7 @@ function renderAssetRow(key, item, idx, meta, defItems) {
     <td class="td-r">
       <input class="inline-input inline-input--qty" type="text" value="${item.amount}"
         data-class="${key}" data-idx="${idx}" data-field="amount"
-        inputmode="decimal" aria-label="Quantidade de ${item.id}">
+        inputmode="decimal" aria-label="Quantidade de ${safeId}">
     </td>
     <td class="td-price">${priceStr}</td>
     <td class="td-change">${changeHtml}</td>
@@ -274,10 +293,11 @@ function renderAssetRow(key, item, idx, meta, defItems) {
         value="${item.target !== undefined ? item.target : ''}"
         data-class="${key}" data-idx="${idx}" data-field="target"
         placeholder="auto" inputmode="decimal"
-        aria-label="Meta % de ${item.id} na classe" title="Meta do ativo na classe">
+        aria-label="Meta % de ${safeId} na classe" title="Meta do ativo na classe">
     </td>
     <td class="td-action">
-      <button class="remove-btn" data-class="${key}" data-idx="${idx}" title="Remover ${item.id}">
+      <button class="remove-btn" data-class="${key}" data-idx="${idx}"
+        title="Remover ${safeId}" aria-label="Remover ${safeId}">
         <i data-lucide="x" style="width:12px;height:12px"></i>
       </button>
     </td>
@@ -295,7 +315,8 @@ function formatPriceCell(key, item, p) {
     priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (p.change !== undefined) {
       const dir = p.change >= 0;
-      changeHtml = `<span class="${dir ? 'change-up' : 'change-down'}">${dir ? '+' : ''}${p.change.toFixed(2)}%</span>`;
+      const label = dir ? 'alta' : 'queda';
+      changeHtml = `<span class="${dir ? 'change-up' : 'change-down'}" title="${label} de ${Math.abs(p.change).toFixed(2)}%">${dir ? '+' : ''}${p.change.toFixed(2)}%</span>`;
     }
   }
 
