@@ -320,9 +320,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
-.donut-wrap { position: relative; width: 170px; height: 170px; }
+.donut-wrap { position: relative; width: 150px; height: 150px; }
 .donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .donut-wrap svg circle { transition: opacity var(--ease); }
 .donut-wrap svg circle:hover { opacity: 1 !important; filter: brightness(1.15); cursor: pointer; }
@@ -335,33 +335,31 @@ body {
   pointer-events: none;
 }
 .donut-center .total-label {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .donut-center .total-value {
   font-family: var(--font-h);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 .donut-center .total-sub { font-size: 0.65rem; color: var(--text-muted); margin-top: 1px; }
 .donut-empty { color: var(--text-muted); padding: 20px; font-size: 0.88rem; }
 
 /* Chart legend */
-.chart-legend { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.chart-legend { display: flex; flex-direction: column; width: 100%; }
 .legend-row {
   display: grid;
-  grid-template-columns: 8px 1fr auto 44px;
+  grid-template-columns: 8px 1fr auto 36px;
   gap: 8px;
   align-items: center;
-  padding: 4px 2px;
+  padding: 2px;
   font-size: 0.82rem;
   color: var(--text-secondary);
   border-radius: 6px;
-  transition: background var(--ease);
 }
-.legend-row:hover { background: var(--bg-elevated); }
 .legend-row--hidden { opacity: 0.4; }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .legend-label { cursor: pointer; transition: color var(--ease); font-size: 0.84rem; }
@@ -386,8 +384,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: var(--touch-min);
-  min-height: var(--touch-min);
+  min-width: 36px;
+  min-height: 36px;
   border-radius: var(--r-sm);
 }
 .legend-eye:hover { color: var(--text-primary); background: var(--bg-hover); }
@@ -505,23 +503,6 @@ body {
   border: 1px solid rgba(110, 119, 143, 0.2);
 }
 
-/* Asset section */
-.asset-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.asset-section-title {
-  font-family: var(--font-h);
-  font-size: 1.1rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.section-icon { width: 18px; height: 18px; }
-
 /* Ticker links */
 .ticker-link {
   color: inherit;
@@ -558,7 +539,7 @@ body {
   letter-spacing: 0.05em;
   font-weight: 700;
   text-align: left;
-  padding: 9px 10px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
   white-space: nowrap;
@@ -566,12 +547,12 @@ body {
   top: 0;
 }
 .asset-table thead th.col-r { text-align: right; }
-.asset-table thead th.col-action { width: 44px; }
+.asset-table thead th.col-action { width: 36px; }
 .asset-table tbody tr { transition: background var(--ease); }
 .asset-table tbody tr:hover { background: var(--bg-hover); }
 .asset-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
 .asset-table td {
-  padding: 8px 10px;
+  padding: 6px 10px;
   font-size: 0.85rem;
   vertical-align: middle;
   font-variant-numeric: tabular-nums;
@@ -581,7 +562,7 @@ body {
 .td-value { text-align: right; font-family: var(--font-h); font-weight: 600; }
 .td-price { color: var(--text-secondary); text-align: right; font-size: 0.82rem; }
 .td-change { font-size: 0.75rem; font-weight: 600; text-align: right; white-space: nowrap; }
-.td-action { text-align: center; width: 44px; }
+.td-action { text-align: center; width: 36px; }
 
 .change-up { color: var(--up); }
 .change-down { color: var(--down); }
@@ -608,10 +589,10 @@ body {
 .inline-input--qty { width: 90px; }
 .inline-input--target { width: 54px; }
 
-/* Remove button — meets 44px touch target */
+/* Remove button — compact, destructive action protected by confirm dialog */
 .remove-btn {
-  width: var(--touch-min);
-  height: var(--touch-min);
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -631,7 +612,7 @@ body {
 }
 
 .add-row td {
-  padding: 9px 10px;
+  padding: 7px 10px;
   text-align: center;
   cursor: pointer;
   color: var(--text-muted);
@@ -795,9 +776,9 @@ body {
   .header-inner { padding: 0 24px; max-width: 1280px; }
   .overview-grid { grid-template-columns: 290px 1fr; align-items: start; }
   .chart-card { padding: 20px; }
-  .donut-wrap { width: 185px; height: 185px; }
-  .donut-center .total-value { font-size: 1.25rem; }
-  .legend-row { font-size: 0.85rem; padding: 5px 4px; }
+  .donut-wrap { width: 160px; height: 160px; }
+  .donut-center .total-value { font-size: 1.15rem; }
+  .legend-row { font-size: 0.85rem; padding: 3px 4px; }
   .legend-amount { font-size: 0.85rem; }
   .summary-card { padding: 16px; }
   .summary-cards { gap: 14px; }
@@ -805,13 +786,12 @@ body {
   .summary-card-value { font-size: 1.15rem; }
   .summary-card-meta { font-size: 0.76rem; }
   .summary-card-target { font-size: 0.76rem; width: 32px; }
-  .asset-table td, .asset-table thead th { padding: 10px 14px; }
+  .asset-table td, .asset-table thead th { padding: 8px 14px; }
   .asset-table td { font-size: 0.88rem; }
   .td-ticker { font-size: 0.92rem; }
   .td-price { font-size: 0.85rem; }
   .td-change { font-size: 0.8rem; }
   .td-value { font-size: 0.9rem; }
-  .asset-section-title { font-size: 1.2rem; }
   .notice { font-size: 0.88rem; }
   .inline-input { font-size: 0.88rem; }
   .inline-input--qty { width: 100px; }
@@ -824,8 +804,8 @@ body {
   .header-brand h1 { font-size: 1.4rem; }
   .overview-grid { grid-template-columns: 330px 1fr; gap: 22px; }
   .summary-card-value { font-size: 1.25rem; }
-  .donut-wrap { width: 195px; height: 195px; }
-  .donut-center .total-value { font-size: 1.35rem; }
+  .donut-wrap { width: 170px; height: 170px; }
+  .donut-center .total-value { font-size: 1.2rem; }
   .chart-card { padding: 22px; }
   .inline-input--qty { width: 110px; }
   .asset-table td { font-size: 0.9rem; }
@@ -901,3 +881,9 @@ body {
   border-radius: 4px;
 }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Inline inputs use border-color change instead of outline to avoid overlap with adjacent text */
+.inline-input:focus-visible,
+.summary-card-target:focus-visible {
+  outline: none;
+}

@@ -221,11 +221,7 @@ function renderClassPanel(key) {
   const items = classItems(key);
   const hidden = isClassHidden(key);
 
-  let html = `<div class="asset-section-header">
-    <h2 class="asset-section-title" style="color:${meta.color}">
-      <i data-lucide="${meta.icon}" class="section-icon"></i>${escapeHtml(meta.label)}
-    </h2>
-  </div>`;
+  let html = `<h2 class="sr-only">${escapeHtml(meta.label)}</h2>`;
 
   if (hidden)
     html += notice('eye-off', 'Classe oculta. Valores não contabilizados no patrimônio e sem sugestões de aporte.', 'info');
