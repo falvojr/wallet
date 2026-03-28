@@ -74,19 +74,15 @@ async function fetchUsQuote(ticker) {
 }
 
 async function fetchSovQuote(ticker) {
-  try {
-    const data = await fetchJson(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
-    const entry = data?.[`${ticker}BRL`];
-    if (entry) {
-      state.prices[ticker] = {
-        price:    parseFloat(entry.bid),
-        currency: 'BRL',
-        change:   parseFloat(entry.pctChange),
-      };
-      return;
-    }
-  } catch (e) {
-    console.warn(`awesomeapi (${ticker}):`, e);
+  const data = await fetchJsonSoft(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
+  const entry = data?.[`${ticker}BRL`];
+  if (entry) {
+    state.prices[ticker] = {
+      price:    parseFloat(entry.bid),
+      currency: 'BRL',
+      change:   parseFloat(entry.pctChange),
+    };
+    return;
   }
   await fetchUsQuote(ticker);
 }
@@ -95,6 +91,14 @@ async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
   return res.json();
+}
+
+/** Like fetchJson but returns null on failure instead of throwing — used for expected fallbacks. */
+async function fetchJsonSoft(url) {
+  try {
+    const res = await fetch(url);
+    return res.ok ? res.json() : null;
+  } catch { return null; }
 }
 
 const delay = ms => new Promise(r => setTimeout(r, ms));
