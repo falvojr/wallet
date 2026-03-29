@@ -1,6 +1,6 @@
 import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab } from './state.js';
 import {
-  formatBRL, formatCompact, assetValueBRL, classTotalBRL, portfolioTotalBRL, classTargetPct, classActualPct,
+  formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, classTargetPct, classActualPct,
   isQuarantined, allocationWarning, deficientClasses, deficientItems, itemTargetPct, allAssetsWeighted,
 } from './calc.js';
 
@@ -90,28 +90,29 @@ function renderOverview() {
 function renderChartsTab() {
   const populated = CLASS_KEYS.filter(k => portfolio.items(k).length > 0);
   const chartData = populated.map(k => {
-    const hidden = portfolio.isHidden(k);
-    const total = classTotalBRL(k);
-    const count = portfolio.items(k).length;
-    return { key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, icon: CLASS_META[k].icon, value: hidden ? 0 : (total ?? count * 0.01), count, hasPrices: total !== null, total, hidden };
+    const hidden = portfolio.isHidden(k), total = classTotalBRL(k), count = portfolio.items(k).length;
+    return { key: k, label: CLASS_META[k].label, color: CLASS_META[k].color, value: hidden ? 0 : (total ?? count * 0.01), count, hasPrices: total !== null, total, hidden };
   });
 
-  let html = `<div class="charts-grid">`;
-  html += `<div class="chart-card"><h3 class="chart-title">Alocação por Classe</h3>${renderDonut(chartData.filter(d => !d.hidden))}
-    <div class="chart-legend">${chartData.map(renderLegendRow).join('')}</div></div>`;
-  html += `<div class="chart-card"><h3 class="chart-title">Mapa da Carteira</h3><div id="bubbleChart" class="bubble-container"></div></div>`;
-  html += `</div>`;
+  const { total, partial } = portfolioTotalBRL();
+  const headerValue = total > 0 ? formatBRL(total) + (partial ? ' (parcial)' : '') : `${populated.reduce((s, k) => s + portfolio.items(k).length, 0)} ativos`;
+
+  let html = `<div class="chart-fullwidth">
+    <div class="chart-header"><span class="chart-header-label">Patrimônio</span><span class="chart-header-value">${headerValue}</span></div>
+    <div id="bubbleChart" class="bubble-container"></div>
+    <div class="chart-legend-bar">${chartData.map(renderLegendChip).join('')}</div>
+  </div>`;
   return html;
 }
 
-function renderLegendRow(d) {
+function renderLegendChip(d) {
   const eye = d.hidden ? 'eye-off' : 'eye';
   const action = d.hidden ? 'Reativar' : 'Ocultar';
-  return `<div class="legend-row${d.hidden ? ' legend-row--hidden' : ''}">
+  return `<div class="legend-chip${d.hidden ? ' legend-chip--hidden' : ''}">
     <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
-    <span class="legend-label" data-goto="${d.key}">${escapeHtml(d.label)}</span>
-    <span class="legend-amount${d.hidden ? ' legend-amount--hidden' : ''}">${d.hasPrices ? formatBRL(d.total) : countLabel(d.count)}</span>
-    <button class="legend-eye" data-toggle-hidden="${d.key}" title="${action} classe ${escapeHtml(d.label)}" aria-label="${action} classe ${escapeHtml(d.label)}"><i data-lucide="${eye}"></i></button>
+    <span class="legend-chip-label" data-goto="${d.key}">${escapeHtml(d.label)}</span>
+    <span class="legend-chip-value">${d.hasPrices ? formatBRL(d.total) : countLabel(d.count)}</span>
+    <button class="legend-eye-sm" data-toggle-hidden="${d.key}" title="${action} classe" aria-label="${action} classe ${escapeHtml(d.label)}"><i data-lucide="${eye}"></i></button>
   </div>`;
 }
 
@@ -138,32 +139,12 @@ function renderSummaryCard(key, defClasses) {
   </div>`;
 }
 
-function renderDonut(segments) {
-  const total = segments.reduce((s, d) => s + d.value, 0);
-  if (total === 0) return '<p class="donut-empty">Sem dados</p>';
-
-  const R = 75, circ = Math.PI * 2 * R;
-  let offset = 0;
-  const descriptions = [];
-  const arcs = segments.map(d => {
-    const pct = ((d.value / total) * 100).toFixed(1), dash = (d.value / total) * circ;
-    descriptions.push(`${d.label}: ${pct}%`);
-    const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${d.color}" stroke-width="22" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset}" opacity="0.88"><title>${escapeHtml(d.label)}: ${formatBRL(d.value)} (${pct}%)</title></circle>`;
-    offset += dash;
-    return arc;
-  });
-
-  const { total: ptotal, partial } = portfolioTotalBRL();
-  const hasVal = ptotal > 0;
-
-  return `<div class="donut-wrap">
-    <svg viewBox="0 0 200 200" role="img" aria-label="Distribuição: ${descriptions.join(', ')}">${arcs.join('')}</svg>
-    <div class="donut-center">
-      <div class="total-label">${hasVal ? 'Patrimônio' : 'Total'}</div>
-      <div class="total-value">${hasVal ? formatCompact(ptotal) : segments.reduce((s, d) => s + d.count, 0) + ' ativos'}</div>
-      ${hasVal && partial ? '<div class="total-sub">(parcial)</div>' : ''}
-    </div>
-  </div>`;
+/** Abbreviates a label to fit within a circle of given radius. */
+function fitLabel(name, radius) {
+  const fontSize = Math.min(radius * 0.45, 14);
+  const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
+  if (name.length <= maxChars) return name;
+  return maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
 }
 
 /**
@@ -179,7 +160,7 @@ function renderBubbleChart() {
 
   const { total } = portfolioTotalBRL();
   const width = container.clientWidth || 500;
-  const height = Math.max(350, width * 0.75);
+  const height = Math.max(400, Math.min(width * 0.85, 600));
 
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
   d3.pack().size([width, height]).padding(3)(root);
@@ -192,9 +173,14 @@ function renderBubbleChart() {
 
   nodes.append('title').text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return `${d.data.id}: ${formatBRL(d.data.value)} (${pct}%)`; });
 
-  nodes.filter(d => d.r > 18).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central').attr('fill', 'var(--text-primary)').attr('font-family', 'var(--font-h)').attr('font-weight', '700').attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => d.data.id);
+  nodes.filter(d => d.r > 16).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+    .attr('fill', 'var(--text-primary)').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
+    .attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => fitLabel(d.data.id, d.r));
 
-  nodes.filter(d => d.r > 30).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central').attr('dy', d => d.r * 0.35).attr('fill', 'var(--text-secondary)').attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10)).text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; });
+  nodes.filter(d => d.r > 28).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+    .attr('dy', d => d.r * 0.35).attr('fill', 'var(--text-secondary)').attr('font-family', 'var(--font-b)')
+    .attr('font-size', d => Math.min(d.r * 0.28, 10))
+    .text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; });
 }
 
 function sortIndicator(col) {

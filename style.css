@@ -304,94 +304,42 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Charts grid — used in the Gráficos tab */
-.charts-grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
-.chart-title { font-family: var(--font-h); font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-align: center; }
-.bubble-container { width: 100%; min-height: 300px; }
-.bubble-container svg { width: 100%; height: auto; display: block; }
-
-/* Overview — summary cards as standalone full-width grid */
-.summary-cards--overview { grid-template-columns: 1fr 1fr; }
-
-/* Chart card */
-.chart-card {
+/* Charts — fullwidth bubble chart with integrated legend */
+.chart-fullwidth {
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
 }
-.donut-wrap { position: relative; width: 150px; height: 150px; }
-.donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.donut-wrap svg circle { transition: opacity var(--ease); }
-.donut-wrap svg circle:hover { opacity: 1 !important; filter: brightness(1.15); cursor: pointer; }
-.donut-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-}
-.donut-center .total-label {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.donut-center .total-value {
-  font-family: var(--font-h);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-.donut-center .total-sub { font-size: 0.65rem; color: var(--text-muted); margin-top: 1px; }
-.donut-empty { color: var(--text-muted); padding: 20px; font-size: 0.88rem; }
+.chart-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.chart-header-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.chart-header-value { font-family: var(--font-h); font-size: 1.2rem; font-weight: 700; }
 
-/* Chart legend */
-.chart-legend { display: flex; flex-direction: column; width: 100%; }
-.legend-row {
-  display: grid;
-  grid-template-columns: 8px 1fr auto 36px;
-  gap: 8px;
-  align-items: center;
-  padding: 2px;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  border-radius: 6px;
+.bubble-container { width: 100%; min-height: 300px; }
+.bubble-container svg { width: 100%; height: auto; display: block; }
+.donut-empty { color: var(--text-muted); padding: 20px; font-size: 0.88rem; text-align: center; }
+
+.chart-legend-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.legend-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 8px; border-radius: var(--r-sm);
+  background: var(--bg-elevated); font-size: 0.78rem; color: var(--text-secondary);
+  transition: opacity var(--ease);
 }
-.legend-row--hidden { opacity: 0.4; }
+.legend-chip--hidden { opacity: 0.35; }
 .legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.legend-label { cursor: pointer; transition: color var(--ease); font-size: 0.84rem; }
-.legend-label:hover { color: var(--text-primary); }
-.legend-amount {
-  font-family: var(--font-h);
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.legend-chip-label { cursor: pointer; transition: color var(--ease); }
+.legend-chip-label:hover { color: var(--text-primary); }
+.legend-chip-value { font-family: var(--font-h); font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.legend-eye-sm {
+  background: none; border: none; padding: 2px; cursor: pointer;
+  color: var(--text-muted); transition: color var(--ease); display: flex; align-items: center;
 }
-.legend-amount--hidden { text-decoration: line-through; color: var(--text-muted); }
-.legend-eye {
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: color var(--ease);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 36px;
-  min-height: 36px;
-  border-radius: var(--r-sm);
-}
-.legend-eye:hover { color: var(--text-primary); background: var(--bg-hover); }
-.legend-eye svg { width: 14px; height: 14px; }
+.legend-eye-sm:hover { color: var(--text-primary); }
+.legend-eye-sm svg { width: 12px; height: 12px; }
+
+/* Overview — summary cards as standalone full-width grid */
+.summary-cards--overview { grid-template-columns: 1fr 1fr; }
 
 /* Summary cards */
 .summary-cards {
@@ -795,13 +743,9 @@ tr:hover .note-btn { opacity: 0.6; }
 @media (min-width: 768px) {
   .app-container { padding: 0 24px 100px; max-width: 1280px; }
   .header-inner { padding: 0 24px; max-width: 1280px; }
-  .charts-grid { grid-template-columns: 1fr 1fr; }
+  .chart-fullwidth { padding: 20px; }
+  .chart-header-value { font-size: 1.3rem; }
   .summary-cards--overview { grid-template-columns: repeat(3, 1fr); }
-  .chart-card { padding: 20px; }
-  .donut-wrap { width: 160px; height: 160px; }
-  .donut-center .total-value { font-size: 1.15rem; }
-  .legend-row { font-size: 0.85rem; padding: 3px 4px; }
-  .legend-amount { font-size: 0.85rem; }
   .summary-card { padding: 16px; }
   .summary-cards { gap: 14px; }
   .summary-card-label { font-size: 0.75rem; }
@@ -824,12 +768,10 @@ tr:hover .note-btn { opacity: 0.6; }
   .app-container { max-width: 1440px; padding: 0 32px 100px; }
   .header-inner { max-width: 1440px; padding: 0 32px; }
   .header-brand h1 { font-size: 1.4rem; }
-  .charts-grid { gap: 22px; }
+  .chart-fullwidth { padding: 24px; }
+  .chart-header-value { font-size: 1.4rem; }
   .summary-cards--overview { grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .summary-card-value { font-size: 1.25rem; }
-  .donut-wrap { width: 170px; height: 170px; }
-  .donut-center .total-value { font-size: 1.2rem; }
-  .chart-card { padding: 22px; }
   .inline-input--qty { width: 110px; }
   .asset-table td { font-size: 0.9rem; }
   .td-ticker { font-size: 0.95rem; }

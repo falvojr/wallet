@@ -9,13 +9,21 @@ Dashboard pessoal para carteira de investimentos Buy and Hold. Funciona 100% no 
 ## Começando
 
 1. Acesse **[falvojr.github.io/wallet](https://falvojr.github.io/wallet)**;
-2. Crie seu `portfolio.json` seguindo o modelo abaixo e importe (ou arraste) na tela;
+2. Importe um `portfolio.json` (arraste ou clique em Importar), ou monte sua carteira diretamente pela interface;
 3. Em ⚙️, adicione tokens gratuitos do [brapi.dev](https://brapi.dev) e/ou [Finnhub](https://finnhub.io) para cotações;
 4. Clique em **Cotar** para buscar preços (ficam em cache por 24h).
 
 Tudo é salvo localmente no navegador. Para backup, exporte o JSON.
 
 > Quer rodar sua própria cópia? Faça fork e ative GitHub Pages, ou rode `npx serve .` localmente.
+
+### Montando a carteira pela interface
+
+Você pode criar sua carteira do zero sem precisar de um arquivo JSON:
+
+1. Importe um JSON mínimo (ex: `{ "brStocks": { "target": 25, "items": [] } }`) ou com pelo menos uma classe;
+2. Use o botão **+ Adicionar ativo** dentro de cada classe para incluir ativos;
+3. Quantidade zero é permitida — útil para reservar posição em ativos que você pretende comprar.
 
 ---
 
@@ -76,13 +84,27 @@ Cada classe tem um `target` (meta % do portfólio) e seus `items`:
 | Campo | Descrição |
 |-------|-----------|
 | `id` | Ticker (ex: `WEGE3`, `AAPL`) ou nome livre (ex: `Tesouro Selic`) |
-| `amount` | Quantidade de cotas, ou valor em R$ para renda fixa e bens |
+| `amount` | Quantidade de cotas (0 para reservar posição), ou valor em R$ para renda fixa e bens |
 | `target` | Meta % dentro da classe (vazio = distribuição igual, `0` = quarentena) |
-| `note` | Comentário pessoal (aparece ao clicar no nome do ativo) |
+| `note` | Comentário pessoal (acessível pelo ícone 💬 ao lado do nome do ativo) |
 
 ---
 
-## Rebalanceamento
+## Funcionalidades
+
+### Visão Geral
+
+Cards de resumo por classe mostrando valor total, alocação atual vs. meta, e barra de progresso. A tag `APORTAR` aparece nas classes com maior necessidade de aporte.
+
+### Gráficos
+
+Mapa da Carteira em formato de bolhas (*circle-packing*), onde o tamanho de cada círculo representa a proporção do ativo no portfólio total. Cores indicam a classe do ativo. A legenda permite ocultar/reativar classes e navegar para a aba correspondente.
+
+### Tabelas de Ativos
+
+Cada classe tem sua aba com tabela completa dos ativos. As colunas são ordenáveis (clique no cabeçalho) e incluem: nome, quantidade, preço atual, variação do dia, valor total e meta %. Todos os campos de quantidade e meta são editáveis inline.
+
+### Rebalanceamento
 
 A tag `APORTAR` aparece nas classes e ativos com maior necessidade de aporte, com base na diferença entre a alocação atual e a meta:
 
@@ -93,12 +115,17 @@ A tag `APORTAR` aparece nas classes e ativos com maior necessidade de aporte, co
 
 O objetivo é apontar onde o portfólio está mais desbalanceado, não dizer exatamente quanto aportar.
 
+### Comentários
+
+Cada ativo tem um ícone de comentário (💬) ao lado do nome. Clique para adicionar ou editar uma nota pessoal (ex: data de vencimento, rentabilidade, observações). O comentário aparece como tooltip ao passar o mouse.
+
 ---
 
 ## Tecnologias
 
-Feito com HTML, CSS e JS puros. Sem frameworks, sem backend. Funciona offline via Service Worker.
+Feito com HTML, CSS e JS puros (ES2023+). Sem frameworks, sem backend. Funciona offline via Service Worker.
 
+- [D3.js](https://d3js.org): visualização de dados (bubble chart);
 - [Lucide Icons](https://lucide.dev): ícones;
 - [Google Fonts](https://fonts.google.com): tipografia (Outfit + Plus Jakarta Sans);
 - [brapi.dev](https://brapi.dev): cotações B3 (Ações e FIIs);

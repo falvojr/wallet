@@ -4,12 +4,6 @@ export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-export function formatCompact(val) {
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1) + 'M';
-  if (val >= 1_000)     return (val / 1_000).toFixed(1) + 'K';
-  return val.toFixed(0);
-}
-
 /** Returns asset value in BRL, or null if price is unavailable. */
 export function assetValueBRL(key, asset) {
   if (key === 'fixedIncome' || key === 'assets') return asset.amount;
