@@ -1,7 +1,7 @@
 const CACHE_NAME = 'holding';
 const APP_FILES = [
   './index.html', './style.css', './app.js',
-  './js/state.js', './js/calc.js', './js/api.js', './js/render.js',
+  './js/state.js', './js/calc.js', './js/api.js', './js/render.js', './js/i18n.js',
   './manifest.json',
 ];
 

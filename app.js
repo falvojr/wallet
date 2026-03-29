@@ -1,4 +1,5 @@
 import { CLASS_KEYS, portfolio, prices, settings, setActiveTab, loadTheme, toggleTheme } from './js/state.js';
+import { t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
 import { render, toggleSort } from './js/render.js';
 
@@ -48,10 +49,10 @@ function scheduleSave() {
 }
 
 async function refreshPrices() {
-  if (!settings.hasTokens) { toast('Configure os tokens de API em ⚙️'); return; }
+  if (!settings.hasTokens) { toast(t('toastConfigTokens')); return; }
   const ok = await fetchAllPrices(showLoading);
   hideLoading(); render();
-  toast(ok ? 'Cotações atualizadas' : 'Erro ao buscar cotações');
+  toast(ok ? t('toastPricesOk') : t('toastPricesFail'));
 }
 
 /** Keeps Tab cycling inside an open modal. */
@@ -113,7 +114,7 @@ function confirmAddAsset() {
   const amount = parseFloat($('#newAmount').value.replace(',', '.'));
   if (!id) { $('#newTicker').focus(); return; }
   if (isNaN(amount) || amount < 0) { $('#newAmount').focus(); return; }
-  if (portfolio.items(addTargetClass).find(a => a.id === id)) { toast(id + ' já existe'); return; }
+  if (portfolio.items(addTargetClass).find(a => a.id === id)) { toast(t('toastExists', id)); return; }
 
   const item = { id, amount };
   const raw = $('#newTarget').value.trim();
@@ -121,7 +122,7 @@ function confirmAddAsset() {
 
   portfolio.addItem(addTargetClass, item);
   portfolio.save(); closeAddModal(); render();
-  toast(id + ' adicionado');
+  toast(t('toastAdded', id));
 }
 
 let noteClass = null, noteId = null;
@@ -154,7 +155,7 @@ function closeSettings() { closeModal('#settingsModal'); }
 function saveSettingsModal() {
   settings.brapiToken  = $('#brapiToken').value.trim();
   settings.finnhubToken = $('#finnhubToken').value.trim();
-  settings.save(); closeSettings(); toast('Configurações salvas');
+  settings.save(); closeSettings(); toast(t('toastSettingsSaved'));
 }
 
 function doExport() {
@@ -163,21 +164,21 @@ function doExport() {
   const url = URL.createObjectURL(blob);
   Object.assign(document.createElement('a'), { href: url, download: 'portfolio_' + (out.syncedAt || 'export') + '.json' }).click();
   URL.revokeObjectURL(url);
-  toast('JSON exportado');
+  toast(t('toastExported'));
 }
 
 function doImport(file) {
-  showLoading('Importando...');
+  showLoading(t('loadingImporting'));
   const reader = new FileReader();
   reader.onload = e => {
     try {
       const data = JSON.parse(e.target.result);
-      if (!CLASS_KEYS.some(k => data[k]?.items)) throw new Error('Formato inválido');
+      if (!CLASS_KEYS.some(k => data[k]?.items)) throw new Error(t('toastInvalidFormat'));
       portfolio.import(data);
       setActiveTab('overview'); render(); hideLoading();
-      toast('Carteira importada');
+      toast(t('toastImported'));
       if (settings.hasTokens) refreshPrices();
-    } catch (err) { hideLoading(); toast('Erro: ' + err.message); }
+    } catch (err) { hideLoading(); toast(t('toastErrorPrefix') + err.message); }
   };
   reader.readAsText(file);
 }
@@ -197,15 +198,12 @@ $('#panels').addEventListener('click', e => {
     const item = { ...items[idx] };
     items.splice(idx, 1);
     portfolio.save(); render();
-    toast(item.id + ' removido', {
-      label: 'Desfazer',
+    toast(t('toastRemoved', item.id), {
+      label: t('toastUndo'),
       handler() { portfolio.addItem(cls, item); portfolio.save(); render(); },
     });
     return;
   }
-
-  const toggleBtn = e.target.closest('[data-toggle-hidden]');
-  if (toggleBtn) { e.stopPropagation(); portfolio.toggleHidden(toggleBtn.dataset.toggleHidden); render(); return; }
 
   const noteBtn = e.target.closest('.note-btn');
   if (noteBtn) { openNoteModal(noteBtn.dataset.noteClass, noteBtn.dataset.noteId); return; }
@@ -256,21 +254,22 @@ $('#tabNav').addEventListener('click', e => {
   if (btn) { setActiveTab(btn.dataset.tab); render(); }
 });
 
-/* Drag & Drop — only react to external file drags, not internal element drags */
+/* Drag & Drop — only react to external file drags */
 function isFileDrag(e) { return e.dataTransfer?.types?.includes('Files'); }
 
 let dragN = 0;
 document.addEventListener('dragenter', e => { if (!isFileDrag(e)) return; e.preventDefault(); dragN++; $('#dropZone').classList.add('visible'); });
 document.addEventListener('dragleave', e => { if (!isFileDrag(e)) return; e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); } });
 document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
-document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else if (f) toast('Apenas arquivos .json'); });
+document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else if (f) toast(t('toastJsonOnly')); });
 
-$('#btnExport').addEventListener('click', doExport);
+/* Header buttons — M3 order: secondary actions left-to-right, primary action last */
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
-$('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
-$('#btnPrices').addEventListener('click', refreshPrices);
-$('#btnSettings').addEventListener('click', openSettings);
+$('#btnExport').addEventListener('click', doExport);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
+$('#btnSettings').addEventListener('click', openSettings);
+$('#btnPrices').addEventListener('click', refreshPrices);
+$('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
 $('#modalCancel').addEventListener('click', closeAddModal);

@@ -18,12 +18,13 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="header-brand"><h1>Minha Holding</h1></div>
+      <!-- M3: secondary icon buttons → primary FAB-style last -->
       <div class="header-actions" id="headerActions" hidden>
-        <button class="btn" id="btnSettings" title="Configurações de API" aria-label="Configurações de API"><i data-lucide="settings"></i></button>
-        <button class="btn" id="btnTheme" title="Alternar tema" aria-label="Alternar tema claro e escuro"><i data-lucide="sun-moon"></i></button>
-        <button class="btn" id="btnImport" title="Importar JSON" aria-label="Importar carteira JSON"><i data-lucide="download"></i></button>
-        <button class="btn" id="btnExport" title="Exportar JSON" aria-label="Exportar carteira JSON"><i data-lucide="upload"></i></button>
-        <button class="btn btn--primary" id="btnPrices" title="Atualizar cotações" aria-label="Atualizar cotações">
+        <button class="icon-btn" id="btnImport" title="Importar carteira JSON" aria-label="Importar carteira JSON"><i data-lucide="download"></i></button>
+        <button class="icon-btn" id="btnExport" title="Exportar carteira JSON" aria-label="Exportar carteira JSON"><i data-lucide="upload"></i></button>
+        <button class="icon-btn" id="btnTheme" title="Alternar tema claro e escuro" aria-label="Alternar tema claro e escuro"><i data-lucide="sun-moon"></i></button>
+        <button class="icon-btn" id="btnSettings" title="Configurações de API" aria-label="Configurações de API"><i data-lucide="settings"></i></button>
+        <button class="btn btn--filled" id="btnPrices" title="Atualizar cotações" aria-label="Atualizar cotações">
           <i data-lucide="refresh-cw"></i><span class="btn-label">Cotar</span>
         </button>
       </div>
@@ -35,7 +36,7 @@
       <div class="empty-icon"><i data-lucide="download" style="width:40px;height:40px"></i></div>
       <h2>Importe sua carteira</h2>
       <p>Arraste um arquivo <code>.json</code> ou clique para carregar.</p>
-      <button class="btn btn--primary btn--lg" id="btnWelcomeImport">Importar JSON</button>
+      <button class="btn btn--filled btn--lg" id="btnWelcomeImport">Importar JSON</button>
     </div>
     <nav class="tab-nav" id="tabNav" aria-label="Navegação por classe de ativos"></nav>
     <div id="panels"></div>
@@ -58,8 +59,8 @@
       <div class="modal-field"><label for="newTarget">Meta % (dentro da classe)</label>
         <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal" autocomplete="off"></div>
       <div class="modal-actions">
-        <button class="btn" id="modalCancel">Cancelar</button>
-        <button class="btn btn--primary" id="modalConfirm">Adicionar</button>
+        <button class="btn btn--text" id="modalCancel">Cancelar</button>
+        <button class="btn btn--filled" id="modalConfirm">Adicionar</button>
       </div>
     </div>
   </div>
@@ -70,8 +71,8 @@
       <p class="modal-hint">Nota sobre <strong id="noteAssetName"></strong></p>
       <div class="modal-field"><textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI" aria-label="Comentário sobre o ativo"></textarea></div>
       <div class="modal-actions">
-        <button class="btn" id="noteCancel">Cancelar</button>
-        <button class="btn btn--primary" id="noteSave">Salvar</button>
+        <button class="btn btn--text" id="noteCancel">Cancelar</button>
+        <button class="btn btn--filled" id="noteSave">Salvar</button>
       </div>
     </div>
   </div>
@@ -87,8 +88,8 @@
         <input type="text" id="finnhubToken" placeholder="Crie grátis em finnhub.io" autocomplete="off">
         <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
       <div class="modal-actions">
-        <button class="btn" id="settingsCancel">Cancelar</button>
-        <button class="btn btn--primary" id="settingsSave">Salvar</button>
+        <button class="btn btn--text" id="settingsCancel">Cancelar</button>
+        <button class="btn btn--filled" id="settingsSave">Salvar</button>
       </div>
     </div>
   </div>

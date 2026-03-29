@@ -6,7 +6,7 @@ export function formatBRL(val) {
 
 /** Returns asset value in BRL, or null if price is unavailable. */
 export function assetValueBRL(key, asset) {
-  if (key === 'fixedIncome' || key === 'assets') return asset.amount;
+  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve') return asset.amount;
 
   const p = prices.get(asset.id);
   if (!p) return key === 'storeOfValue' ? asset.amount : null;
@@ -23,9 +23,10 @@ export function classTotalBRL(key) {
   return hasValue ? total : null;
 }
 
+/** Full patrimônio — includes ALL classes (active + inactive). */
 export function portfolioTotalBRL() {
   let total = 0, partial = false;
-  for (const key of portfolio.visibleKeys()) {
+  for (const key of portfolio.allKeys()) {
     const val = classTotalBRL(key);
     if (val !== null) total += val;
     else if (portfolio.items(key).length > 0) partial = true;
@@ -35,6 +36,7 @@ export function portfolioTotalBRL() {
 
 export const isQuarantined  = item => item.target === 0;
 export const classTargetPct = key  => portfolio.target(key);
+export const isClassInactive = key => portfolio.target(key) === 0;
 
 export function classActualPct(key) {
   const val       = classTotalBRL(key);
@@ -49,39 +51,18 @@ export function itemTargetPct(key, item) {
 }
 
 export function allocationWarning() {
-  const sum = portfolio.visibleKeys().reduce((acc, key) => acc + classTargetPct(key), 0);
+  const sum = portfolio.activeKeys().reduce((acc, key) => acc + classTargetPct(key), 0);
   return Math.abs(sum - 100) < 0.1 ? null : { sum: Math.round(sum) };
 }
 
 /**
  * Threshold-based greedy rebalancing algorithm.
  *
- * Identifies where to allocate new capital by comparing each asset class's
- * actual allocation against its target percentage. Uses a proportional
- * threshold to filter noise from minor deviations, then greedily selects
- * the most underweight classes and assets.
+ * Only considers active classes (target > 0).
  *
  * Two-level approach:
- *
- * 1. **Class level** ({@link deficientClasses}):
- *    - Compute deficit = target% − actual% for each visible class.
- *    - Ignore classes where deficit < threshold (10% of target, min 0.5pp).
- *      This avoids suggesting rebalancing for a class at 24.5% when target is 25%.
- *    - Sort by deficit descending, return top 1–3 as "aportar" suggestions.
- *
- * 2. **Asset level** ({@link deficientItems}):
- *    - Within a deficient class, compute each asset's gap from its
- *      within-class target (explicit or auto-distributed equally).
- *    - Score = asset_gap × class_deficit, so assets in severely underweight
- *      classes are prioritized over similar gaps in mildly underweight ones.
- *    - Sort by score descending, return top 1–3.
- *
- * The algorithm intentionally does NOT prescribe amounts. It answers
- * "where should I invest next?" rather than "how much should I invest?",
- * aligning with a Buy and Hold philosophy of gradual, direction-oriented
- * rebalancing through new contributions.
- *
- * Assets in quarantine (target = 0) and hidden classes are excluded.
+ * 1. Class level: deficit = target% − actual%, filtered by threshold.
+ * 2. Asset level: within-class gap × class deficit, sorted by score.
  */
 
 const THRESHOLD_MIN    = 0.5;
@@ -102,9 +83,9 @@ function recLimit(count) {
   return count >= 2 ? 1 : 0;
 }
 
-/** Returns the keys of classes with the largest allocation deficit (up to 3). */
+/** Returns the keys of active classes with the largest allocation deficit (up to 3). */
 export function deficientClasses() {
-  const ranked = portfolio.visibleKeys()
+  const ranked = portfolio.activeKeys()
     .filter(key => portfolio.items(key).length > 0)
     .map(key => ({ key, gap: classDeficit(key) }))
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
@@ -116,7 +97,7 @@ export function deficientClasses() {
 
 /** Returns the IDs of assets within a class that have the largest allocation deficit. */
 export function deficientItems(key) {
-  if (portfolio.isHidden(key)) return [];
+  if (isClassInactive(key)) return [];
 
   const items = portfolio.items(key).filter(a => !isQuarantined(a));
   const total = classTotalBRL(key);
@@ -137,10 +118,10 @@ export function deficientItems(key) {
   return ranked.slice(0, recLimit(items.length)).map(r => r.id);
 }
 
-/** Returns all visible assets with their BRL value and class metadata, for the bubble chart. */
+/** Returns all assets with their BRL value and class metadata, for the bubble chart. */
 export function allAssetsWeighted() {
   const assets = [];
-  for (const key of portfolio.visibleKeys()) {
+  for (const key of portfolio.allKeys()) {
     const color = CLASS_META[key].color;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);

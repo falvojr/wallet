@@ -1,3 +1,5 @@
+import { tn } from './i18n.js';
+
 const STORAGE_KEY  = 'holding_portfolio';
 const SETTINGS_KEY = 'holding_settings';
 const PRICES_KEY   = 'holding_prices';
@@ -5,14 +7,20 @@ const PRICES_TTL   = 24 * 60 * 60 * 1000;
 const THEME_KEY    = 'holding_theme';
 
 export const CLASS_META = {
-  brStocks:     { label: 'Ações',            color: '#4ade80', icon: 'trending-up' },
-  brFiis:       { label: 'FIIs',             color: '#22d3ee', icon: 'building-2'  },
-  usStocks:     { label: 'Stocks',           color: '#818cf8', icon: 'globe'       },
-  usReits:      { label: 'REITs',            color: '#c084fc', icon: 'landmark'    },
-  fixedIncome:  { label: 'Renda Fixa',       color: '#fbbf24', icon: 'shield'      },
-  storeOfValue: { label: 'Reserva de Valor', color: '#fb923c', icon: 'bitcoin'     },
-  assets:       { label: 'Bens',             color: '#f472b6', icon: 'home'        },
+  brStocks:         { color: '#4ade80', icon: 'trending-up' },
+  brFiis:           { color: '#22d3ee', icon: 'building-2'  },
+  usStocks:         { color: '#818cf8', icon: 'globe'       },
+  usReits:          { color: '#c084fc', icon: 'landmark'    },
+  fixedIncome:      { color: '#fbbf24', icon: 'shield'      },
+  emergencyReserve: { color: '#34d399', icon: 'life-buoy'   },
+  storeOfValue:     { color: '#fb923c', icon: 'bitcoin'     },
+  assets:           { color: '#f472b6', icon: 'home'        },
 };
+
+/** Returns the localised label for a class key. */
+export function classLabel(key) {
+  return tn('className', key);
+}
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
@@ -26,7 +34,10 @@ export class Portfolio {
   target(key) {
     const stored = this.#data?.[key]?.target;
     if (stored !== undefined) return stored;
-    const count = this.visibleKeys().length;
+    /* Default targets for "patrimônio" classes */
+    if (key === 'assets') return 0;
+    if (key === 'emergencyReserve') return 0;
+    const count = this.activeKeys().length;
     return count > 0 ? 100 / count : 0;
   }
 
@@ -49,22 +60,20 @@ export class Portfolio {
     this.save();
   }
 
-  isHidden(key) { return !!(this.#data?.hiddenClasses?.[key]); }
+  /** Classes with target > 0 (participate in rebalancing). */
+  activeKeys() { return CLASS_KEYS.filter(k => this.target(k) > 0); }
 
-  toggleHidden(key) {
-    if (!this.#data) return;
-    this.#data.hiddenClasses ??= {};
-    if (this.#data.hiddenClasses[key]) delete this.#data.hiddenClasses[key];
-    else this.#data.hiddenClasses[key] = true;
-    this.save();
-  }
-
-  visibleKeys() { return CLASS_KEYS.filter(k => !this.isHidden(k)); }
+  /** All keys (active + inactive) — replaces old visibleKeys. */
+  allKeys() { return CLASS_KEYS; }
 
   load() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) this.#data = JSON.parse(raw);
+      if (raw) {
+        this.#data = JSON.parse(raw);
+        /* Migration: remove legacy hiddenClasses field */
+        delete this.#data?.hiddenClasses;
+      }
     } catch { this.#data = null; }
   }
 
@@ -74,13 +83,13 @@ export class Portfolio {
   }
 
   import(data) {
+    delete data?.hiddenClasses;
     this.#data = data;
     this.save();
   }
 
   export() {
     const out = { syncedAt: this.#data.syncedAt };
-    if (this.#data.hiddenClasses) out.hiddenClasses = this.#data.hiddenClasses;
     CLASS_KEYS.forEach(k => { if (this.#data[k]) out[k] = this.#data[k]; });
     return out;
   }

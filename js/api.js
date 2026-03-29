@@ -1,4 +1,5 @@
 import { portfolio, prices, settings } from './state.js';
+import { t } from './i18n.js';
 
 const FINNHUB_DELAY_MS = 120;
 const TICKER_RE = /^[A-Z0-9.]{1,10}$/;
@@ -18,11 +19,11 @@ export async function fetchAllPrices(onProgress) {
   const progress = label => onProgress?.(`${label} (${++step}/${total})`, step / total);
 
   try {
-    progress('Câmbio');
+    progress(t('loadingExchange'));
     await fetchExchangeRates();
-    for (const t of br)  { progress(t); await fetchBrQuote(t); }
-    for (const t of us)  { progress(t); await fetchUsQuote(t); }
-    for (const t of sov) { progress(t); await fetchSovQuote(t); }
+    for (const ticker of br)  { progress(ticker); await fetchBrQuote(ticker); }
+    for (const ticker of us)  { progress(ticker); await fetchUsQuote(ticker); }
+    for (const ticker of sov) { progress(ticker); await fetchSovQuote(ticker); }
 
     if (prices.hasData) prices.save();
     return prices.hasData;
@@ -70,14 +71,6 @@ async function fetchUsQuote(ticker) {
   await delay(FINNHUB_DELAY_MS);
 }
 
-/**
- * Fetches store-of-value quotes using a two-step fallback:
- * 1. AwesomeAPI for crypto/currencies (BTC, ETH, etc.) — returns BRL directly.
- * 2. Finnhub for US-traded assets (GLD, IAU, etc.) — returns USD.
- *
- * Free-text entries (e.g. "Reais em Espécie") are skipped entirely
- * to avoid unnecessary network errors.
- */
 async function fetchSovQuote(ticker) {
   if (!TICKER_RE.test(ticker)) return;
 
@@ -101,7 +94,6 @@ async function fetchJson(url) {
   return res.json();
 }
 
-/** Like fetchJson but returns null on failure — used for expected fallbacks. */
 async function fetchJsonSoft(url) {
   try {
     const res = await fetch(url);
