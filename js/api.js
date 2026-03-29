@@ -15,7 +15,7 @@ export async function fetchAllPrices(onProgress) {
 
   let step = 0;
   const total = br.length + us.length + sov.length + 1;
-  const progress = label => onProgress?.(`${label} (${++step}/${total})`);
+  const progress = label => onProgress?.(`${label} (${++step}/${total})`, step / total);
 
   try {
     progress('Câmbio');

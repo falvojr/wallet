@@ -86,6 +86,10 @@ function renderOverview() {
   if (prices.hasData && prices.stale) html += notice('clock', `Cotações desatualizadas (${prices.dateStr}). Atualize em <strong>Cotar</strong>.`, 'info');
   else if (!prices.hasData) html += notice('clock', 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.', 'info');
 
+  if (prices.hasData && defClasses.length === 0 && populated.length > 0) {
+    html += notice('check-circle', 'Carteira balanceada — nenhuma classe precisa de aporte no momento.', 'success');
+  }
+
   html += `<div class="summary-cards summary-cards--overview">${populated.filter(k => !portfolio.isHidden(k)).map(k => renderSummaryCard(k, defClasses)).join('')}</div>`;
   return html;
 }
@@ -124,11 +128,11 @@ function renderSummaryCard(key, defClasses) {
   const isDef = defClasses.includes(key);
   const pct = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
 
-  return `<div class="summary-card" style="--card-color:${m.color}">
+  return `<div class="summary-card" data-goto="${key}" style="--card-color:${m.color}">
     <div class="summary-card-head">
-      <span class="summary-card-label" data-goto="${key}"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(m.label)}${isDef ? aportarBadge() : ''}</span>
+      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(m.label)}${isDef ? aportarBadge() : ''}</span>
     </div>
-    <div class="summary-card-value" data-goto="${key}">${total !== null ? formatBRL(total) : countLabel(portfolio.items(key).length)}</div>
+    <div class="summary-card-value">${total !== null ? formatBRL(total) : countLabel(portfolio.items(key).length)}</div>
     <div class="summary-card-bar" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
       aria-label="Alocação de ${escapeHtml(m.label)}: ${actual !== null ? actual.toFixed(1) : 0}% de ${target.toFixed(0)}%">
       <div class="summary-card-bar-fill" style="width:${pct}%"></div>
@@ -148,6 +152,17 @@ function fitLabel(name, radius) {
   const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
   if (name.length <= maxChars) return name;
   return maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
+}
+
+/** Shows a brief tooltip-style toast for bubble chart taps on mobile. */
+function bubbleToast(id, value, pct) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = `${id}: ${formatBRL(value)} (${pct}%)`;
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 2500);
 }
 
 /**
@@ -172,18 +187,28 @@ function renderBubbleChart() {
 
   const nodes = svg.selectAll('g').data(root.leaves()).join('g').attr('transform', d => `translate(${d.x},${d.y})`);
 
-  nodes.append('circle').attr('r', d => d.r).attr('fill', d => d.data.color).attr('opacity', 0.8).attr('stroke', d => d.data.color).attr('stroke-opacity', 0.3).attr('stroke-width', 1);
+  nodes.append('circle').attr('r', d => d.r).attr('fill', d => d.data.color).attr('opacity', 0.8).attr('stroke', d => d.data.color).attr('stroke-opacity', 0.3).attr('stroke-width', 1)
+    .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
+    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2).attr('stroke-opacity', 0.6); })
+    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.8).attr('stroke-width', 1).attr('stroke-opacity', 0.3); });
 
   nodes.append('title').text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return `${d.data.id}: ${formatBRL(d.data.value)} (${pct}%)`; });
 
+  nodes.on('click', (_event, d) => {
+    const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0';
+    bubbleToast(d.data.id, d.data.value, pct);
+  });
+
   nodes.filter(d => d.r > 16).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
     .attr('fill', '#fff').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
-    .attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => fitLabel(d.data.id, d.r));
+    .attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => fitLabel(d.data.id, d.r))
+    .style('pointer-events', 'none');
 
   nodes.filter(d => d.r > 28).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
     .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.7)').attr('font-family', 'var(--font-b)')
     .attr('font-size', d => Math.min(d.r * 0.28, 10))
-    .text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; });
+    .text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; })
+    .style('pointer-events', 'none');
 }
 
 function sortIndicator(col) {

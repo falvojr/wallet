@@ -4,17 +4,33 @@ import { render, toggleSort } from './js/render.js';
 
 const $ = s => document.querySelector(s);
 
-function toast(msg) {
+function toast(msg, action) {
   const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = msg;
+  el.className = action ? 'toast toast--has-action' : 'toast';
+
+  if (action) {
+    const span = document.createElement('span');
+    span.textContent = msg;
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => { action.handler(); el.remove(); });
+    el.append(span, btn);
+  } else {
+    el.textContent = msg;
+  }
+
   $('#toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+  const delay = action ? 5000 : 3000;
+  setTimeout(() => el.remove(), delay);
 }
 
-function showLoading(text) {
+function showLoading(text, pct) {
   const overlay = $('#loadingOverlay');
   $('#loadingText').textContent = text;
+  const fill = $('#loadingBarFill');
+  if (pct !== undefined) fill.style.width = `${Math.round(pct * 100)}%`;
+  else fill.style.width = '0%';
   overlay.hidden = false;
   overlay.setAttribute('aria-hidden', 'false');
 }
@@ -168,20 +184,23 @@ function doImport(file) {
 
 $('#panels').addEventListener('click', e => {
   const target = e.target.closest('[data-goto]');
-  if (target) { setActiveTab(target.dataset.goto); render(); return; }
+  if (target && !e.target.closest('input, button')) { setActiveTab(target.dataset.goto); render(); return; }
 
   const addBtn = e.target.closest('.add-row, .add-to-empty');
   if (addBtn) { openAddModal(addBtn.dataset.addClass); return; }
 
   const removeBtn = e.target.closest('.remove-btn');
   if (removeBtn) {
-    const items = portfolio.items(removeBtn.dataset.class);
+    const cls = removeBtn.dataset.class;
+    const items = portfolio.items(cls);
     const idx = parseInt(removeBtn.dataset.idx);
-    const item = items[idx];
-    if (confirm('Remover ' + item.id + '?')) {
-      items.splice(idx, 1); portfolio.save(); render();
-      toast(item.id + ' removido');
-    }
+    const item = { ...items[idx] };
+    items.splice(idx, 1);
+    portfolio.save(); render();
+    toast(item.id + ' removido', {
+      label: 'Desfazer',
+      handler() { portfolio.addItem(cls, item); portfolio.save(); render(); },
+    });
     return;
   }
 
