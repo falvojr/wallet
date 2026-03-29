@@ -1,4 +1,4 @@
-import { portfolio, prices } from './state.js';
+import { portfolio, prices, CLASS_META } from './state.js';
 
 export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -141,4 +141,17 @@ export function deficientItems(key) {
     .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
 
   return ranked.slice(0, recLimit(items.length)).map(r => r.id);
+}
+
+/** Returns all visible assets with their BRL value and class metadata, for the bubble chart. */
+export function allAssetsWeighted() {
+  const assets = [];
+  for (const key of portfolio.visibleKeys()) {
+    const color = CLASS_META[key].color;
+    for (const item of portfolio.items(key)) {
+      const value = assetValueBRL(key, item);
+      if (value !== null && value > 0) assets.push({ id: item.id, value, color, classKey: key });
+    }
+  }
+  return assets;
 }
