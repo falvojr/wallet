@@ -57,14 +57,17 @@ function renderTabs() {
   const tabs = [
     { key: 'overview', label: 'Visão Geral', count: null, hidden: false },
     { key: 'charts', label: 'Gráficos', count: null, hidden: false },
+    { key: '_sep', label: '', count: null, hidden: false },
     ...CLASS_KEYS.map(k => ({ key: k, label: CLASS_META[k].label, count: portfolio.items(k).length, hidden: portfolio.isHidden(k) })),
   ];
 
-  $('#tabNav').innerHTML = tabs.map(t => `
-    <button class="tab-btn${t.key === activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}"
+  $('#tabNav').innerHTML = tabs.map(t => {
+    if (t.key === '_sep') return '<span class="tab-sep" aria-hidden="true"></span>';
+    return `<button class="tab-btn${t.key === activeTab ? ' active' : ''}${t.hidden ? ' tab-hidden' : ''}"
       data-tab="${t.key}" aria-current="${t.key === activeTab ? 'page' : 'false'}">
       ${escapeHtml(t.label)}${t.count !== null ? `<span class="tab-count">${t.count}</span>` : ''}
-    </button>`).join('');
+    </button>`;
+  }).join('');
 }
 
 function renderPanels() {
@@ -174,11 +177,11 @@ function renderBubbleChart() {
   nodes.append('title').text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return `${d.data.id}: ${formatBRL(d.data.value)} (${pct}%)`; });
 
   nodes.filter(d => d.r > 16).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('fill', 'var(--text-primary)').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
+    .attr('fill', '#fff').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
     .attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => fitLabel(d.data.id, d.r));
 
   nodes.filter(d => d.r > 28).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', 'var(--text-secondary)').attr('font-family', 'var(--font-b)')
+    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.7)').attr('font-family', 'var(--font-b)')
     .attr('font-size', d => Math.min(d.r * 0.28, 10))
     .text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; });
 }
