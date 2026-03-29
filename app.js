@@ -1,6 +1,6 @@
 import { CLASS_KEYS, portfolio, prices, settings, setActiveTab, loadTheme, toggleTheme } from './js/state.js';
 import { fetchAllPrices } from './js/api.js';
-import { render } from './js/render.js';
+import { render, toggleSort } from './js/render.js';
 
 const $ = s => document.querySelector(s);
 
@@ -96,7 +96,7 @@ function confirmAddAsset() {
   const id = $('#newTicker').value.trim();
   const amount = parseFloat($('#newAmount').value.replace(',', '.'));
   if (!id) { $('#newTicker').focus(); return; }
-  if (isNaN(amount) || amount <= 0) { $('#newAmount').focus(); return; }
+  if (isNaN(amount) || amount < 0) { $('#newAmount').focus(); return; }
   if (portfolio.items(addTargetClass).find(a => a.id === id)) { toast(id + ' já existe'); return; }
 
   const item = { id, amount };
@@ -188,8 +188,11 @@ $('#panels').addEventListener('click', e => {
   const toggleBtn = e.target.closest('[data-toggle-hidden]');
   if (toggleBtn) { e.stopPropagation(); portfolio.toggleHidden(toggleBtn.dataset.toggleHidden); render(); return; }
 
-  const noteEl = e.target.closest('.ticker-note');
-  if (noteEl) { openNoteModal(noteEl.dataset.noteClass, noteEl.dataset.noteId); return; }
+  const noteBtn = e.target.closest('.note-btn');
+  if (noteBtn) { openNoteModal(noteBtn.dataset.noteClass, noteBtn.dataset.noteId); return; }
+
+  const sortTh = e.target.closest('th[data-sort]');
+  if (sortTh) { toggleSort(sortTh.dataset.sort); render(); return; }
 });
 
 $('#panels').addEventListener('change', e => {
@@ -234,11 +237,14 @@ $('#tabNav').addEventListener('click', e => {
   if (btn) { setActiveTab(btn.dataset.tab); render(); }
 });
 
+/* Drag & Drop — only react to external file drags, not internal element drags */
+function isFileDrag(e) { return e.dataTransfer?.types?.includes('Files'); }
+
 let dragN = 0;
-document.addEventListener('dragenter', e => { e.preventDefault(); dragN++; $('#dropZone').classList.add('visible'); });
-document.addEventListener('dragleave', e => { e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); } });
-document.addEventListener('dragover', e => e.preventDefault());
-document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else toast('Apenas arquivos .json'); });
+document.addEventListener('dragenter', e => { if (!isFileDrag(e)) return; e.preventDefault(); dragN++; $('#dropZone').classList.add('visible'); });
+document.addEventListener('dragleave', e => { if (!isFileDrag(e)) return; e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); } });
+document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
+document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else if (f) toast('Apenas arquivos .json'); });
 
 $('#btnExport').addEventListener('click', doExport);
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());

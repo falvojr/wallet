@@ -2,7 +2,7 @@ import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab } from './state.js
 import {
   formatBRL, formatCompact, assetValueBRL, classTotalBRL, portfolioTotalBRL,
   classTargetPct, classActualPct, isQuarantined, allocationWarning,
-  deficientClasses, deficientItems,
+  deficientClasses, deficientItems, itemTargetPct,
 } from './calc.js';
 
 const $ = s => document.querySelector(s);
@@ -28,6 +28,14 @@ function badge(cls, icon, label, title) {
 
 const aportarBadge = () => badge('aportar', 'sparkles', 'aportar', 'Maior necessidade de aporte');
 const ignorarBadge = () => badge('ignorar', 'circle-pause', 'ignorar', 'Em quarentena');
+
+let sortCol = null;
+let sortDir = 'asc';
+
+export function toggleSort(col) {
+  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortCol = col; sortDir = 'asc'; }
+}
 
 function tickerUrl(key, id) {
   const p = prices.get(id);
@@ -209,6 +217,46 @@ function renderDonut(segments) {
   </div>`;
 }
 
+function sortIndicator(col) {
+  if (sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
+  const icon = sortDir === 'asc' ? 'arrow-up' : 'arrow-down';
+  return `<i data-lucide="${icon}" class="sort-icon"></i>`;
+}
+
+function sortedItems(key) {
+  const items = portfolio.items(key);
+  if (!sortCol || items.length < 2) return items.map((item, idx) => ({ item, idx }));
+
+  const indexed = items.map((item, idx) => ({ item, idx }));
+  const dir = sortDir === 'asc' ? 1 : -1;
+
+  return indexed.toSorted((a, b) => {
+    const ia = a.item, ib = b.item;
+    let va, vb;
+    switch (sortCol) {
+      case 'name':   return dir * ia.id.localeCompare(ib.id);
+      case 'amount': return dir * (ia.amount - ib.amount);
+      case 'price':
+        va = prices.get(ia.id)?.price ?? 0;
+        vb = prices.get(ib.id)?.price ?? 0;
+        return dir * (va - vb);
+      case 'change':
+        va = prices.get(ia.id)?.change ?? 0;
+        vb = prices.get(ib.id)?.change ?? 0;
+        return dir * (va - vb);
+      case 'total':
+        va = assetValueBRL(key, ia) ?? 0;
+        vb = assetValueBRL(key, ib) ?? 0;
+        return dir * (va - vb);
+      case 'target':
+        va = itemTargetPct(key, ia);
+        vb = itemTargetPct(key, ib);
+        return dir * (va - vb);
+      default: return 0;
+    }
+  });
+}
+
 function renderClassPanel(key) {
   const meta   = CLASS_META[key];
   const items  = portfolio.items(key);
@@ -228,19 +276,20 @@ function renderClassPanel(key) {
   }
 
   const defItems = hidden ? [] : deficientItems(key);
+  const sorted   = sortedItems(key);
 
   html += `<div class="table-wrap"><table class="asset-table">
     <thead><tr>
-      <th>Nome</th>
-      <th class="col-r">Qtd</th>
-      <th class="col-r">Preço</th>
-      <th class="col-r">Hoje</th>
-      <th class="col-r">Total</th>
-      <th class="col-r">Meta %</th>
+      <th data-sort="name" class="sortable">Nome ${sortIndicator('name')}</th>
+      <th data-sort="amount" class="col-r sortable">Qtd ${sortIndicator('amount')}</th>
+      <th data-sort="price" class="col-r sortable">Preço ${sortIndicator('price')}</th>
+      <th data-sort="change" class="col-r sortable">Hoje ${sortIndicator('change')}</th>
+      <th data-sort="total" class="col-r sortable">Total ${sortIndicator('total')}</th>
+      <th data-sort="target" class="col-r sortable">Meta % ${sortIndicator('target')}</th>
       <th class="col-action"><span class="sr-only">Ações</span></th>
     </tr></thead>
     <tbody>
-      ${items.map((item, idx) => renderAssetRow(key, item, idx, meta, defItems)).join('')}
+      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, meta, defItems)).join('')}
       <tr class="add-row" data-add-class="${key}"><td colspan="7">+ Adicionar ativo</td></tr>
     </tbody>
   </table></div>`;
@@ -258,16 +307,22 @@ function renderAssetRow(key, item, idx, meta, defItems) {
   const { priceStr, changeHtml } = formatPriceCell(key, item, p);
 
   const url = tickerUrl(key, item.id);
-  const noteAttr = item.note ? ` title="${escapeHtml(item.note)}"` : '';
   const ticker = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteAttr}>${safeId}</a>`
-    : `<span class="ticker-note${item.note ? ' has-note' : ''}" data-note-class="${key}" data-note-id="${safeId}"${noteAttr}>${safeId}</span>`;
+    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${safeId}</a>`
+    : `<span class="ticker-name">${safeId}</span>`;
+
+  const noteIcon = item.note ? 'message-square-text' : 'message-square';
+  const noteTitle = item.note ? escapeHtml(item.note) : 'Adicionar comentário';
 
   const rowClass = isDef ? 'row-target' : quarantined ? 'row-quarantine' : '';
 
   return `<tr${rowClass ? ` class="${rowClass}"` : ''}>
     <td class="td-ticker">
-      ${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}
+      ${ticker}<button class="note-btn${item.note ? ' has-note' : ''}"
+        data-note-class="${key}" data-note-id="${safeId}"
+        title="${noteTitle}" aria-label="Comentário de ${safeId}">
+        <i data-lucide="${noteIcon}"></i>
+      </button>${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}
     </td>
     <td class="td-r">
       <input class="inline-input inline-input--qty" type="text" value="${item.amount}"
@@ -299,7 +354,7 @@ function formatPriceCell(key, item, p) {
   if (key === 'fixedIncome' || key === 'assets' || (key === 'storeOfValue' && !p)) {
     priceStr = 'Declarado';
   } else if (p) {
-    const prefix = p.currency === 'USD' ? '$ ' : 'R$ ';
+    const prefix = p.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
     priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (p.change !== undefined) {
       const dir = p.change >= 0;
