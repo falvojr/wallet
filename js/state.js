@@ -17,13 +17,9 @@ export const CLASS_META = {
   assets:           { color: '#f472b6', icon: 'home'        },
 };
 
-export function classLabel(key) {
-  return tn('className', key);
-}
+export function classLabel(key) { return tn('className', key); }
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
-
-const DEFAULT_INACTIVE = new Set(['assets', 'emergencyReserve']);
 
 export class Portfolio {
   #data = null;
@@ -32,20 +28,20 @@ export class Portfolio {
 
   items(key) { return this.#data?.[key]?.items ?? []; }
 
-  /**
-   * Raw check without calling target(), avoiding infinite recursion.
-   * Used only by activeKeys().
-   */
+  /* ── Target (percentage-based classes) ───────────────────── */
+
   #isActiveRaw(key) {
+    if (key === 'emergencyReserve') return false;
     const stored = this.#data?.[key]?.target;
     if (stored !== undefined) return stored > 0;
-    return !DEFAULT_INACTIVE.has(key);
+    return key !== 'assets';
   }
 
   target(key) {
+    if (key === 'emergencyReserve') return 0;
     const stored = this.#data?.[key]?.target;
     if (stored !== undefined) return stored;
-    if (DEFAULT_INACTIVE.has(key)) return 0;
+    if (key === 'assets') return 0;
     const count = this.activeKeys().length;
     return count > 0 ? 100 / count : 0;
   }
@@ -54,6 +50,39 @@ export class Portfolio {
     this.#ensure(key);
     this.#data[key].target = value;
   }
+
+  /** Classes with target > 0 that participate in rebalancing. */
+  activeKeys() { return CLASS_KEYS.filter(k => this.#isActiveRaw(k)); }
+
+  /** All keys. */
+  allKeys() { return CLASS_KEYS; }
+
+  /**
+   * Display order: active classes first, then emergency reserve, then inactive (target=0).
+   * Within each group, original CLASS_KEYS order is preserved.
+   */
+  displayOrder() {
+    const active = [], inactive = [];
+    for (const k of CLASS_KEYS) {
+      if (k === 'emergencyReserve') continue;
+      if (this.#isActiveRaw(k)) active.push(k);
+      else inactive.push(k);
+    }
+    return [...active, 'emergencyReserve', ...inactive];
+  }
+
+  /* ── Emergency reserve goal (BRL fixed amount) ───────────── */
+
+  goal(key) {
+    return this.#data?.[key]?.goal ?? 0;
+  }
+
+  setGoal(key, value) {
+    this.#ensure(key);
+    this.#data[key].goal = value;
+  }
+
+  /* ── Items ───────────────────────────────────────────────── */
 
   addItem(key, item) {
     this.#ensure(key);
@@ -69,9 +98,18 @@ export class Portfolio {
     this.save();
   }
 
-  activeKeys() { return CLASS_KEYS.filter(k => this.#isActiveRaw(k)); }
+  /* ── Chart visibility (transient, not persisted) ─────────── */
 
-  allKeys() { return CLASS_KEYS; }
+  #chartHidden = new Set();
+
+  isChartHidden(key) { return this.#chartHidden.has(key); }
+
+  toggleChartHidden(key) {
+    if (this.#chartHidden.has(key)) this.#chartHidden.delete(key);
+    else this.#chartHidden.add(key);
+  }
+
+  /* ── Persistence ─────────────────────────────────────────── */
 
   load() {
     try {
@@ -100,9 +138,7 @@ export class Portfolio {
     return out;
   }
 
-  #ensure(key) {
-    this.#data[key] ??= { items: [] };
-  }
+  #ensure(key) { this.#data[key] ??= { items: [] }; }
 }
 
 export class PriceCache {
@@ -122,34 +158,25 @@ export class PriceCache {
 
   get hasData() { return Object.keys(this.#prices).length > 0; }
 
-  get stale() {
-    return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false;
-  }
+  get stale() { return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false; }
 
   get dateStr() {
     if (!this.#timestamp) return null;
     return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   }
 
   load() {
     try {
       const data = JSON.parse(localStorage.getItem(PRICES_KEY));
-      if (data) {
-        this.#prices    = data.prices ?? {};
-        this.#rates     = data.rates  ?? {};
-        this.#timestamp = data.ts     ?? null;
-      }
+      if (data) { this.#prices = data.prices ?? {}; this.#rates = data.rates ?? {}; this.#timestamp = data.ts ?? null; }
     } catch {}
   }
 
   save() {
     this.#timestamp = Date.now();
-    localStorage.setItem(PRICES_KEY, JSON.stringify({
-      ts: this.#timestamp, prices: this.#prices, rates: this.#rates,
-    }));
+    localStorage.setItem(PRICES_KEY, JSON.stringify({ ts: this.#timestamp, prices: this.#prices, rates: this.#rates }));
   }
 }
 
@@ -159,24 +186,11 @@ export class Settings {
 
   get hasTokens() { return !!(this.brapiToken || this.finnhubToken); }
 
-  load() {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) Object.assign(this, JSON.parse(raw));
-    } catch {}
-  }
-
-  save() {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({
-      brapiToken: this.brapiToken, finnhubToken: this.finnhubToken,
-    }));
-  }
+  load() { try { const raw = localStorage.getItem(SETTINGS_KEY); if (raw) Object.assign(this, JSON.parse(raw)); } catch {} }
+  save() { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ brapiToken: this.brapiToken, finnhubToken: this.finnhubToken })); }
 }
 
-export function loadTheme() {
-  document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'dark';
-}
-
+export function loadTheme() { document.documentElement.dataset.theme = localStorage.getItem(THEME_KEY) || 'dark'; }
 export function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;

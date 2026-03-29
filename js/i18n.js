@@ -1,14 +1,12 @@
 /**
  * Centralised UI strings for future internationalisation.
  *
- * Every user-visible label, hint, placeholder and description lives here.
- * To add a new locale, duplicate the `pt-BR` object under a new key
- * and translate each value. Then call `setLocale('xx-YY')` at boot.
+ * To add a locale, duplicate `pt-BR` under a new key and translate.
+ * Then call `setLocale('xx-YY')` at boot.
  */
 
 const strings = {
   'pt-BR': {
-    /* ── App chrome ─────────────────────────────────────────── */
     appTitle:           'Minha Holding',
     btnSettings:        'Configurações de API',
     btnTheme:           'Alternar tema claro e escuro',
@@ -17,11 +15,9 @@ const strings = {
     btnPrices:          'Cotar',
     btnPricesLabel:     'Atualizar cotações',
 
-    /* ── Tabs ───────────────────────────────────────────────── */
     tabOverview:        'Metas',
     tabPortfolio:       'Carteira',
 
-    /* ── Classes ────────────────────────────────────────────── */
     className: {
       brStocks:           'Ações',
       brFiis:             'FIIs',
@@ -60,29 +56,30 @@ const strings = {
         'Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
     },
 
-    /* ── Overview / Metas ───────────────────────────────────── */
+    /* Overview / Metas */
     metaLabel:          'meta',
-    allocationLabel:    'Alocação',
     targetLabel:        'Meta %',
-    actualLabel:        'Atual',
+    goalLabel:          'meta',
+    goalUnit:           'R$',
     warningTargetSum:   (sum) => `As metas somam <strong>${sum}%</strong>, mas deveriam totalizar 100%.`,
     infoStale:          (dateStr) => `Cotações desatualizadas (${dateStr}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices:       'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced:    'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
-    disabledClassHint:  'Meta 0%. Não participa do rebalanceamento.',
+    inactiveClassHint:  'Não participa do rebalanceamento.',
+    emergencyHint:      'Valor fixo, não participa do rebalanceamento.',
 
-    /* ── Badges ─────────────────────────────────────────────── */
+    /* Badges */
     badgeAportar:       'aportar',
     badgeAportarTitle:  'Maior necessidade de aporte',
     badgeIgnorar:       'ignorar',
     badgeIgnorarTitle:  'Em quarentena',
 
-    /* ── Carteira / Charts ──────────────────────────────────── */
+    /* Carteira / Charts */
     portfolioLabel:     'Patrimônio',
     noData:             'Sem dados para exibir',
     partialSuffix:      '(parcial)',
 
-    /* ── Asset table ────────────────────────────────────────── */
+    /* Asset table */
     colName:            'Nome',
     colAmount:          'Qtd',
     colPrice:           'Preço',
@@ -96,7 +93,7 @@ const strings = {
     targetPlaceholder:  'auto',
     assetCount:         (n) => `${n} ativo${n !== 1 ? 's' : ''}`,
 
-    /* ── Add modal ──────────────────────────────────────────── */
+    /* Add modal */
     addModalTitle:      'Adicionar Ativo',
     addFieldTicker:     'Nome / Ticker',
     addTickerHint:      'Ex: PETR4, CDB Inter',
@@ -107,13 +104,13 @@ const strings = {
     btnCancel:          'Cancelar',
     btnAdd:             'Adicionar',
 
-    /* ── Note modal ─────────────────────────────────────────── */
+    /* Note modal */
     noteModalTitle:     'Comentário',
     noteHintPrefix:     'Nota sobre',
     notePlaceholder:    'Ex: Vence em 2027, rendendo 120% CDI',
     btnSave:            'Salvar',
 
-    /* ── Settings modal ─────────────────────────────────────── */
+    /* Settings */
     settingsTitle:      'Tokens de API',
     settingsHint:       'Tokens gratuitos para cotações em tempo real.',
     brapiLabel:         'brapi.dev (Ações / FIIs)',
@@ -122,7 +119,7 @@ const strings = {
     finnhubHint:        'Crie grátis em finnhub.io',
     linkCreate:         'Criar conta',
 
-    /* ── Toasts ─────────────────────────────────────────────── */
+    /* Toasts */
     toastConfigTokens:  'Configure os tokens de API em ⚙️',
     toastPricesOk:      'Cotações atualizadas',
     toastPricesFail:    'Erro ao buscar cotações',
@@ -137,37 +134,33 @@ const strings = {
     toastErrorPrefix:   'Erro: ',
     toastInvalidFormat: 'Formato inválido',
 
-    /* ── Welcome ────────────────────────────────────────────── */
     welcomeTitle:       'Importe sua carteira',
     welcomeText:        'Arraste um arquivo <code>.json</code> ou clique para carregar.',
     welcomeBtn:         'Importar JSON',
 
-    /* ── Loading ────────────────────────────────────────────── */
     loadingDefault:     'Carregando...',
     loadingImporting:   'Importando...',
     loadingExchange:    'Câmbio',
-
-    /* ── Drop zone ──────────────────────────────────────────── */
     dropHint:           'Solte o arquivo JSON aqui',
 
-    /* ── Accessibility ──────────────────────────────────────── */
+    /* Accessibility */
     a11yBubbleChart:    'Mapa da carteira por tamanho de posição',
     a11yRemove:         (id) => `Remover ${id}`,
     a11yNote:           (id) => `Comentário de ${id}`,
     a11yAddNote:        'Adicionar comentário',
     a11yTargetClass:    (label) => `Meta de ${label} (%)`,
+    a11yGoalClass:      (label) => `Meta de ${label} (R$)`,
     a11yAllocation:     (label, actual, target) => `Alocação de ${label}: ${actual}% de ${target}%`,
     a11yAmountOf:       (id) => `Quantidade de ${id}`,
     a11yTargetOf:       (id) => `Meta % de ${id} na classe`,
     a11yTargetTitle:    'Meta do ativo na classe',
+    a11yToggleChart:    (label, visible) => `${visible ? 'Ocultar' : 'Mostrar'} ${label} no gráfico`,
   },
 };
 
 let currentLocale = 'pt-BR';
 
-export function setLocale(locale) {
-  if (strings[locale]) currentLocale = locale;
-}
+export function setLocale(locale) { if (strings[locale]) currentLocale = locale; }
 
 export function t(key, ...args) {
   const val = strings[currentLocale]?.[key] ?? strings['pt-BR']?.[key] ?? key;

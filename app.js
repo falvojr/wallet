@@ -8,7 +8,6 @@ const $ = s => document.querySelector(s);
 function toast(msg, action) {
   const el = document.createElement('div');
   el.className = action ? 'toast toast--has-action' : 'toast';
-
   if (action) {
     const span = document.createElement('span');
     span.textContent = msg;
@@ -17,21 +16,16 @@ function toast(msg, action) {
     btn.textContent = action.label;
     btn.addEventListener('click', () => { action.handler(); el.remove(); });
     el.append(span, btn);
-  } else {
-    el.textContent = msg;
-  }
-
+  } else { el.textContent = msg; }
   $('#toastContainer').appendChild(el);
-  const delay = action ? 5000 : 3000;
-  setTimeout(() => el.remove(), delay);
+  setTimeout(() => el.remove(), action ? 5000 : 3000);
 }
 
 function showLoading(text, pct) {
   const overlay = $('#loadingOverlay');
   $('#loadingText').textContent = text;
   const fill = $('#loadingBarFill');
-  if (pct !== undefined) fill.style.width = `${Math.round(pct * 100)}%`;
-  else fill.style.width = '0%';
+  fill.style.width = pct !== undefined ? `${Math.round(pct * 100)}%` : '0%';
   overlay.hidden = false;
   overlay.setAttribute('aria-hidden', 'false');
 }
@@ -55,47 +49,36 @@ async function refreshPrices() {
   toast(ok ? t('toastPricesOk') : t('toastPricesFail'));
 }
 
+/* ── Modal helpers ─────────────────────────────────────────── */
+
 function trapFocus(modal) {
   const focusable = modal.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
-  if (focusable.length === 0) return;
-  const first = focusable[0];
-  const last  = focusable[focusable.length - 1];
-
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
   const handler = e => {
     if (e.key !== 'Tab') return;
-    if (e.shiftKey) {
-      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-    } else {
-      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
+    if (e.shiftKey) { if (document.activeElement === first) { e.preventDefault(); last.focus(); } }
+    else { if (document.activeElement === last) { e.preventDefault(); first.focus(); } }
   };
   modal.addEventListener('keydown', handler);
   modal._focusTrap = handler;
 }
 
 function releaseFocus(modal) {
-  if (modal._focusTrap) {
-    modal.removeEventListener('keydown', modal._focusTrap);
-    delete modal._focusTrap;
-  }
+  if (modal._focusTrap) { modal.removeEventListener('keydown', modal._focusTrap); delete modal._focusTrap; }
 }
 
 let previousFocus = null;
 
 function openModal(id, focusSelector) {
   previousFocus = document.activeElement;
-  const modal = $(id);
-  modal.classList.add('open');
-  trapFocus(modal);
+  const modal = $(id); modal.classList.add('open'); trapFocus(modal);
   if (focusSelector) setTimeout(() => $(focusSelector)?.focus(), 100);
 }
 
 function closeModal(id) {
-  const modal = $(id);
-  modal.classList.remove('open');
-  releaseFocus(modal);
-  previousFocus?.focus();
-  previousFocus = null;
+  const modal = $(id); modal.classList.remove('open'); releaseFocus(modal);
+  previousFocus?.focus(); previousFocus = null;
 }
 
 let addTargetClass = null;
@@ -105,7 +88,6 @@ function openAddModal(cls) {
   $('#newTicker').value = ''; $('#newAmount').value = ''; $('#newTarget').value = '';
   openModal('#addModal', '#newTicker');
 }
-
 function closeAddModal() { closeModal('#addModal'); addTargetClass = null; }
 
 function confirmAddAsset() {
@@ -114,18 +96,15 @@ function confirmAddAsset() {
   if (!id) { $('#newTicker').focus(); return; }
   if (isNaN(amount) || amount < 0) { $('#newAmount').focus(); return; }
   if (portfolio.items(addTargetClass).find(a => a.id === id)) { toast(t('toastExists', id)); return; }
-
   const item = { id, amount };
   const raw = $('#newTarget').value.trim();
   if (raw !== '') { const v = parseFloat(raw.replace(',', '.')); if (!isNaN(v) && v >= 0) item.target = v; }
-
   portfolio.addItem(addTargetClass, item);
   portfolio.save(); closeAddModal(); render();
   toast(t('toastAdded', id));
 }
 
 let noteClass = null, noteId = null;
-
 function openNoteModal(cls, id) {
   noteClass = cls; noteId = id;
   const item = portfolio.items(cls).find(a => a.id === id);
@@ -133,14 +112,9 @@ function openNoteModal(cls, id) {
   $('#noteText').value = item?.note || '';
   openModal('#noteModal', '#noteText');
 }
-
 function closeNoteModal() { closeModal('#noteModal'); noteClass = noteId = null; }
-
 function saveNote() {
-  if (noteClass && noteId) {
-    portfolio.setItemNote(noteClass, noteId, $('#noteText').value);
-    closeNoteModal(); render();
-  }
+  if (noteClass && noteId) { portfolio.setItemNote(noteClass, noteId, $('#noteText').value); closeNoteModal(); render(); }
 }
 
 function openSettings() {
@@ -148,11 +122,9 @@ function openSettings() {
   $('#finnhubToken').value = settings.finnhubToken;
   openModal('#settingsModal', '#brapiToken');
 }
-
 function closeSettings() { closeModal('#settingsModal'); }
-
 function saveSettingsModal() {
-  settings.brapiToken  = $('#brapiToken').value.trim();
+  settings.brapiToken = $('#brapiToken').value.trim();
   settings.finnhubToken = $('#finnhubToken').value.trim();
   settings.save(); closeSettings(); toast(t('toastSettingsSaved'));
 }
@@ -182,8 +154,12 @@ function doImport(file) {
   reader.readAsText(file);
 }
 
-/* ── Delegated event: clicks ───────────────────────────────── */
+/* ── Delegated: clicks ─────────────────────────────────────── */
 $('#panels').addEventListener('click', e => {
+  /* Chart visibility toggle (only affects bubble chart) */
+  const chartToggle = e.target.closest('[data-toggle-chart]');
+  if (chartToggle) { e.stopPropagation(); portfolio.toggleChartHidden(chartToggle.dataset.toggleChart); render(); return; }
+
   const target = e.target.closest('[data-goto]');
   if (target && !e.target.closest('input, button')) { setActiveTab(target.dataset.goto); render(); return; }
 
@@ -192,12 +168,9 @@ $('#panels').addEventListener('click', e => {
 
   const removeBtn = e.target.closest('.remove-btn');
   if (removeBtn) {
-    const cls = removeBtn.dataset.class;
-    const items = portfolio.items(cls);
-    const idx = parseInt(removeBtn.dataset.idx);
+    const cls = removeBtn.dataset.class, items = portfolio.items(cls), idx = parseInt(removeBtn.dataset.idx);
     const item = { ...items[idx] };
-    items.splice(idx, 1);
-    portfolio.save(); render();
+    items.splice(idx, 1); portfolio.save(); render();
     toast(t('toastRemoved', item.id), {
       label: t('toastUndo'),
       handler() { portfolio.addItem(cls, item); portfolio.save(); render(); },
@@ -212,22 +185,18 @@ $('#panels').addEventListener('click', e => {
   if (sortTh) { toggleSort(sortTh.dataset.sort); render(); return; }
 });
 
-/* ── Delegated event: change ───────────────────────────────── */
+/* ── Delegated: change ─────────────────────────────────────── */
 $('#panels').addEventListener('change', e => {
-  /* Inline asset inputs (amount / per-item target) */
+  /* Inline asset inputs */
   const inlineInput = e.target.closest('.inline-input');
   if (inlineInput) {
     if (inlineInput.dataset.field === 'amount') {
       const val = parseFloat(inlineInput.value.replace(',', '.'));
-      if (!isNaN(val) && val >= 0) {
-        portfolio.items(inlineInput.dataset.class)[parseInt(inlineInput.dataset.idx)].amount = val;
-        scheduleSave();
-      }
+      if (!isNaN(val) && val >= 0) { portfolio.items(inlineInput.dataset.class)[parseInt(inlineInput.dataset.idx)].amount = val; scheduleSave(); }
       return;
     }
     if (inlineInput.dataset.field === 'target') {
-      const items = portfolio.items(inlineInput.dataset.class);
-      const idx = parseInt(inlineInput.dataset.idx);
+      const items = portfolio.items(inlineInput.dataset.class), idx = parseInt(inlineInput.dataset.idx);
       const raw = inlineInput.value.trim();
       if (raw === '') delete items[idx].target;
       else { const val = parseFloat(raw.replace(',', '.')); if (!isNaN(val) && val >= 0) items[idx].target = val; }
@@ -236,20 +205,25 @@ $('#panels').addEventListener('change', e => {
     }
   }
 
-  /* Class-level target (the chip in summary cards) */
+  /* Class-level target (percentage chip) */
   const classTarget = e.target.closest('[data-class-target]');
   if (classTarget) {
     const val = parseFloat(classTarget.value.replace(',', '.'));
-    if (!isNaN(val) && val >= 0) {
-      portfolio.setTarget(classTarget.dataset.classTarget, val);
-      portfolio.save(); render();
-    }
+    if (!isNaN(val) && val >= 0) { portfolio.setTarget(classTarget.dataset.classTarget, val); portfolio.save(); render(); }
+    return;
+  }
+
+  /* Emergency reserve goal (BRL chip) */
+  const classGoal = e.target.closest('[data-class-goal]');
+  if (classGoal) {
+    const val = parseFloat(classGoal.value.replace(',', '.'));
+    if (!isNaN(val) && val >= 0) { portfolio.setGoal(classGoal.dataset.classGoal, val); portfolio.save(); render(); }
   }
 });
 
-/* Prevent card navigation when clicking inside the target chip */
+/* Prevent card navigation when clicking inside chips */
 $('#panels').addEventListener('click', e => {
-  if (e.target.closest('[data-class-target]') || e.target.closest('.summary-card-target-chip')) {
+  if (e.target.closest('[data-class-target]') || e.target.closest('[data-class-goal]') || e.target.closest('.summary-card-target-chip')) {
     e.stopPropagation();
   }
 });
@@ -261,14 +235,13 @@ $('#tabNav').addEventListener('click', e => {
 
 /* Drag & Drop */
 function isFileDrag(e) { return e.dataTransfer?.types?.includes('Files'); }
-
 let dragN = 0;
 document.addEventListener('dragenter', e => { if (!isFileDrag(e)) return; e.preventDefault(); dragN++; $('#dropZone').classList.add('visible'); });
 document.addEventListener('dragleave', e => { if (!isFileDrag(e)) return; e.preventDefault(); if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); } });
 document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
 document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else if (f) toast(t('toastJsonOnly')); });
 
-/* Header buttons */
+/* Header */
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnExport').addEventListener('click', doExport);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
@@ -277,7 +250,7 @@ $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
-/* Modal buttons */
+/* Modals */
 $('#modalCancel').addEventListener('click', closeAddModal);
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#addModal').addEventListener('click', e => { if (e.target.id === 'addModal') closeAddModal(); });
@@ -288,7 +261,6 @@ $('#noteCancel').addEventListener('click', closeNoteModal);
 $('#noteSave').addEventListener('click', saveNote);
 $('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
 
-/* Modal keyboard shortcuts */
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
