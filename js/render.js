@@ -57,7 +57,7 @@ function renderTabs() {
   const tabs = [
     { key: 'overview', label: t('tabOverview'), count: null },
     { key: 'charts', label: t('tabPortfolio'), count: null },
-    { key: '_sep', label: '', count: null },
+    { key: '_sep' },
     ...CLASS_KEYS.map(k => ({
       key: k,
       label: classLabel(k),
@@ -68,8 +68,8 @@ function renderTabs() {
 
   $('#tabNav').innerHTML = tabs.map(tab => {
     if (tab.key === '_sep') return '<span class="tab-sep" aria-hidden="true"></span>';
-    const inactiveClass = tab.inactive ? ' tab-inactive' : '';
-    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}${inactiveClass}"
+    const cls = tab.inactive ? ' tab-inactive' : '';
+    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}${cls}"
       data-tab="${tab.key}" aria-current="${tab.key === activeTab ? 'page' : 'false'}">
       ${escapeHtml(tab.label)}${tab.count !== null ? `<span class="tab-count">${tab.count}</span>` : ''}
     </button>`;
@@ -77,7 +77,8 @@ function renderTabs() {
 }
 
 function renderPanels() {
-  const wrap = (key, content) => `<div class="tab-panel${key === activeTab ? ' active' : ''}" data-panel="${key}" role="tabpanel">${content}</div>`;
+  const wrap = (key, content) =>
+    `<div class="tab-panel${key === activeTab ? ' active' : ''}" data-panel="${key}" role="tabpanel">${content}</div>`;
 
   $('#panels').innerHTML =
     wrap('overview', renderOverview()) +
@@ -90,8 +91,6 @@ function renderPanels() {
 function renderOverview() {
   const defClasses = deficientClasses();
   const populated = CLASS_KEYS.filter(k => portfolio.items(k).length > 0);
-  const activePopulated = populated.filter(k => !isClassInactive(k));
-  const inactivePopulated = populated.filter(k => isClassInactive(k));
 
   const warning = allocationWarning();
   let html = '';
@@ -99,60 +98,64 @@ function renderOverview() {
   if (prices.hasData && prices.stale) html += notice('clock', t('infoStale', prices.dateStr), 'info');
   else if (!prices.hasData) html += notice('clock', t('infoNoPrices'), 'info');
 
-  if (prices.hasData && defClasses.length === 0 && activePopulated.length > 0) {
+  if (prices.hasData && defClasses.length === 0 && populated.filter(k => !isClassInactive(k)).length > 0) {
     html += notice('check-circle', t('successBalanced'), 'success');
   }
 
-  /* Active classes grid */
-  if (activePopulated.length > 0) {
-    html += `<div class="summary-cards">${activePopulated.map(k => renderSummaryCard(k, defClasses)).join('')}</div>`;
-  }
-
-  /* Inactive classes (target = 0) — patrimônio-only section */
-  if (inactivePopulated.length > 0) {
-    html += `<div class="summary-cards summary-cards--inactive">${inactivePopulated.map(k => renderSummaryCard(k, [], true)).join('')}</div>`;
-  }
-
+  /* Single unified grid — inactive cards (target=0) are styled differently via CSS */
+  html += `<div class="summary-cards">${populated.map(k => renderSummaryCard(k, defClasses)).join('')}</div>`;
   return html;
 }
 
-function renderSummaryCard(key, defClasses, inactive = false) {
+function renderSummaryCard(key, defClasses) {
   const m = CLASS_META[key];
   const label = classLabel(key);
   const total = classTotalBRL(key);
   const actual = classActualPct(key);
   const target = classTargetPct(key);
   const isDef = defClasses.includes(key);
+  const inactive = isClassInactive(key);
   const pct = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
   const description = tn('classDescription', key);
-
-  const cardClass = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
 
-  return `<div class="${cardClass}" data-goto="${key}" style="--card-color:${m.color}">
-    <div class="summary-card-head">
-      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}${isDef ? aportarBadge() : ''}</span>
-    </div>
-    <div class="summary-card-value">${valueStr}</div>
-    ${!inactive ? `
+  const cardClass = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
+
+  let metaSection;
+  if (!inactive) {
+    metaSection = `
       <div class="summary-card-bar" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
         aria-label="${t('a11yAllocation', escapeHtml(label), actual !== null ? actual.toFixed(1) : '0', target.toFixed(0))}">
         <div class="summary-card-bar-fill" style="width:${pct}%"></div>
       </div>
       <div class="summary-card-meta">
         ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>'}
-        <span class="summary-card-target-wrap">${t('metaLabel')}
-          <input class="summary-card-target" type="text" value="${target.toFixed(0)}" data-class-target="${key}"
-            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">%
-        </span>
-      </div>` : `
+        <div class="summary-card-target-chip">
+          <span class="target-chip-label">${t('metaLabel')}</span>
+          <input class="target-chip-input" type="text" value="${target.toFixed(0)}" data-class-target="${key}"
+            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
+          <span class="target-chip-unit">%</span>
+        </div>
+      </div>`;
+  } else {
+    metaSection = `
       <div class="summary-card-meta summary-card-meta--inactive">
         <span class="summary-card-inactive-hint">${t('disabledClassHint')}</span>
-        <span class="summary-card-target-wrap">${t('metaLabel')}
-          <input class="summary-card-target" type="text" value="0" data-class-target="${key}"
-            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">%
-        </span>
-      </div>`}
+        <div class="summary-card-target-chip summary-card-target-chip--inactive">
+          <span class="target-chip-label">${t('metaLabel')}</span>
+          <input class="target-chip-input" type="text" value="0" data-class-target="${key}"
+            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
+          <span class="target-chip-unit">%</span>
+        </div>
+      </div>`;
+  }
+
+  return `<div class="${cardClass}" data-goto="${key}" style="--card-color:${m.color}">
+    <div class="summary-card-head">
+      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}${isDef ? aportarBadge() : ''}</span>
+    </div>
+    <div class="summary-card-value">${valueStr}</div>
+    ${metaSection}
     <p class="summary-card-desc">${escapeHtml(description)}</p>
   </div>`;
 }
@@ -179,16 +182,20 @@ function renderChartsTab() {
       <span class="chart-header-label">${t('portfolioLabel')}</span>
       <span class="chart-header-value">${headerValue}</span>
     </div>
-    <div id="bubbleChart" class="bubble-container"></div>
-    <div class="chart-legend-bar">${chartData.map(renderLegendChip).join('')}</div>
+    <div class="chart-layout">
+      <div class="chart-legend-sidebar">${chartData.map(renderLegendItem).join('')}</div>
+      <div id="bubbleChart" class="bubble-container"></div>
+    </div>
   </div>`;
 }
 
-function renderLegendChip(d) {
-  return `<div class="legend-chip">
+function renderLegendItem(d) {
+  return `<div class="legend-item" data-goto="${d.key}">
     <span class="legend-dot" style="background:${d.color}"></span>
-    <span class="legend-chip-label" data-goto="${d.key}">${escapeHtml(d.label)}</span>
-    <span class="legend-chip-value">${d.hasPrices ? formatBRL(d.total) : t('assetCount', d.count)}</span>
+    <div class="legend-item-text">
+      <span class="legend-item-label">${escapeHtml(d.label)}</span>
+      <span class="legend-item-value">${d.hasPrices ? formatBRL(d.total) : t('assetCount', d.count)}</span>
+    </div>
   </div>`;
 }
 
@@ -220,7 +227,7 @@ function renderBubbleChart() {
 
   const { total } = portfolioTotalBRL();
   const width = container.clientWidth || 500;
-  const height = Math.max(400, Math.min(width * 0.85, 600));
+  const height = Math.max(400, Math.min(width * 0.9, 620));
 
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
   d3.pack().size([width, height]).padding(3)(root);
@@ -233,11 +240,11 @@ function renderBubbleChart() {
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
   nodes.append('circle').attr('r', d => d.r)
-    .attr('fill', d => d.data.color).attr('opacity', 0.8)
-    .attr('stroke', d => d.data.color).attr('stroke-opacity', 0.3).attr('stroke-width', 1)
+    .attr('fill', d => d.data.color).attr('opacity', 0.82)
+    .attr('stroke', d => d.data.color).attr('stroke-opacity', 0.25).attr('stroke-width', 1.5)
     .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
-    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2).attr('stroke-opacity', 0.6); })
-    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.8).attr('stroke-width', 1).attr('stroke-opacity', 0.3); });
+    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5); })
+    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25); });
 
   nodes.append('title').text(d => {
     const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0';
@@ -257,7 +264,7 @@ function renderBubbleChart() {
 
   nodes.filter(d => d.r > 28).append('text')
     .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.7)')
+    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.65)')
     .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
     .text(d => { const pct = total > 0 ? ((d.data.value / total) * 100).toFixed(1) : '0'; return pct + '%'; })
     .style('pointer-events', 'none');
@@ -295,16 +302,12 @@ function renderClassPanel(key) {
   const label = classLabel(key);
   const items = portfolio.items(key);
   const inactive = isClassInactive(key);
-  const description = tn('classDescription', key);
 
   let html = `<h2 class="sr-only">${escapeHtml(label)}</h2>`;
 
-  /* Class description */
-  html += `<div class="class-description"><p>${escapeHtml(description)}</p></div>`;
-
   if (inactive) html += notice('info', t('disabledClassHint'), 'info');
   if (items.length === 0) {
-    return html + `<div class="empty-class"><p>${t('emptyClass')}</p><button class="btn btn--primary add-to-empty" data-add-class="${key}">${t('addAsset')}</button></div>`;
+    return html + `<div class="empty-class"><p>${t('emptyClass')}</p><button class="btn btn--filled add-to-empty" data-add-class="${key}">${t('addAsset')}</button></div>`;
   }
 
   const defItems = inactive ? [] : deficientItems(key);

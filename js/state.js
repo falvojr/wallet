@@ -17,12 +17,13 @@ export const CLASS_META = {
   assets:           { color: '#f472b6', icon: 'home'        },
 };
 
-/** Returns the localised label for a class key. */
 export function classLabel(key) {
   return tn('className', key);
 }
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
+
+const DEFAULT_INACTIVE = new Set(['assets', 'emergencyReserve']);
 
 export class Portfolio {
   #data = null;
@@ -31,12 +32,20 @@ export class Portfolio {
 
   items(key) { return this.#data?.[key]?.items ?? []; }
 
+  /**
+   * Raw check without calling target(), avoiding infinite recursion.
+   * Used only by activeKeys().
+   */
+  #isActiveRaw(key) {
+    const stored = this.#data?.[key]?.target;
+    if (stored !== undefined) return stored > 0;
+    return !DEFAULT_INACTIVE.has(key);
+  }
+
   target(key) {
     const stored = this.#data?.[key]?.target;
     if (stored !== undefined) return stored;
-    /* Default targets for "patrimônio" classes */
-    if (key === 'assets') return 0;
-    if (key === 'emergencyReserve') return 0;
+    if (DEFAULT_INACTIVE.has(key)) return 0;
     const count = this.activeKeys().length;
     return count > 0 ? 100 / count : 0;
   }
@@ -60,10 +69,8 @@ export class Portfolio {
     this.save();
   }
 
-  /** Classes with target > 0 (participate in rebalancing). */
-  activeKeys() { return CLASS_KEYS.filter(k => this.target(k) > 0); }
+  activeKeys() { return CLASS_KEYS.filter(k => this.#isActiveRaw(k)); }
 
-  /** All keys (active + inactive) — replaces old visibleKeys. */
   allKeys() { return CLASS_KEYS; }
 
   load() {
@@ -71,7 +78,6 @@ export class Portfolio {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         this.#data = JSON.parse(raw);
-        /* Migration: remove legacy hiddenClasses field */
         delete this.#data?.hiddenClasses;
       }
     } catch { this.#data = null; }
@@ -106,7 +112,6 @@ export class PriceCache {
   #brQuoted = new Set();
 
   get(id) { return this.#prices[id] ?? null; }
-
   set(id, data) { this.#prices[id] = data; }
 
   get usdBrl() { return this.#rates.USDBRL ?? 0; }
@@ -137,7 +142,7 @@ export class PriceCache {
         this.#rates     = data.rates  ?? {};
         this.#timestamp = data.ts     ?? null;
       }
-    } catch { /* no cached prices */ }
+    } catch {}
   }
 
   save() {
@@ -158,7 +163,7 @@ export class Settings {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) Object.assign(this, JSON.parse(raw));
-    } catch { /* keep defaults */ }
+    } catch {}
   }
 
   save() {

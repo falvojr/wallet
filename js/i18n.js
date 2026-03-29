@@ -35,29 +35,29 @@ const strings = {
 
     classDescription: {
       brStocks:
-        'Participações em empresas listadas na bolsa brasileira (B3). ' +
-        'No longo prazo, ações tendem a superar a inflação e gerar riqueza por meio de valorização e dividendos.',
+        'Participações em empresas na bolsa brasileira (B3). ' +
+        'No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
       brFiis:
-        'Fundos Imobiliários negociados na B3. Investem em imóveis físicos ou títulos imobiliários ' +
-        'e distribuem rendimentos mensais isentos de IR para pessoa física.',
+        'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. ' +
+        'Distribuem rendimentos mensais isentos de IR para pessoa física.',
       usStocks:
-        'Ações de empresas listadas nas bolsas americanas (NYSE, Nasdaq). ' +
-        'Proporcionam exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
+        'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). ' +
+        'Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
       usReits:
-        'Real Estate Investment Trusts — equivalentes americanos dos FIIs. ' +
-        'Investem em imóveis como data centers, hospitais e galpões logísticos, distribuindo dividendos regulares.',
+        'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. ' +
+        'Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
       fixedIncome:
-        'Títulos de renda fixa como CDBs, LCIs, LCAs e Tesouro Direto. ' +
+        'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. ' +
         'Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
       emergencyReserve:
-        'Reserva com liquidez imediata para imprevistos — geralmente de 6 a 12 meses de custo de vida. ' +
-        'Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB com liquidez diária.',
+        'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. ' +
+        'Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
       storeOfValue:
         'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. ' +
-        'Funcionam como proteção contra desvalorização cambial e instabilidade monetária.',
+        'Servem como proteção contra desvalorização cambial e instabilidade monetária.',
       assets:
         'Bens patrimoniais como imóveis de uso pessoal e veículos. ' +
-        'Compõem o patrimônio total mas não fazem parte da estratégia de aporte.',
+        'Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
     },
 
     /* ── Overview / Metas ───────────────────────────────────── */
@@ -68,8 +68,8 @@ const strings = {
     warningTargetSum:   (sum) => `As metas somam <strong>${sum}%</strong>, mas deveriam totalizar 100%.`,
     infoStale:          (dateStr) => `Cotações desatualizadas (${dateStr}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices:       'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
-    successBalanced:    'Carteira balanceada — nenhuma classe precisa de aporte no momento.',
-    disabledClassHint:  'Meta 0% — não participa do rebalanceamento.',
+    successBalanced:    'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
+    disabledClassHint:  'Meta 0%. Não participa do rebalanceamento.',
 
     /* ── Badges ─────────────────────────────────────────────── */
     badgeAportar:       'aportar',
@@ -174,7 +174,6 @@ export function t(key, ...args) {
   return typeof val === 'function' ? val(...args) : val;
 }
 
-/** Access nested keys like t('className', 'brStocks') → 'Ações'. */
 export function tn(section, key) {
   return strings[currentLocale]?.[section]?.[key]
       ?? strings['pt-BR']?.[section]?.[key]

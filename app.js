@@ -55,7 +55,6 @@ async function refreshPrices() {
   toast(ok ? t('toastPricesOk') : t('toastPricesFail'));
 }
 
-/** Keeps Tab cycling inside an open modal. */
 function trapFocus(modal) {
   const focusable = modal.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
   if (focusable.length === 0) return;
@@ -183,6 +182,7 @@ function doImport(file) {
   reader.readAsText(file);
 }
 
+/* ── Delegated event: clicks ───────────────────────────────── */
 $('#panels').addEventListener('click', e => {
   const target = e.target.closest('[data-goto]');
   if (target && !e.target.closest('input, button')) { setActiveTab(target.dataset.goto); render(); return; }
@@ -212,29 +212,31 @@ $('#panels').addEventListener('click', e => {
   if (sortTh) { toggleSort(sortTh.dataset.sort); render(); return; }
 });
 
+/* ── Delegated event: change ───────────────────────────────── */
 $('#panels').addEventListener('change', e => {
-  const input = e.target.closest('.inline-input');
-  if (!input) return;
-
-  if (input.dataset.field === 'amount') {
-    const val = parseFloat(input.value.replace(',', '.'));
-    if (!isNaN(val) && val >= 0) {
-      portfolio.items(input.dataset.class)[parseInt(input.dataset.idx)].amount = val;
-      scheduleSave();
+  /* Inline asset inputs (amount / per-item target) */
+  const inlineInput = e.target.closest('.inline-input');
+  if (inlineInput) {
+    if (inlineInput.dataset.field === 'amount') {
+      const val = parseFloat(inlineInput.value.replace(',', '.'));
+      if (!isNaN(val) && val >= 0) {
+        portfolio.items(inlineInput.dataset.class)[parseInt(inlineInput.dataset.idx)].amount = val;
+        scheduleSave();
+      }
+      return;
     }
-    return;
+    if (inlineInput.dataset.field === 'target') {
+      const items = portfolio.items(inlineInput.dataset.class);
+      const idx = parseInt(inlineInput.dataset.idx);
+      const raw = inlineInput.value.trim();
+      if (raw === '') delete items[idx].target;
+      else { const val = parseFloat(raw.replace(',', '.')); if (!isNaN(val) && val >= 0) items[idx].target = val; }
+      scheduleSave();
+      return;
+    }
   }
 
-  if (input.dataset.field === 'target') {
-    const items = portfolio.items(input.dataset.class);
-    const idx = parseInt(input.dataset.idx);
-    const raw = input.value.trim();
-    if (raw === '') delete items[idx].target;
-    else { const val = parseFloat(raw.replace(',', '.')); if (!isNaN(val) && val >= 0) items[idx].target = val; }
-    scheduleSave();
-    return;
-  }
-
+  /* Class-level target (the chip in summary cards) */
   const classTarget = e.target.closest('[data-class-target]');
   if (classTarget) {
     const val = parseFloat(classTarget.value.replace(',', '.'));
@@ -245,8 +247,11 @@ $('#panels').addEventListener('change', e => {
   }
 });
 
+/* Prevent card navigation when clicking inside the target chip */
 $('#panels').addEventListener('click', e => {
-  if (e.target.closest('[data-class-target]')) e.stopPropagation();
+  if (e.target.closest('[data-class-target]') || e.target.closest('.summary-card-target-chip')) {
+    e.stopPropagation();
+  }
 });
 
 $('#tabNav').addEventListener('click', e => {
@@ -254,7 +259,7 @@ $('#tabNav').addEventListener('click', e => {
   if (btn) { setActiveTab(btn.dataset.tab); render(); }
 });
 
-/* Drag & Drop — only react to external file drags */
+/* Drag & Drop */
 function isFileDrag(e) { return e.dataTransfer?.types?.includes('Files'); }
 
 let dragN = 0;
@@ -263,7 +268,7 @@ document.addEventListener('dragleave', e => { if (!isFileDrag(e)) return; e.prev
 document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
 document.addEventListener('drop', e => { e.preventDefault(); dragN = 0; $('#dropZone').classList.remove('visible'); const f = e.dataTransfer.files[0]; if (f?.name.endsWith('.json')) doImport(f); else if (f) toast(t('toastJsonOnly')); });
 
-/* Header buttons — M3 order: secondary actions left-to-right, primary action last */
+/* Header buttons */
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
 $('#btnExport').addEventListener('click', doExport);
 $('#btnTheme').addEventListener('click', () => { toggleTheme(); if (typeof lucide !== 'undefined') lucide.createIcons(); });
@@ -272,6 +277,7 @@ $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
 $('#fileInput').addEventListener('change', e => { if (e.target.files[0]) doImport(e.target.files[0]); e.target.value = ''; });
 
+/* Modal buttons */
 $('#modalCancel').addEventListener('click', closeAddModal);
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#addModal').addEventListener('click', e => { if (e.target.id === 'addModal') closeAddModal(); });
@@ -282,6 +288,7 @@ $('#noteCancel').addEventListener('click', closeNoteModal);
 $('#noteSave').addEventListener('click', saveNote);
 $('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
 
+/* Modal keyboard shortcuts */
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
