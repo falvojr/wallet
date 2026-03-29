@@ -55,8 +55,8 @@ export function render() {
 
 function renderTabs() {
   const tabs = [
-    { key: 'overview', label: 'Visão Geral', count: null, hidden: false },
-    { key: 'charts', label: 'Gráficos', count: null, hidden: false },
+    { key: 'overview', label: 'Metas', count: null, hidden: false },
+    { key: 'charts', label: 'Carteira', count: null, hidden: false },
     { key: '_sep', label: '', count: null, hidden: false },
     ...CLASS_KEYS.map(k => ({ key: k, label: CLASS_META[k].label, count: portfolio.items(k).length, hidden: portfolio.isHidden(k) })),
   ];

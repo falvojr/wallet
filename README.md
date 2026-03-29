@@ -92,11 +92,11 @@ Cada classe tem um `target` (meta % do portfólio) e seus `items`:
 
 ## Funcionalidades
 
-### Visão Geral
+### Metas
 
 Cards de resumo por classe mostrando valor total, alocação atual vs. meta, e barra de progresso. A tag `APORTAR` aparece nas classes com maior necessidade de aporte.
 
-### Gráficos
+### Carteira
 
 Mapa da Carteira em formato de bolhas (*circle-packing*), onde o tamanho de cada círculo representa a proporção do ativo no portfólio total. Cores indicam a classe do ativo. A legenda permite ocultar/reativar classes e navegar para a aba correspondente.
 
