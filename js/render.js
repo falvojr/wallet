@@ -1,31 +1,36 @@
 import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab, classLabel, consumeTabChange } from './state.js';
 import { t, tn } from './i18n.js';
 import {
-  formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, classTargetPct, classActualPct,
-  isQuarantined, isClassInactive, allocationWarning, deficientClasses, deficientItems,
-  itemTargetPct, allAssetsWeighted, emergencyProgress,
+  formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, chartVisibleTotalBRL, classTargetPct, classActualPct,
+  isQuarantined, isClassInactive, allocationWarning, deficientClasses, deficientItems, itemTargetPct, allAssetsWeighted, emergencyProgress,
 } from './calc.js';
 
 const $ = s => document.querySelector(s);
-const createIcons = () => { if (typeof lucide !== 'undefined') lucide.createIcons(); };
-const escapeHtml = str => String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+const refreshIcons = () => { if (typeof lucide !== 'undefined') lucide.createIcons(); };
+const esc = str => String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// Shared HTML fragments (DRY)
 
 function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}"><i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span></div>`;
 }
 
-function badge(cls, icon, label, title) {
-  return ` <span class="badge badge--${cls}" title="${title}"><i data-lucide="${icon}" class="badge-icon"></i>${label}</span>`;
-}
-
+const badge = (cls, icon, label, title) => ` <span class="badge badge--${cls}" title="${title}"><i data-lucide="${icon}" class="badge-icon"></i>${label}</span>`;
 const aportarBadge = () => badge('aportar', 'sparkles', t('badgeAportar'), t('badgeAportarTitle'));
 const ignorarBadge = () => badge('ignorar', 'circle-off', t('badgeIgnorar'), t('badgeIgnorarTitle'));
 
-let sortCol = null, sortDir = 'asc';
-export function toggleSort(col) {
-  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-  else { sortCol = col; sortDir = 'asc'; }
+function targetChip(key, value, unit, inputAttrs, wide = false) {
+  const inactive = isClassInactive(key) ? ' summary-card-target-chip--inactive' : '';
+  return `<div class="summary-card-target-chip${inactive}"><span class="target-chip-label">${t(unit === 'R$' ? 'goalLabel' : 'metaLabel')}</span>${
+    unit === 'R$' ? `<span class="target-chip-unit">R$</span><input class="target-chip-input target-chip-input--wide" type="text" value="${value}" ${inputAttrs} placeholder="0" inputmode="decimal">` :
+    `<input class="target-chip-input" type="text" value="${value}" ${inputAttrs} inputmode="decimal"><span class="target-chip-unit">%</span>`
+  }</div>`;
 }
+
+// Sort state
+
+let sortCol = null, sortDir = 'asc';
+export function toggleSort(col) { if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc'; else { sortCol = col; sortDir = 'asc'; } }
 
 function tickerUrl(key, id) {
   const p = prices.get(id);
@@ -34,342 +39,239 @@ function tickerUrl(key, id) {
   return null;
 }
 
-// Main render
+// Full render
 
 export function render() {
   const has = portfolio.loaded;
-  $('#emptyWelcome').hidden = has;
-  $('#headerActions').hidden = !has;
-  if (!has) { $('#tabNav').innerHTML = ''; $('#panels').innerHTML = ''; createIcons(); return; }
-  renderTabs(); renderPanels(); createIcons();
+  $('#emptyWelcome').hidden = has; $('#headerActions').hidden = !has;
+  if (!has) { $('#tabNav').innerHTML = ''; $('#panels').innerHTML = ''; refreshIcons(); return; }
+  renderTabs(); renderPanels(); refreshIcons();
   if (activeTab === 'charts') renderBubbleChart();
 }
 
-// Tabs (follows displayOrder)
+/** Surgical update: re-renders only the overview panel without touching tabs or other panels. */
+export function renderOverviewOnly() {
+  const panel = $('[data-panel="overview"]');
+  if (panel) { panel.innerHTML = renderOverview(); refreshIcons(); }
+}
+
+/** Surgical update: re-renders only the chart panel (used after toggling class visibility). */
+export function renderChartOnly() {
+  const panel = $('[data-panel="charts"]');
+  if (panel) { panel.innerHTML = renderChartsTab(); refreshIcons(); renderBubbleChart(); }
+}
+
+// Tabs (follows displayOrder, no disabled styling)
 
 function renderTabs() {
   const order = portfolio.displayOrder();
-  const tabs = [
-    { key: 'overview', label: t('tabOverview') },
-    { key: 'charts', label: t('tabPortfolio') },
-    { key: '_sep' },
-    ...order.map(k => ({ key: k, label: classLabel(k), count: portfolio.items(k).length, inactive: isClassInactive(k) })),
-  ];
+  const tabs = [{ key: 'overview', label: t('tabOverview') }, { key: 'charts', label: t('tabPortfolio') }, { key: '_sep' },
+    ...order.map(k => ({ key: k, label: classLabel(k), count: portfolio.items(k).length }))];
   $('#tabNav').innerHTML = tabs.map(tab => {
     if (tab.key === '_sep') return '<span class="tab-sep" aria-hidden="true"></span>';
-    const cls = tab.inactive ? ' tab-inactive' : '';
-    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}${cls}" data-tab="${tab.key}" aria-current="${tab.key === activeTab ? 'page' : 'false'}">${escapeHtml(tab.label)}${tab.count != null ? `<span class="tab-count">${tab.count}</span>` : ''}</button>`;
+    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}" data-tab="${tab.key}">${esc(tab.label)}${tab.count != null ? `<span class="tab-count">${tab.count}</span>` : ''}</button>`;
   }).join('');
 }
 
-// Panels (animation only on tab switch to avoid flicker on data updates)
+// Panels (animation only on tab switch)
 
 function renderPanels() {
-  const animated = consumeTabChange();
-  const wrap = (key, content) => {
-    const isActive = key === activeTab;
-    const cls = isActive ? (animated ? ' active tab-panel--enter' : ' active') : '';
-    return `<div class="tab-panel${cls}" data-panel="${key}" role="tabpanel">${content}</div>`;
-  };
-  $('#panels').innerHTML =
-    wrap('overview', renderOverview()) +
-    wrap('charts', renderChartsTab()) +
-    CLASS_KEYS.map(key => wrap(key, renderClassPanel(key))).join('');
+  const anim = consumeTabChange();
+  const wrap = (key, html) => `<div class="tab-panel${key === activeTab ? (anim ? ' active tab-panel--enter' : ' active') : ''}" data-panel="${key}">${html}</div>`;
+  $('#panels').innerHTML = wrap('overview', renderOverview()) + wrap('charts', renderChartsTab()) + CLASS_KEYS.map(k => wrap(k, renderClassPanel(k))).join('');
 }
 
 // Overview
 
 function renderOverview() {
-  const defClasses = deficientClasses();
-  const order = portfolio.displayOrder();
+  const defCls = deficientClasses(), order = portfolio.displayOrder();
   const populated = order.filter(k => portfolio.items(k).length > 0);
 
-  const warning = allocationWarning();
   let html = '';
-  if (warning) html += notice('triangle-alert', t('warningTargetSum', warning.sum));
+  const warn = allocationWarning();
+  if (warn) html += notice('triangle-alert', t('warningTargetSum', warn.sum));
   if (prices.hasData && prices.stale) html += notice('clock', t('infoStale', prices.dateStr), 'info');
   else if (!prices.hasData) html += notice('clock', t('infoNoPrices'), 'info');
 
-  // Emergency reserve priority notice
-  if (portfolio.isEmergencyUnmet()) {
-    html += notice('life-buoy', t('emergencyPriority'), 'warning');
-  } else {
-    const activePopulated = populated.filter(k => !isClassInactive(k));
-    if (prices.hasData && defClasses.length === 0 && activePopulated.length > 0) {
-      html += notice('check-circle', t('successBalanced'), 'success');
-    }
-  }
+  if (portfolio.isEmergencyUnmet()) html += notice('life-buoy', t('emergencyPriority'), 'warning');
+  else if (prices.hasData && defCls.length === 0 && populated.some(k => !isClassInactive(k))) html += notice('check-circle', t('successBalanced'), 'success');
 
-  html += `<div class="summary-cards">${populated.map((k, i) => renderSummaryCard(k, defClasses, i + 1)).join('')}</div>`;
+  html += `<div class="summary-cards">${populated.map((k, i) => renderSummaryCard(k, defCls, i + 1)).join('')}</div>`;
   return html;
 }
 
-/**
- * Renders a summary card for any class. All cards follow the same template:
- * header (order + icon + label + badges) > value > progress bar > meta row > description.
- */
-function renderSummaryCard(key, defClasses, order) {
-  const m = CLASS_META[key], label = classLabel(key);
-  const total = classTotalBRL(key);
-  const isDef = defClasses.includes(key);
-  const inactive = isClassInactive(key);
-  const isEmergency = key === 'emergencyReserve';
-  const description = tn('classDescription', key);
-  const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
-  const cardClass = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
+/** All cards follow the same template: header > value > bar > meta > description. Only the meta chip content varies per type. */
+function renderSummaryCard(key, defCls, displayIdx) {
+  const m = CLASS_META[key], label = classLabel(key), total = classTotalBRL(key), isDef = defCls.includes(key);
+  const inactive = isClassInactive(key), isEmergency = key === 'emergencyReserve';
+  const desc = tn('classDescription', key), val = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
+  const order = portfolio.order(key);
 
-  // Progress bar
+  // Progress bar percentage
   let pct = 0;
-  if (isEmergency) {
-    pct = emergencyProgress() ?? 0;
-  } else {
-    const actual = classActualPct(key), target = classTargetPct(key);
-    pct = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
-  }
-  const barHtml = `<div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>`;
+  if (isEmergency) { pct = emergencyProgress() ?? 0; }
+  else { const actual = classActualPct(key), tgt = classTargetPct(key); pct = actual !== null && tgt > 0 ? Math.min((actual / tgt) * 100, 100) : 0; }
 
-  // Meta row: actual % + chip (or hint + chip for inactive/emergency)
-  let metaHtml;
+  // Meta row (varies by type)
+  let metaLeft, chipHtml;
   if (isEmergency) {
-    const goal = portfolio.goal('emergencyReserve');
-    const progress = emergencyProgress();
-    metaHtml = `<div class="summary-card-meta">
-      ${progress !== null ? `<span class="summary-card-actual">${progress.toFixed(1)}%</span>` : '<span></span>'}
-      <div class="summary-card-target-chip">
-        <span class="target-chip-label">${t('goalLabel')}</span>
-        <span class="target-chip-unit">R$</span>
-        <input class="target-chip-input target-chip-input--wide" type="text"
-          value="${goal > 0 ? Math.round(goal) : ''}" data-class-goal="emergencyReserve"
-          placeholder="0" inputmode="decimal" aria-label="${t('a11yGoalClass', escapeHtml(label))}">
-      </div>
-    </div>`;
+    const prog = emergencyProgress(), goal = portfolio.goal('emergencyReserve');
+    metaLeft = prog !== null ? `<span class="summary-card-actual">${prog.toFixed(1)}%</span>` : '<span></span>';
+    chipHtml = targetChip(key, goal > 0 ? Math.round(goal) : '', 'R$', `data-class-goal="emergencyReserve" aria-label="${t('a11yGoalClass', esc(label))}"`, true);
   } else if (!inactive) {
-    const actual = classActualPct(key), target = classTargetPct(key);
-    metaHtml = `<div class="summary-card-meta">
-      ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>'}
-      <div class="summary-card-target-chip">
-        <span class="target-chip-label">${t('metaLabel')}</span>
-        <input class="target-chip-input" type="text" value="${target.toFixed(0)}" data-class-target="${key}"
-          inputmode="decimal" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
-        <span class="target-chip-unit">%</span>
-      </div>
-    </div>`;
+    const actual = classActualPct(key), tgt = classTargetPct(key);
+    metaLeft = actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>';
+    chipHtml = targetChip(key, tgt.toFixed(0), '%', `data-class-target="${key}" aria-label="${t('a11yTargetClass', esc(label))}"`);
   } else {
-    metaHtml = `<div class="summary-card-meta">
-      <span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-      <div class="summary-card-target-chip summary-card-target-chip--inactive">
-        <span class="target-chip-label">${t('metaLabel')}</span>
-        <input class="target-chip-input" type="text" value="0" data-class-target="${key}"
-          inputmode="decimal" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
-        <span class="target-chip-unit">%</span>
-      </div>
-    </div>`;
+    metaLeft = `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`;
+    chipHtml = targetChip(key, '0', '%', `data-class-target="${key}" aria-label="${t('a11yTargetClass', esc(label))}"`);
   }
 
-  return `<div class="${cardClass}" data-goto="${key}" style="--card-color:${m.color}">
+  const cardCls = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
+  return `<div class="${cardCls}" data-goto="${key}" style="--card-color:${m.color}">
     <div class="summary-card-head">
-      <span class="summary-card-order">${order}</span>
-      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}${isDef ? aportarBadge() : ''}</span>
+      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${esc(label)}${isDef ? aportarBadge() : ''}</span>
+      <input class="summary-card-order" type="text" value="${order}" data-class-order="${key}" inputmode="numeric" title="Ordem" aria-label="Ordem de ${esc(label)}">
     </div>
-    <div class="summary-card-value">${valueStr}</div>
-    ${barHtml}
-    ${metaHtml}
-    <p class="summary-card-desc">${escapeHtml(description)}</p>
+    <div class="summary-card-value">${val}</div>
+    <div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>
+    <div class="summary-card-meta">${metaLeft}${chipHtml}</div>
+    <p class="summary-card-desc">${esc(desc)}</p>
   </div>`;
 }
 
-// Carteira
+// Carteira (chart patrimônio reflects only visible classes)
 
 function renderChartsTab() {
-  const order = portfolio.displayOrder();
-  const populated = order.filter(k => portfolio.items(k).length > 0);
-  const chartData = populated.map(k => {
+  const order = portfolio.displayOrder(), populated = order.filter(k => portfolio.items(k).length > 0);
+  const data = populated.map(k => {
     const total = classTotalBRL(k), count = portfolio.items(k).length, hidden = portfolio.isChartHidden(k);
-    return { key: k, label: classLabel(k), color: CLASS_META[k].color, value: total ?? count * 0.01, count, hasPrices: total !== null, total, hidden };
+    return { key: k, label: classLabel(k), color: CLASS_META[k].color, count, hasPrices: total !== null, total, hidden };
   });
 
-  const { total, partial } = portfolioTotalBRL();
-  const headerValue = total > 0
-    ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
-    : t('assetCount', populated.reduce((s, k) => s + portfolio.items(k).length, 0));
+  const { total, partial } = chartVisibleTotalBRL();
+  const headerVal = total > 0 ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '') : t('assetCount', populated.reduce((s, k) => s + portfolio.items(k).length, 0));
 
   return `<div class="chart-fullwidth">
-    <div class="chart-header">
-      <span class="chart-header-label">${t('portfolioLabel')}</span>
-      <span class="chart-header-value">${headerValue}</span>
-    </div>
+    <div class="chart-header"><span class="chart-header-label">${t('portfolioLabel')}</span><span class="chart-header-value">${headerVal}</span></div>
     <div class="chart-layout">
-      <div class="chart-legend-sidebar">${chartData.map(renderLegendItem).join('')}</div>
+      <div class="chart-legend-sidebar">${data.map(renderLegendItem).join('')}</div>
       <div id="bubbleChart" class="bubble-container"></div>
     </div>
   </div>`;
 }
 
+/** Legend item: entire row is clickable to toggle chart visibility. Hidden items get strikethrough. */
 function renderLegendItem(d) {
-  const eye = d.hidden ? 'eye-off' : 'eye';
-  return `<div class="legend-item${d.hidden ? ' legend-item--hidden' : ''}">
-    <button class="legend-eye" data-toggle-chart="${d.key}" aria-label="${t('a11yToggleChart', d.label, !d.hidden)}"><i data-lucide="${eye}"></i></button>
+  return `<div class="legend-item${d.hidden ? ' legend-item--hidden' : ''}" data-toggle-chart="${d.key}" title="${t('a11yToggleChart', d.label, !d.hidden)}">
     <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
-    <div class="legend-item-text" data-goto="${d.key}">
-      <span class="legend-item-label">${escapeHtml(d.label)}</span>
-      <span class="legend-item-value">${d.hasPrices ? formatBRL(d.total) : t('assetCount', d.count)}</span>
+    <div class="legend-item-text">
+      <span class="legend-item-label${d.hidden ? ' legend-strike' : ''}">${esc(d.label)}</span>
+      <span class="legend-item-value${d.hidden ? ' legend-strike' : ''}">${d.hasPrices ? formatBRL(d.total) : t('assetCount', d.count)}</span>
     </div>
   </div>`;
 }
 
 // Bubble chart
 
-function fitLabel(name, radius) {
-  const fontSize = Math.min(radius * 0.45, 14);
-  const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
-  return name.length <= maxChars ? name : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
-}
-
-function bubbleToast(id, value, pct) {
-  const el = document.createElement('div');
-  el.className = 'toast';
-  el.textContent = `${id}: ${formatBRL(value)} (${pct}%)`;
-  document.getElementById('toastContainer')?.appendChild(el);
-  setTimeout(() => el.remove(), 2500);
-}
+function fitLabel(name, r) { const fs = Math.min(r * 0.45, 14), mx = Math.floor((r * 1.6) / (fs * 0.6)); return name.length <= mx ? name : (mx >= 3 ? name.slice(0, mx - 1) + '…' : name.slice(0, mx)); }
 
 function renderBubbleChart() {
-  const container = document.getElementById('bubbleChart');
-  if (!container || typeof d3 === 'undefined') return;
-
+  const el = document.getElementById('bubbleChart');
+  if (!el || typeof d3 === 'undefined') return;
   const assets = allAssetsWeighted();
-  if (!assets.length) { container.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
+  if (!assets.length) { el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
 
-  const visibleTotal = assets.reduce((s, a) => s + a.value, 0);
-  const width = container.clientWidth || 600;
-  // Fill most of the available viewport height for better space usage
-  const height = Math.max(420, Math.min(width * 0.72, window.innerHeight * 0.65));
-
+  const vTotal = assets.reduce((s, a) => s + a.value, 0);
+  const w = el.clientWidth || 600, h = Math.max(440, Math.min(w * 0.75, window.innerHeight * 0.68));
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
-  d3.pack().size([width, height]).padding(3)(root);
+  d3.pack().size([w, h]).padding(3)(root);
 
-  const svg = d3.select(container).html('')
-    .append('svg').attr('viewBox', `0 0 ${width} ${height}`)
-    .attr('role', 'img').attr('aria-label', t('a11yBubbleChart'));
+  const svg = d3.select(el).html('').append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('role', 'img').attr('aria-label', t('a11yBubbleChart'));
+  const nodes = svg.selectAll('g').data(root.leaves()).join('g').attr('transform', d => `translate(${d.x},${d.y})`);
 
-  const nodes = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x},${d.y})`);
-
-  nodes.append('circle').attr('r', d => d.r)
-    .attr('fill', d => d.data.color).attr('opacity', 0.82)
+  nodes.append('circle').attr('r', d => d.r).attr('fill', d => d.data.color).attr('opacity', 0.82)
     .attr('stroke', d => d.data.color).attr('stroke-opacity', 0.25).attr('stroke-width', 1.5)
     .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
     .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5); })
     .on('mouseleave', function () { d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25); });
 
-  nodes.append('title').text(d => {
-    const pct = visibleTotal > 0 ? ((d.data.value / visibleTotal) * 100).toFixed(1) : '0';
-    return `${d.data.id}: ${formatBRL(d.data.value)} (${pct}%)`;
-  });
+  const pct = d => vTotal > 0 ? ((d.data.value / vTotal) * 100).toFixed(1) : '0';
+  nodes.append('title').text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pct(d)}%)`);
+  nodes.on('click', (_e, d) => { const el2 = document.createElement('div'); el2.className = 'toast'; el2.textContent = `${d.data.id}: ${formatBRL(d.data.value)} (${pct(d)}%)`; document.getElementById('toastContainer')?.appendChild(el2); setTimeout(() => el2.remove(), 2500); });
 
-  nodes.on('click', (_event, d) => {
-    const pct = visibleTotal > 0 ? ((d.data.value / visibleTotal) * 100).toFixed(1) : '0';
-    bubbleToast(d.data.id, d.data.value, pct);
-  });
+  nodes.filter(d => d.r > 16).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central').attr('fill', '#fff')
+    .attr('font-family', 'var(--font-h)').attr('font-weight', '700').attr('font-size', d => Math.min(d.r * 0.45, 14)).text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
 
-  nodes.filter(d => d.r > 16).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('fill', '#fff').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
-    .attr('font-size', d => Math.min(d.r * 0.45, 14))
-    .text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
-
-  nodes.filter(d => d.r > 28).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.65)')
-    .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
-    .text(d => { const pct = visibleTotal > 0 ? ((d.data.value / visibleTotal) * 100).toFixed(1) : '0'; return pct + '%'; })
-    .style('pointer-events', 'none');
+  nodes.filter(d => d.r > 28).append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'central').attr('dy', d => d.r * 0.35)
+    .attr('fill', 'rgba(255,255,255,0.65)').attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
+    .text(d => pct(d) + '%').style('pointer-events', 'none');
 }
 
 // Asset table
 
-function sortIndicator(col) {
-  if (sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
-  return `<i data-lucide="${sortDir === 'asc' ? 'arrow-up' : 'arrow-down'}" class="sort-icon"></i>`;
-}
+function sortIndicator(col) { return sortCol !== col ? '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>' : `<i data-lucide="${sortDir === 'asc' ? 'arrow-up' : 'arrow-down'}" class="sort-icon"></i>`; }
 
 function sortedItems(key) {
-  const items = portfolio.items(key);
-  if (!sortCol || items.length < 2) return items.map((item, idx) => ({ item, idx }));
-  const indexed = items.map((item, idx) => ({ item, idx }));
+  const items = portfolio.items(key); if (!sortCol || items.length < 2) return items.map((item, idx) => ({ item, idx }));
   const dir = sortDir === 'asc' ? 1 : -1;
-  return indexed.toSorted((a, b) => {
-    const ia = a.item, ib = b.item;
+  return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
+    const [ia, ib] = [a.item, b.item];
     switch (sortCol) {
-      case 'name':   return dir * ia.id.localeCompare(ib.id);
-      case 'amount': return dir * (ia.amount - ib.amount);
-      case 'price':  return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
+      case 'name': return dir * ia.id.localeCompare(ib.id); case 'amount': return dir * (ia.amount - ib.amount);
+      case 'price': return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
       case 'change': return dir * ((prices.get(ia.id)?.change ?? 0) - (prices.get(ib.id)?.change ?? 0));
-      case 'total':  return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
-      case 'target': return dir * (itemTargetPct(key, ia) - itemTargetPct(key, ib));
-      default: return 0;
+      case 'total': return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
+      case 'target': return dir * (itemTargetPct(key, ia) - itemTargetPct(key, ib)); default: return 0;
     }
   });
 }
 
 function renderClassPanel(key) {
   const label = classLabel(key), items = portfolio.items(key), inactive = isClassInactive(key);
-  let html = `<h2 class="sr-only">${escapeHtml(label)}</h2>`;
+  let html = `<h2 class="sr-only">${esc(label)}</h2>`;
   if (inactive) html += notice('info', t('inactiveClassHint'), 'info');
-  if (items.length === 0) {
-    return html + `<div class="empty-class"><p>${t('emptyClass')}</p><button class="btn btn--filled add-to-empty" data-add-class="${key}">${t('addAsset')}</button></div>`;
-  }
-  const defItems = inactive ? [] : deficientItems(key);
-  const sorted = sortedItems(key);
-  html += `<div class="table-wrap"><table class="asset-table">
-    <thead><tr>
-      <th data-sort="name" class="sortable">${t('colName')} ${sortIndicator('name')}</th>
-      <th data-sort="amount" class="col-r sortable">${t('colAmount')} ${sortIndicator('amount')}</th>
-      <th data-sort="price" class="col-r sortable">${t('colPrice')} ${sortIndicator('price')}</th>
-      <th data-sort="change" class="col-r sortable">${t('colChange')} ${sortIndicator('change')}</th>
-      <th data-sort="total" class="col-r sortable">${t('colTotal')} ${sortIndicator('total')}</th>
-      <th data-sort="target" class="col-r sortable">${t('colTarget')} ${sortIndicator('target')}</th>
-      <th class="col-actions">${t('colActions')}</th>
-    </tr></thead>
-    <tbody>${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, defItems)).join('')}
-      <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr>
-    </tbody></table></div>`;
+  if (!items.length) return html + `<div class="empty-class"><p>${t('emptyClass')}</p><button class="btn btn--filled add-to-empty" data-add-class="${key}">${t('addAsset')}</button></div>`;
+  const defItems = deficientItems(key);
+  html += `<div class="table-wrap"><table class="asset-table"><thead><tr>
+    <th data-sort="name" class="sortable">${t('colName')} ${sortIndicator('name')}</th>
+    <th data-sort="amount" class="col-r sortable">${t('colAmount')} ${sortIndicator('amount')}</th>
+    <th data-sort="price" class="col-r sortable">${t('colPrice')} ${sortIndicator('price')}</th>
+    <th data-sort="change" class="col-r sortable">${t('colChange')} ${sortIndicator('change')}</th>
+    <th data-sort="total" class="col-r sortable">${t('colTotal')} ${sortIndicator('total')}</th>
+    <th data-sort="target" class="col-r sortable">${t('colTarget')} ${sortIndicator('target')}</th>
+    <th class="col-actions">${t('colActions')}</th></tr></thead><tbody>
+    ${sortedItems(key).map(({ item, idx }) => renderAssetRow(key, item, idx, defItems)).join('')}
+    <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr></tbody></table></div>`;
   return html;
 }
 
 function renderAssetRow(key, item, idx, defItems) {
-  const meta = CLASS_META[key], isDef = defItems.includes(item.id), quarantined = isQuarantined(item);
-  const p = prices.get(item.id), value = assetValueBRL(key, item), safeId = escapeHtml(item.id);
-  const { priceStr, changeHtml } = formatPriceCell(key, item, p);
+  const m = CLASS_META[key], isDef = defItems.includes(item.id), q = isQuarantined(item);
+  const p = prices.get(item.id), val = assetValueBRL(key, item), id = esc(item.id);
   const url = tickerUrl(key, item.id);
-  const ticker = url ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${safeId}</a>` : `<span class="ticker-name">${safeId}</span>`;
+  const ticker = url ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${id}</a>` : `<span class="ticker-name">${id}</span>`;
+  const { priceStr, changeHtml } = fmtPrice(key, item, p);
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
-  const noteTitle = item.note ? escapeHtml(item.note) : t('a11yAddNote');
-  const rowClass = isDef ? 'row-target' : quarantined ? 'row-quarantine' : '';
-  return `<tr${rowClass ? ` class="${rowClass}"` : ''}>
-    <td class="td-ticker">${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}</td>
-    <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" aria-label="${t('a11yAmountOf', safeId)}"></td>
-    <td class="td-price">${priceStr}</td>
-    <td class="td-change">${changeHtml}</td>
-    <td class="td-value" style="color:${meta.color}">${value !== null ? formatBRL(value) : ''}</td>
-    <td class="td-r"><input class="inline-input inline-input--target" type="text" value="${item.target !== undefined ? item.target : ''}" data-class="${key}" data-idx="${idx}" data-field="target" placeholder="${t('targetPlaceholder')}" inputmode="decimal" aria-label="${t('a11yTargetOf', safeId)}" title="${t('a11yTargetTitle')}"></td>
+  const cls = isDef ? ' class="row-target"' : q ? ' class="row-quarantine"' : '';
+  return `<tr${cls}>
+    <td class="td-ticker">${ticker}${isDef ? aportarBadge() : q ? ignorarBadge() : ''}</td>
+    <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" aria-label="${t('a11yAmountOf', id)}"></td>
+    <td class="td-price">${priceStr}</td><td class="td-change">${changeHtml}</td>
+    <td class="td-value" style="color:${m.color}">${val !== null ? formatBRL(val) : ''}</td>
+    <td class="td-r"><input class="inline-input inline-input--target" type="text" value="${item.target !== undefined ? item.target : ''}" data-class="${key}" data-idx="${idx}" data-field="target" placeholder="${t('targetPlaceholder')}" inputmode="decimal" aria-label="${t('a11yTargetOf', id)}"></td>
     <td class="td-actions">
-      <button class="icon-btn icon-btn--ghost note-btn${item.note ? ' has-note' : ''}" data-note-class="${key}" data-note-id="${safeId}" title="${noteTitle}" aria-label="${t('a11yNote', safeId)}"><i data-lucide="${noteIcon}"></i></button>
-      <button class="icon-btn icon-btn--ghost remove-btn" data-class="${key}" data-idx="${idx}" title="${t('a11yRemove', safeId)}" aria-label="${t('a11yRemove', safeId)}"><i data-lucide="trash-2"></i></button>
-    </td>
-  </tr>`;
+      <button class="icon-btn icon-btn--ghost note-btn${item.note ? ' has-note' : ''}" data-note-class="${key}" data-note-id="${id}" title="${item.note ? esc(item.note) : t('a11yAddNote')}" aria-label="${t('a11yNote', id)}"><i data-lucide="${noteIcon}"></i></button>
+      <button class="icon-btn icon-btn--ghost remove-btn" data-class="${key}" data-idx="${idx}" title="${t('a11yRemove', id)}" aria-label="${t('a11yRemove', id)}"><i data-lucide="trash-2"></i></button>
+    </td></tr>`;
 }
 
-function formatPriceCell(key, item, p) {
-  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve' || (key === 'storeOfValue' && !p))
-    return { priceStr: t('declaredPrice'), changeHtml: '' };
+function fmtPrice(key, item, p) {
+  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve' || (key === 'storeOfValue' && !p)) return { priceStr: t('declaredPrice'), changeHtml: '' };
   if (!p) return { priceStr: '', changeHtml: '' };
-  const prefix = p.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
-  const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  let changeHtml = '';
-  if (p.change !== undefined) {
-    const dir = p.change >= 0;
-    changeHtml = `<span class="${dir ? 'change-up' : 'change-down'}" title="${dir ? 'alta' : 'queda'} de ${Math.abs(p.change).toFixed(2)}%">${dir ? '+' : ''}${p.change.toFixed(2)}%</span>`;
-  }
-  return { priceStr, changeHtml };
+  const pfx = p.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
+  const priceStr = pfx + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p.change === undefined) return { priceStr, changeHtml: '' };
+  const up = p.change >= 0;
+  return { priceStr, changeHtml: `<span class="${up ? 'change-up' : 'change-down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>` };
 }
