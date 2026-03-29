@@ -4,6 +4,7 @@ export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+/** Returns asset value in BRL, or null if no price is available. */
 export function assetValueBRL(key, asset) {
   if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve') return asset.amount;
   const p = prices.get(asset.id);
@@ -21,6 +22,7 @@ export function classTotalBRL(key) {
   return hasValue ? total : null;
 }
 
+/** Full portfolio value across all classes (active and inactive). */
 export function portfolioTotalBRL() {
   let total = 0, partial = false;
   for (const key of portfolio.allKeys()) {
@@ -34,7 +36,7 @@ export function portfolioTotalBRL() {
 export const isQuarantined  = item => item.target === 0;
 export const classTargetPct = key  => portfolio.target(key);
 
-/** A class is inactive if it has target=0 OR is emergencyReserve. */
+/** A class does not participate in percentage-based rebalancing. */
 export const isClassInactive = key => key === 'emergencyReserve' || portfolio.target(key) === 0;
 
 export function classActualPct(key) {
@@ -43,18 +45,43 @@ export function classActualPct(key) {
   return val !== null && total > 0 ? (val / total) * 100 : null;
 }
 
+/** Progress of emergency reserve toward its BRL goal (0-100). */
+export function emergencyProgress() {
+  const goal = portfolio.goal('emergencyReserve');
+  if (goal <= 0) return null;
+  const total = classTotalBRL('emergencyReserve') ?? 0;
+  return Math.min((total / goal) * 100, 100);
+}
+
 export function itemTargetPct(key, item) {
   if (item.target !== undefined) return item.target;
   const activeCount = portfolio.items(key).filter(a => !isQuarantined(a)).length;
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
+/** Checks if active class targets sum to 100%. Returns null if OK. */
 export function allocationWarning() {
   const sum = portfolio.activeKeys().reduce((acc, key) => acc + classTargetPct(key), 0);
   return Math.abs(sum - 100) < 0.1 ? null : { sum: Math.round(sum) };
 }
 
-/* ── Rebalancing ───────────────────────────────────────────── */
+// Rebalancing
+//
+// The algorithm follows a two-level greedy approach:
+//
+// 1. Emergency reserve check: if the reserve has a goal set and the
+//    current amount is below it, the algorithm recommends ONLY the
+//    emergency reserve. This reflects the financial principle that an
+//    emergency fund is a prerequisite before investing elsewhere.
+//
+// 2. Class level: for each active class (target > 0), compute the
+//    deficit (target% - actual%). Filter out classes where the deficit
+//    is below a proportional threshold (10% of target, min 0.5pp).
+//    Return the top 1-2 most underweight classes.
+//
+// 3. Asset level: within a recommended class, rank assets by their
+//    gap from their within-class target, weighted by the class deficit.
+//    Return the top 1-3 assets depending on class size.
 
 const THRESHOLD_MIN    = 0.5;
 const THRESHOLD_FACTOR = 0.1;
@@ -68,23 +95,37 @@ function classDeficit(key) {
   return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
 }
 
+/**
+ * Returns max number of recommendations based on item count.
+ * Avoids overwhelming the user with suggestions in small sets.
+ */
 function recLimit(count) {
   if (count >= 10) return 3;
   if (count >= 5)  return 2;
   return count >= 2 ? 1 : 0;
 }
 
+/**
+ * Returns the keys of classes that need the most investment.
+ *
+ * If the emergency reserve goal is set but not met, returns only
+ * ['emergencyReserve'] to enforce the "safety net first" principle.
+ */
 export function deficientClasses() {
+  if (portfolio.isEmergencyUnmet()) return ['emergencyReserve'];
+
   const ranked = portfolio.activeKeys()
     .filter(key => portfolio.items(key).length > 0)
     .map(key => ({ key, gap: classDeficit(key) }))
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
     .toSorted((a, b) => b.gap - a.gap);
 
-  const limit = ranked.length >= 4 ? 3 : ranked.length >= 2 ? 2 : 1;
+  // Cap at 2 for typical portfolios (6-8 classes); 3 only for 10+
+  const limit = ranked.length >= 8 ? 3 : ranked.length >= 3 ? 2 : 1;
   return ranked.slice(0, limit).map(r => r.key);
 }
 
+/** Returns asset IDs within a class that are most underweight. */
 export function deficientItems(key) {
   if (isClassInactive(key)) return [];
 
@@ -107,6 +148,7 @@ export function deficientItems(key) {
   return ranked.slice(0, recLimit(items.length)).map(r => r.id);
 }
 
+/** Returns all visible assets for the bubble chart (respects chart-only hide toggle). */
 export function allAssetsWeighted() {
   const assets = [];
   for (const key of portfolio.allKeys()) {

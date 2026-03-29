@@ -1,8 +1,8 @@
 /**
- * Centralised UI strings for future internationalisation.
+ * Centralised UI strings for internationalisation.
  *
- * To add a locale, duplicate `pt-BR` under a new key and translate.
- * Then call `setLocale('xx-YY')` at boot.
+ * To add a locale, duplicate `pt-BR` under a new key, translate each value,
+ * then call setLocale('xx-YY') at boot time.
  */
 
 const strings = {
@@ -13,7 +13,6 @@ const strings = {
     btnImport:          'Importar carteira JSON',
     btnExport:          'Exportar carteira JSON',
     btnPrices:          'Cotar',
-    btnPricesLabel:     'Atualizar cotações',
 
     tabOverview:        'Metas',
     tabPortfolio:       'Carteira',
@@ -30,33 +29,16 @@ const strings = {
     },
 
     classDescription: {
-      brStocks:
-        'Participações em empresas na bolsa brasileira (B3). ' +
-        'No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
-      brFiis:
-        'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. ' +
-        'Distribuem rendimentos mensais isentos de IR para pessoa física.',
-      usStocks:
-        'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). ' +
-        'Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
-      usReits:
-        'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. ' +
-        'Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
-      fixedIncome:
-        'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. ' +
-        'Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
-      emergencyReserve:
-        'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. ' +
-        'Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
-      storeOfValue:
-        'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. ' +
-        'Servem como proteção contra desvalorização cambial e instabilidade monetária.',
-      assets:
-        'Bens patrimoniais como imóveis de uso pessoal e veículos. ' +
-        'Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
+      brStocks:         'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
+      brFiis:           'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
+      usStocks:         'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
+      usReits:          'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
+      fixedIncome:      'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
+      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
+      storeOfValue:     'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. Servem como proteção contra desvalorização cambial e instabilidade monetária.',
+      assets:           'Bens patrimoniais como imóveis de uso pessoal e veículos. Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
     },
 
-    /* Overview / Metas */
     metaLabel:          'meta',
     targetLabel:        'Meta %',
     goalLabel:          'meta',
@@ -66,20 +48,17 @@ const strings = {
     infoNoPrices:       'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced:    'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
     inactiveClassHint:  'Não participa do rebalanceamento.',
-    emergencyHint:      'Valor fixo, não participa do rebalanceamento.',
+    emergencyPriority:  'Reserva de emergência não atingida. Priorize aportes aqui antes de investir em outras classes.',
 
-    /* Badges */
     badgeAportar:       'aportar',
     badgeAportarTitle:  'Maior necessidade de aporte',
     badgeIgnorar:       'ignorar',
     badgeIgnorarTitle:  'Em quarentena',
 
-    /* Carteira / Charts */
     portfolioLabel:     'Patrimônio',
     noData:             'Sem dados para exibir',
     partialSuffix:      '(parcial)',
 
-    /* Asset table */
     colName:            'Nome',
     colAmount:          'Qtd',
     colPrice:           'Preço',
@@ -93,7 +72,6 @@ const strings = {
     targetPlaceholder:  'auto',
     assetCount:         (n) => `${n} ativo${n !== 1 ? 's' : ''}`,
 
-    /* Add modal */
     addModalTitle:      'Adicionar Ativo',
     addFieldTicker:     'Nome / Ticker',
     addTickerHint:      'Ex: PETR4, CDB Inter',
@@ -104,22 +82,18 @@ const strings = {
     btnCancel:          'Cancelar',
     btnAdd:             'Adicionar',
 
-    /* Note modal */
     noteModalTitle:     'Comentário',
     noteHintPrefix:     'Nota sobre',
     notePlaceholder:    'Ex: Vence em 2027, rendendo 120% CDI',
     btnSave:            'Salvar',
 
-    /* Settings */
     settingsTitle:      'Tokens de API',
     settingsHint:       'Tokens gratuitos para cotações em tempo real.',
     brapiLabel:         'brapi.dev (Ações / FIIs)',
     brapiHint:          'Crie grátis em brapi.dev/dashboard',
     finnhubLabel:       'Finnhub (Stocks / REITs)',
     finnhubHint:        'Crie grátis em finnhub.io',
-    linkCreate:         'Criar conta',
 
-    /* Toasts */
     toastConfigTokens:  'Configure os tokens de API em ⚙️',
     toastPricesOk:      'Cotações atualizadas',
     toastPricesFail:    'Erro ao buscar cotações',
@@ -137,13 +111,11 @@ const strings = {
     welcomeTitle:       'Importe sua carteira',
     welcomeText:        'Arraste um arquivo <code>.json</code> ou clique para carregar.',
     welcomeBtn:         'Importar JSON',
-
     loadingDefault:     'Carregando...',
     loadingImporting:   'Importando...',
     loadingExchange:    'Câmbio',
     dropHint:           'Solte o arquivo JSON aqui',
 
-    /* Accessibility */
     a11yBubbleChart:    'Mapa da carteira por tamanho de posição',
     a11yRemove:         (id) => `Remover ${id}`,
     a11yNote:           (id) => `Comentário de ${id}`,
@@ -168,7 +140,5 @@ export function t(key, ...args) {
 }
 
 export function tn(section, key) {
-  return strings[currentLocale]?.[section]?.[key]
-      ?? strings['pt-BR']?.[section]?.[key]
-      ?? key;
+  return strings[currentLocale]?.[section]?.[key] ?? strings['pt-BR']?.[section]?.[key] ?? key;
 }

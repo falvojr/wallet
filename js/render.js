@@ -1,17 +1,14 @@
-import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab, classLabel } from './state.js';
+import { CLASS_META, CLASS_KEYS, portfolio, prices, activeTab, classLabel, consumeTabChange } from './state.js';
 import { t, tn } from './i18n.js';
 import {
   formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, classTargetPct, classActualPct,
-  isQuarantined, isClassInactive, allocationWarning, deficientClasses, deficientItems, itemTargetPct, allAssetsWeighted,
+  isQuarantined, isClassInactive, allocationWarning, deficientClasses, deficientItems,
+  itemTargetPct, allAssetsWeighted, emergencyProgress,
 } from './calc.js';
 
 const $ = s => document.querySelector(s);
 const createIcons = () => { if (typeof lucide !== 'undefined') lucide.createIcons(); };
-
-function escapeHtml(str) {
-  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-  return String(str).replace(/[&<>"']/g, c => map[c]);
-}
+const escapeHtml = str => String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
 
 function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}"><i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span></div>`;
@@ -37,6 +34,8 @@ function tickerUrl(key, id) {
   return null;
 }
 
+// Main render
+
 export function render() {
   const has = portfolio.loaded;
   $('#emptyWelcome').hidden = has;
@@ -46,41 +45,39 @@ export function render() {
   if (activeTab === 'charts') renderBubbleChart();
 }
 
-/* ── Tabs — follows displayOrder ───────────────────────────── */
+// Tabs (follows displayOrder)
 
 function renderTabs() {
   const order = portfolio.displayOrder();
   const tabs = [
-    { key: 'overview', label: t('tabOverview'), count: null },
-    { key: 'charts', label: t('tabPortfolio'), count: null },
+    { key: 'overview', label: t('tabOverview') },
+    { key: 'charts', label: t('tabPortfolio') },
     { key: '_sep' },
-    ...order.map(k => ({
-      key: k, label: classLabel(k), count: portfolio.items(k).length,
-      inactive: isClassInactive(k),
-    })),
+    ...order.map(k => ({ key: k, label: classLabel(k), count: portfolio.items(k).length, inactive: isClassInactive(k) })),
   ];
-
   $('#tabNav').innerHTML = tabs.map(tab => {
     if (tab.key === '_sep') return '<span class="tab-sep" aria-hidden="true"></span>';
     const cls = tab.inactive ? ' tab-inactive' : '';
-    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}${cls}"
-      data-tab="${tab.key}" aria-current="${tab.key === activeTab ? 'page' : 'false'}">
-      ${escapeHtml(tab.label)}${tab.count !== null ? `<span class="tab-count">${tab.count}</span>` : ''}
-    </button>`;
+    return `<button class="tab-btn${tab.key === activeTab ? ' active' : ''}${cls}" data-tab="${tab.key}" aria-current="${tab.key === activeTab ? 'page' : 'false'}">${escapeHtml(tab.label)}${tab.count != null ? `<span class="tab-count">${tab.count}</span>` : ''}</button>`;
   }).join('');
 }
 
-function renderPanels() {
-  const wrap = (key, content) =>
-    `<div class="tab-panel${key === activeTab ? ' active' : ''}" data-panel="${key}" role="tabpanel">${content}</div>`;
+// Panels (animation only on tab switch to avoid flicker on data updates)
 
+function renderPanels() {
+  const animated = consumeTabChange();
+  const wrap = (key, content) => {
+    const isActive = key === activeTab;
+    const cls = isActive ? (animated ? ' active tab-panel--enter' : ' active') : '';
+    return `<div class="tab-panel${cls}" data-panel="${key}" role="tabpanel">${content}</div>`;
+  };
   $('#panels').innerHTML =
     wrap('overview', renderOverview()) +
     wrap('charts', renderChartsTab()) +
     CLASS_KEYS.map(key => wrap(key, renderClassPanel(key))).join('');
 }
 
-/* ── Overview ──────────────────────────────────────────────── */
+// Overview
 
 function renderOverview() {
   const defClasses = deficientClasses();
@@ -93,81 +90,51 @@ function renderOverview() {
   if (prices.hasData && prices.stale) html += notice('clock', t('infoStale', prices.dateStr), 'info');
   else if (!prices.hasData) html += notice('clock', t('infoNoPrices'), 'info');
 
-  const activePopulated = populated.filter(k => !isClassInactive(k));
-  if (prices.hasData && defClasses.length === 0 && activePopulated.length > 0) {
-    html += notice('check-circle', t('successBalanced'), 'success');
+  // Emergency reserve priority notice
+  if (portfolio.isEmergencyUnmet()) {
+    html += notice('life-buoy', t('emergencyPriority'), 'warning');
+  } else {
+    const activePopulated = populated.filter(k => !isClassInactive(k));
+    if (prices.hasData && defClasses.length === 0 && activePopulated.length > 0) {
+      html += notice('check-circle', t('successBalanced'), 'success');
+    }
   }
 
-  html += `<div class="summary-cards">${populated.map(k => {
-    if (k === 'emergencyReserve') return renderEmergencyCard();
-    return renderSummaryCard(k, defClasses);
-  }).join('')}</div>`;
+  html += `<div class="summary-cards">${populated.map((k, i) => renderSummaryCard(k, defClasses, i + 1)).join('')}</div>`;
   return html;
 }
 
-function renderSummaryCard(key, defClasses) {
+/**
+ * Renders a summary card for any class. All cards follow the same template:
+ * header (order + icon + label + badges) > value > progress bar > meta row > description.
+ */
+function renderSummaryCard(key, defClasses, order) {
   const m = CLASS_META[key], label = classLabel(key);
-  const total = classTotalBRL(key), actual = classActualPct(key), target = classTargetPct(key);
-  const isDef = defClasses.includes(key), inactive = isClassInactive(key);
-  const pct = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
+  const total = classTotalBRL(key);
+  const isDef = defClasses.includes(key);
+  const inactive = isClassInactive(key);
+  const isEmergency = key === 'emergencyReserve';
   const description = tn('classDescription', key);
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
   const cardClass = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
 
-  let metaSection;
-  if (!inactive) {
-    metaSection = `
-      <div class="summary-card-bar" role="progressbar" aria-valuenow="${pct.toFixed(0)}" aria-valuemin="0" aria-valuemax="100"
-        aria-label="${t('a11yAllocation', escapeHtml(label), actual !== null ? actual.toFixed(1) : '0', target.toFixed(0))}">
-        <div class="summary-card-bar-fill" style="width:${pct}%"></div>
-      </div>
-      <div class="summary-card-meta">
-        ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>'}
-        <div class="summary-card-target-chip">
-          <span class="target-chip-label">${t('metaLabel')}</span>
-          <input class="target-chip-input" type="text" value="${target.toFixed(0)}" data-class-target="${key}"
-            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
-          <span class="target-chip-unit">%</span>
-        </div>
-      </div>`;
+  // Progress bar
+  let pct = 0;
+  if (isEmergency) {
+    pct = emergencyProgress() ?? 0;
   } else {
-    metaSection = `
-      <div class="summary-card-meta summary-card-meta--inactive">
-        <span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-        <div class="summary-card-target-chip summary-card-target-chip--inactive">
-          <span class="target-chip-label">${t('metaLabel')}</span>
-          <input class="target-chip-input" type="text" value="0" data-class-target="${key}"
-            inputmode="decimal" title="${t('targetLabel')}" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
-          <span class="target-chip-unit">%</span>
-        </div>
-      </div>`;
+    const actual = classActualPct(key), target = classTargetPct(key);
+    pct = actual !== null && target > 0 ? Math.min((actual / target) * 100, 100) : 0;
   }
+  const barHtml = `<div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>`;
 
-  return `<div class="${cardClass}" data-goto="${key}" style="--card-color:${m.color}">
-    <div class="summary-card-head">
-      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}${isDef ? aportarBadge() : ''}</span>
-    </div>
-    <div class="summary-card-value">${valueStr}</div>
-    ${metaSection}
-    <p class="summary-card-desc">${escapeHtml(description)}</p>
-  </div>`;
-}
-
-function renderEmergencyCard() {
-  const key = 'emergencyReserve', m = CLASS_META[key], label = classLabel(key);
-  const total = classTotalBRL(key) ?? 0;
-  const goal = portfolio.goal(key);
-  const pct = goal > 0 ? Math.min((total / goal) * 100, 100) : 0;
-  const description = tn('classDescription', key);
-
-  return `<div class="summary-card summary-card--emergency" data-goto="${key}" style="--card-color:${m.color}">
-    <div class="summary-card-head">
-      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}</span>
-    </div>
-    <div class="summary-card-value">${formatBRL(total)}</div>
-    ${goal > 0 ? `<div class="summary-card-bar"><div class="summary-card-bar-fill" style="width:${pct}%"></div></div>` : ''}
-    <div class="summary-card-meta">
-      <span class="summary-card-inactive-hint">${t('emergencyHint')}</span>
+  // Meta row: actual % + chip (or hint + chip for inactive/emergency)
+  let metaHtml;
+  if (isEmergency) {
+    const goal = portfolio.goal('emergencyReserve');
+    const progress = emergencyProgress();
+    metaHtml = `<div class="summary-card-meta">
+      ${progress !== null ? `<span class="summary-card-actual">${progress.toFixed(1)}%</span>` : '<span></span>'}
       <div class="summary-card-target-chip">
         <span class="target-chip-label">${t('goalLabel')}</span>
         <span class="target-chip-unit">R$</span>
@@ -175,23 +142,50 @@ function renderEmergencyCard() {
           value="${goal > 0 ? Math.round(goal) : ''}" data-class-goal="emergencyReserve"
           placeholder="0" inputmode="decimal" aria-label="${t('a11yGoalClass', escapeHtml(label))}">
       </div>
+    </div>`;
+  } else if (!inactive) {
+    const actual = classActualPct(key), target = classTargetPct(key);
+    metaHtml = `<div class="summary-card-meta">
+      ${actual !== null ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>` : '<span></span>'}
+      <div class="summary-card-target-chip">
+        <span class="target-chip-label">${t('metaLabel')}</span>
+        <input class="target-chip-input" type="text" value="${target.toFixed(0)}" data-class-target="${key}"
+          inputmode="decimal" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
+        <span class="target-chip-unit">%</span>
+      </div>
+    </div>`;
+  } else {
+    metaHtml = `<div class="summary-card-meta">
+      <span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
+      <div class="summary-card-target-chip summary-card-target-chip--inactive">
+        <span class="target-chip-label">${t('metaLabel')}</span>
+        <input class="target-chip-input" type="text" value="0" data-class-target="${key}"
+          inputmode="decimal" aria-label="${t('a11yTargetClass', escapeHtml(label))}">
+        <span class="target-chip-unit">%</span>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="${cardClass}" data-goto="${key}" style="--card-color:${m.color}">
+    <div class="summary-card-head">
+      <span class="summary-card-order">${order}</span>
+      <span class="summary-card-label"><i data-lucide="${m.icon}" class="summary-icon"></i>${escapeHtml(label)}${isDef ? aportarBadge() : ''}</span>
     </div>
+    <div class="summary-card-value">${valueStr}</div>
+    ${barHtml}
+    ${metaHtml}
     <p class="summary-card-desc">${escapeHtml(description)}</p>
   </div>`;
 }
 
-/* ── Carteira / Charts ─────────────────────────────────────── */
+// Carteira
 
 function renderChartsTab() {
   const order = portfolio.displayOrder();
   const populated = order.filter(k => portfolio.items(k).length > 0);
   const chartData = populated.map(k => {
-    const total = classTotalBRL(k), count = portfolio.items(k).length;
-    const hidden = portfolio.isChartHidden(k);
-    return {
-      key: k, label: classLabel(k), color: CLASS_META[k].color,
-      value: total ?? count * 0.01, count, hasPrices: total !== null, total, hidden,
-    };
+    const total = classTotalBRL(k), count = portfolio.items(k).length, hidden = portfolio.isChartHidden(k);
+    return { key: k, label: classLabel(k), color: CLASS_META[k].color, value: total ?? count * 0.01, count, hasPrices: total !== null, total, hidden };
   });
 
   const { total, partial } = portfolioTotalBRL();
@@ -214,9 +208,7 @@ function renderChartsTab() {
 function renderLegendItem(d) {
   const eye = d.hidden ? 'eye-off' : 'eye';
   return `<div class="legend-item${d.hidden ? ' legend-item--hidden' : ''}">
-    <button class="legend-eye" data-toggle-chart="${d.key}" title="${t('a11yToggleChart', d.label, !d.hidden)}" aria-label="${t('a11yToggleChart', d.label, !d.hidden)}">
-      <i data-lucide="${eye}"></i>
-    </button>
+    <button class="legend-eye" data-toggle-chart="${d.key}" aria-label="${t('a11yToggleChart', d.label, !d.hidden)}"><i data-lucide="${eye}"></i></button>
     <span class="legend-dot" style="background:${d.hidden ? 'var(--text-muted)' : d.color}"></span>
     <div class="legend-item-text" data-goto="${d.key}">
       <span class="legend-item-label">${escapeHtml(d.label)}</span>
@@ -225,22 +217,19 @@ function renderLegendItem(d) {
   </div>`;
 }
 
-/* ── Bubble chart ──────────────────────────────────────────── */
+// Bubble chart
 
 function fitLabel(name, radius) {
   const fontSize = Math.min(radius * 0.45, 14);
   const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
-  if (name.length <= maxChars) return name;
-  return maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
+  return name.length <= maxChars ? name : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
 }
 
 function bubbleToast(id, value, pct) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
   const el = document.createElement('div');
   el.className = 'toast';
   el.textContent = `${id}: ${formatBRL(value)} (${pct}%)`;
-  container.appendChild(el);
+  document.getElementById('toastContainer')?.appendChild(el);
   setTimeout(() => el.remove(), 2500);
 }
 
@@ -249,11 +238,12 @@ function renderBubbleChart() {
   if (!container || typeof d3 === 'undefined') return;
 
   const assets = allAssetsWeighted();
-  if (assets.length === 0) { container.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
+  if (!assets.length) { container.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
 
   const visibleTotal = assets.reduce((s, a) => s + a.value, 0);
   const width = container.clientWidth || 600;
-  const height = Math.max(320, Math.min(width * 0.6, 480));
+  // Fill most of the available viewport height for better space usage
+  const height = Math.max(420, Math.min(width * 0.72, window.innerHeight * 0.65));
 
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
   d3.pack().size([width, height]).padding(3)(root);
@@ -296,7 +286,7 @@ function renderBubbleChart() {
     .style('pointer-events', 'none');
 }
 
-/* ── Asset table ───────────────────────────────────────────── */
+// Asset table
 
 function sortIndicator(col) {
   if (sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
@@ -325,14 +315,12 @@ function sortedItems(key) {
 function renderClassPanel(key) {
   const label = classLabel(key), items = portfolio.items(key), inactive = isClassInactive(key);
   let html = `<h2 class="sr-only">${escapeHtml(label)}</h2>`;
-  if (inactive && key !== 'emergencyReserve') html += notice('info', t('inactiveClassHint'), 'info');
-  if (key === 'emergencyReserve') html += notice('info', t('emergencyHint'), 'info');
+  if (inactive) html += notice('info', t('inactiveClassHint'), 'info');
   if (items.length === 0) {
     return html + `<div class="empty-class"><p>${t('emptyClass')}</p><button class="btn btn--filled add-to-empty" data-add-class="${key}">${t('addAsset')}</button></div>`;
   }
   const defItems = inactive ? [] : deficientItems(key);
   const sorted = sortedItems(key);
-
   html += `<div class="table-wrap"><table class="asset-table">
     <thead><tr>
       <th data-sort="name" class="sortable">${t('colName')} ${sortIndicator('name')}</th>
@@ -350,17 +338,14 @@ function renderClassPanel(key) {
 }
 
 function renderAssetRow(key, item, idx, defItems) {
-  const meta = CLASS_META[key];
-  const isDef = defItems.includes(item.id), quarantined = isQuarantined(item);
+  const meta = CLASS_META[key], isDef = defItems.includes(item.id), quarantined = isQuarantined(item);
   const p = prices.get(item.id), value = assetValueBRL(key, item), safeId = escapeHtml(item.id);
   const { priceStr, changeHtml } = formatPriceCell(key, item, p);
-
   const url = tickerUrl(key, item.id);
   const ticker = url ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${safeId}</a>` : `<span class="ticker-name">${safeId}</span>`;
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
   const noteTitle = item.note ? escapeHtml(item.note) : t('a11yAddNote');
   const rowClass = isDef ? 'row-target' : quarantined ? 'row-quarantine' : '';
-
   return `<tr${rowClass ? ` class="${rowClass}"` : ''}>
     <td class="td-ticker">${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}</td>
     <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}" data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" aria-label="${t('a11yAmountOf', safeId)}"></td>
@@ -376,16 +361,15 @@ function renderAssetRow(key, item, idx, defItems) {
 }
 
 function formatPriceCell(key, item, p) {
-  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve' || (key === 'storeOfValue' && !p)) {
+  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve' || (key === 'storeOfValue' && !p))
     return { priceStr: t('declaredPrice'), changeHtml: '' };
-  }
   if (!p) return { priceStr: '', changeHtml: '' };
   const prefix = p.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
   const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   let changeHtml = '';
   if (p.change !== undefined) {
-    const dir = p.change >= 0, label = dir ? 'alta' : 'queda';
-    changeHtml = `<span class="${dir ? 'change-up' : 'change-down'}" title="${label} de ${Math.abs(p.change).toFixed(2)}%">${dir ? '+' : ''}${p.change.toFixed(2)}%</span>`;
+    const dir = p.change >= 0;
+    changeHtml = `<span class="${dir ? 'change-up' : 'change-down'}" title="${dir ? 'alta' : 'queda'} de ${Math.abs(p.change).toFixed(2)}%">${dir ? '+' : ''}${p.change.toFixed(2)}%</span>`;
   }
   return { priceStr, changeHtml };
 }
