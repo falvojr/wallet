@@ -9,19 +9,18 @@ const PRICES_TTL = 24 * 60 * 60 * 1000;
 
 /**
  * Visual metadata for each asset class.
- * Colors: single vivid set (Tailwind 500) that works on both themes.
- *   Ações/FIIs: green family | Stocks/REITs: blue family
- *   Renda Fixa: amber | Reserva Emergência: rose | Reserva Valor: orange | Bens: slate
+ * Color families: teal/lime (BR), indigo/blue (US), amber (fixed), rose (emergency), orange (crypto), blue-grey (assets).
+ * These values are used by getClassColor() as fallback; CSS [data-goto] is the primary source.
  */
 export const CLASS_META = {
-  brStocks:         { color: '#22c55e', icon: 'trending-up' },
-  brFiis:           { color: '#10b981', icon: 'building-2' },
-  usStocks:         { color: '#3b82f6', icon: 'globe' },
-  usReits:          { color: '#8b5cf6', icon: 'landmark' },
+  brStocks:         { color: '#0d9488', icon: 'trending-up' },
+  brFiis:           { color: '#65a30d', icon: 'building-2' },
+  usStocks:         { color: '#6366f1', icon: 'globe' },
+  usReits:          { color: '#3b82f6', icon: 'landmark' },
   fixedIncome:      { color: '#eab308', icon: 'shield' },
   emergencyReserve: { color: '#f43f5e', icon: 'life-buoy' },
   storeOfValue:     { color: '#f97316', icon: 'bitcoin' },
-  assets:           { color: '#94a3b8', icon: 'home' },
+  assets:           { color: '#78909c', icon: 'home' },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);

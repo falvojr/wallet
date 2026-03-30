@@ -10,9 +10,11 @@
   --text-primary: #e6e9f4;
   --text-secondary: #a0a8c0;
   --text-muted: #7a839b;
-  --accent: #5b7fa5;
-  --accent-light: #7b9fc5;
-  --accent-dim: rgba(91, 127, 165, 0.15);
+  /* M3 Primary (Deep Purple): title, Cotar, active tab, badges */
+  --accent: #b39ddb;
+  --accent-light: #ce93d8;
+  --accent-dim: rgba(179, 157, 219, 0.15);
+  /* M3 Status */
   --up: #4ade80;
   --down: #f87171;
   --type-headline: 1.15rem;
@@ -57,15 +59,15 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
-/* Class colors: green family (Ações/FIIs), blue family (Stocks/REITs), warm (Renda/BTC), rose (Emergência), slate (Bens) */
-[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #22c55e; }
-[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #10b981; }
-[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #3b82f6; }
-[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #8b5cf6; }
+/* Class colors: teal/lime (BR market), indigo/blue (US market), warm (fixed/crypto), rose (emergency), blue-grey (assets) */
+[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #0d9488; }
+[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #65a30d; }
+[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #6366f1; }
+[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #3b82f6; }
 [data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #eab308; }
 [data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #f43f5e; }
 [data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #f97316; }
-[data-goto="assets"],      [data-tab="assets"]      { --card-color: #94a3b8; }
+[data-goto="assets"],      [data-tab="assets"]      { --card-color: #78909c; }
 
 .tab-btn .tab-icon { color: var(--card-color, var(--accent)); }
 
@@ -241,7 +243,7 @@ body {
 .notice-icon { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
 .notice strong { font-weight: 700; }
 .notice--warning { color: #fbbf24; background: rgba(251, 191, 36, 0.07); border-color: rgba(251, 191, 36, 0.18); }
-.notice--info { color: var(--text-secondary); background: rgba(91, 127, 165, 0.06); border-color: rgba(91, 127, 165, 0.14); }
+.notice--info { color: var(--text-secondary); background: rgba(179, 157, 219, 0.06); border-color: rgba(179, 157, 219, 0.14); }
 .notice--success { color: var(--up); background: rgba(74, 222, 128, 0.07); border-color: rgba(74, 222, 128, 0.18); }
 
 /* Tabs */
@@ -487,7 +489,7 @@ body {
 
 .badge { display: inline-flex; align-items: center; font-size: var(--type-label-sm); font-weight: 700; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; vertical-align: 1px; margin-left: 5px; line-height: 1.4; }
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }
-.badge--aportar { color: #7b9fc5; background: rgba(91, 127, 165, 0.18); border: 1px solid rgba(91, 127, 165, 0.3); }
+.badge--aportar { color: #ce93d8; background: rgba(179, 157, 219, 0.18); border: 1px solid rgba(179, 157, 219, 0.3); }
 .badge--ignorar { color: var(--text-muted); background: rgba(110, 119, 143, 0.12); border: 1px solid rgba(110, 119, 143, 0.2); }
 
 /* Ticker links */
@@ -539,7 +541,7 @@ body {
 
 .change-up { color: var(--up); }
 .change-down { color: var(--down); }
-.row-target { background: rgba(91, 127, 165, 0.04); }
+.row-target { background: rgba(179, 157, 219, 0.04); }
 .row-quarantine .td-ticker { opacity: 0.4; }
 
 .note-btn,
@@ -663,9 +665,9 @@ tr:hover .remove-btn { opacity: 0.6; }
   --text-primary: #1a1d28;
   --text-secondary: #505570;
   --text-muted: #5c6180;
-  --accent: #3d5a80;
-  --accent-light: #5b7fa5;
-  --accent-dim: rgba(61, 90, 128, 0.12);
+  --accent: #5e35b1;
+  --accent-light: #7e57c2;
+  --accent-dim: rgba(94, 53, 177, 0.12);
   --up: #16a34a;
   --down: #dc2626;
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -673,12 +675,12 @@ tr:hover .remove-btn { opacity: 0.6; }
 
 [data-theme="light"] .app-header { background: rgba(244, 245, 249, 0.92); }
 [data-theme="light"] .header-brand h1 { background: linear-gradient(135deg, var(--accent), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-[data-theme="light"] .badge--aportar { color: #1e3a5f; background: rgba(61, 90, 128, 0.10); border-color: rgba(61, 90, 128, 0.2); }
-[data-theme="light"] .badge--ignorar { color: #475569; background: rgba(71, 85, 105, 0.08); border-color: rgba(71, 85, 105, 0.15); }
+[data-theme="light"] .badge--aportar { color: #4527a0; background: rgba(94, 53, 177, 0.10); border-color: rgba(94, 53, 177, 0.2); }
+[data-theme="light"] .badge--ignorar { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.15); }
 [data-theme="light"] .notice--warning { color: #92400e; background: rgba(251, 191, 36, 0.09); border-color: rgba(251, 191, 36, 0.28); }
-[data-theme="light"] .notice--info { color: #3d5a80; background: rgba(61, 90, 128, 0.05); border-color: rgba(61, 90, 128, 0.14); }
+[data-theme="light"] .notice--info { color: #4527a0; background: rgba(94, 53, 177, 0.05); border-color: rgba(94, 53, 177, 0.14); }
 [data-theme="light"] .notice--success { color: #15803d; background: rgba(22, 163, 74, 0.07); border-color: rgba(22, 163, 74, 0.2); }
-[data-theme="light"] .row-target { background: rgba(61, 90, 128, 0.04); }
+[data-theme="light"] .row-target { background: rgba(94, 53, 177, 0.04); }
 [data-theme="light"] .loading-overlay { background: rgba(244, 245, 249, 0.88); }
 [data-theme="light"] .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
 
