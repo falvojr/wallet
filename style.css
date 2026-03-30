@@ -57,16 +57,15 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
-/* M3 tonal palette: class colors mapped to cards (data-goto) and tabs (data-tab).
-   Dark theme uses tone 80 (lighter). Light theme overrides to tone 40 (darker). */
-[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #4ade80; }
-[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #22d3ee; }
-[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #818cf8; }
-[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #c084fc; }
-[data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #fbbf24; }
-[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #2dd4bf; }
-[data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #fb923c; }
-[data-goto="assets"],      [data-tab="assets"]      { --card-color: #f472b6; }
+/* Class colors: single vivid set (Tailwind 500) that works on both dark and light themes */
+[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #22c55e; }
+[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #06b6d4; }
+[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #6366f1; }
+[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #a855f7; }
+[data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #eab308; }
+[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #14b8a6; }
+[data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #f97316; }
+[data-goto="assets"],      [data-tab="assets"]      { --card-color: #ec4899; }
 
 .tab-btn .tab-icon { color: var(--card-color, var(--accent)); }
 
@@ -305,12 +304,12 @@ body {
   font-weight: 700;
   border-radius: 8px;
   background: var(--bg-hover);
-  color: var(--text-muted);
+  color: var(--card-color, var(--text-muted));
 }
 
-.tab-btn.active .tab-count { background: var(--accent-dim); color: var(--accent-light); }
+.tab-btn.active .tab-count { background: var(--card-color, var(--accent-dim)); color: #fff; }
 .tab-icon { width: 14px; height: 14px; flex-shrink: 0; margin-right: 4px; color: var(--card-color, var(--accent)); }
-.tab-gap { width: 12px; flex-shrink: 0; }
+.tab-gap { width: 1px; height: 18px; background: var(--border); align-self: center; margin: 0 6px; flex-shrink: 0; }
 
 /* Tab panels: no animation by default. --enter class added only on tab switch. */
 
@@ -387,7 +386,7 @@ body {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 2px 6px;
+  padding: 3px 8px;
   flex-shrink: 0;
   transition: border-color var(--ease);
 }
@@ -404,7 +403,7 @@ body {
   background: transparent;
   color: var(--text-muted);
   font-family: var(--font-h);
-  font-size: var(--type-label-sm);
+  font-size: var(--type-body-sm);
   font-weight: 600;
   text-align: center;
   outline: none;
@@ -505,16 +504,19 @@ body {
 .chart-header-value { font-family: var(--font-h); font-size: 1.2rem; font-weight: 700; }
 
 .chart-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
-.legend-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--r-sm); cursor: pointer; transition: background var(--ease); background: var(--bg-surface); border: 1px solid var(--border); font-size: var(--type-body-sm); }
+.chart-layout { display: flex; gap: 16px; align-items: flex-start; }
+.chart-legend-sidebar { flex-shrink: 0; width: 180px; display: flex; flex-direction: column; gap: 2px; }
+.legend-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--r-sm); cursor: pointer; transition: background var(--ease); }
 .legend-item:hover { background: var(--bg-hover); }
 .legend-item--hidden { opacity: 0.45; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--card-color, var(--text-muted)); }
 .legend-item--hidden .legend-dot { background: var(--text-muted); }
-.legend-item-label { color: var(--text-secondary); }
-.legend-item-value { font-family: var(--font-h); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.legend-item-text { display: flex; flex-direction: column; min-width: 0; }
+.legend-item-label { font-size: var(--type-body-sm); color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.legend-item-value { font-family: var(--font-h); font-size: var(--type-body-sm); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .legend-strike { text-decoration: line-through; opacity: 0.6; }
 
-.bubble-container { width: 100%; }
+.bubble-container { flex: 1; min-width: 0; }
 .bubble-container svg { width: 100%; height: auto; display: block; }
 .donut-empty { color: var(--text-muted); padding: 20px; font-size: var(--type-subtitle); text-align: center; }
 
@@ -607,6 +609,8 @@ tr:hover .remove-btn { opacity: 0.6; }
   .asset-table td { padding: 6px 8px; }
   .asset-table thead th { padding: 7px 8px; }
   .summary-cards { grid-template-columns: 1fr; }
+  .chart-layout { flex-direction: column; }
+  .chart-legend-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 4px; }
 }
 
 @media (hover: none) {
@@ -630,6 +634,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .summary-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .summary-card { padding: 18px; }
   .summary-card-value { font-size: 1.2rem; }
+  .chart-legend-sidebar { width: 200px; }
   .asset-table td, .asset-table thead th { padding: 6px 14px; }
   .asset-table td { font-size: var(--type-subtitle); }
   .td-ticker { font-size: 0.92rem; }
@@ -644,6 +649,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .header-brand h1 { font-size: 1.4rem; }
   .chart-header-value { font-size: 1.4rem; }
   .summary-card-value { font-size: 1.25rem; }
+  .chart-legend-sidebar { width: 220px; }
   .inline-input--qty { width: 110px; }
 }
 
@@ -677,16 +683,6 @@ tr:hover .remove-btn { opacity: 0.6; }
 [data-theme="light"] .row-target { background: rgba(91, 78, 224, 0.04); }
 [data-theme="light"] .loading-overlay { background: rgba(244, 245, 249, 0.88); }
 [data-theme="light"] .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
-
-/* M3 light theme: darker class colors for contrast on white surfaces */
-[data-theme="light"] [data-goto="brStocks"],    [data-theme="light"] [data-tab="brStocks"]    { --card-color: #16a34a; }
-[data-theme="light"] [data-goto="brFiis"],      [data-theme="light"] [data-tab="brFiis"]      { --card-color: #0891b2; }
-[data-theme="light"] [data-goto="usStocks"],    [data-theme="light"] [data-tab="usStocks"]    { --card-color: #4f46e5; }
-[data-theme="light"] [data-goto="usReits"],     [data-theme="light"] [data-tab="usReits"]     { --card-color: #7c3aed; }
-[data-theme="light"] [data-goto="fixedIncome"], [data-theme="light"] [data-tab="fixedIncome"] { --card-color: #d97706; }
-[data-theme="light"] [data-goto="emergencyReserve"], [data-theme="light"] [data-tab="emergencyReserve"] { --card-color: #0d9488; }
-[data-theme="light"] [data-goto="storeOfValue"], [data-theme="light"] [data-tab="storeOfValue"] { --card-color: #ea580c; }
-[data-theme="light"] [data-goto="assets"],      [data-theme="light"] [data-tab="assets"]      { --card-color: #db2777; }
 
 /* Utilities */
 

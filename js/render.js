@@ -228,7 +228,7 @@ function renderSummaryCard(key, defCls) {
       </span>
       <span class="summary-card-order-chip">
         <input type="text" value="${order}" data-class-order="${key}"
-          inputmode="numeric" autocomplete="off" data-1p-ignore data-lpignore="true"
+          inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-1p-ignore data-lpignore="true"
           aria-label="Ordem de ${esc(label)}">
       </span>
     </div>
@@ -333,11 +333,13 @@ function renderChartsTab() {
     <span class="chart-header-label">${t('portfolioLabel')}</span>
     <span class="chart-header-value">${headerVal}</span>
   </div>
-  <div class="chart-legend">${data.map(renderLegendItem).join('')}</div>
-  <div id="bubbleChart" class="bubble-container"></div>`;
+  <div class="chart-layout">
+    <div class="chart-legend-sidebar">${data.map(renderLegendItem).join('')}</div>
+    <div id="bubbleChart" class="bubble-container"></div>
+  </div>`;
 }
 
-/** Legend item: clickable to toggle chart visibility. Color derived from CSS variables. */
+/** Legend item: clickable to toggle chart visibility. */
 function renderLegendItem(d) {
   const hiddenCls = d.hidden ? ' legend-item--hidden' : '';
   const strikeCls = d.hidden ? ' legend-strike' : '';
@@ -346,8 +348,10 @@ function renderLegendItem(d) {
   return `<div class="legend-item${hiddenCls}" data-toggle-chart="${d.key}" data-goto="${d.key}"
     title="${t('a11yToggleChart', d.label, !d.hidden)}">
     <span class="legend-dot"></span>
-    <span class="legend-item-label${strikeCls}">${esc(d.label)}</span>
-    <span class="legend-item-value${strikeCls}">${valText}</span>
+    <div class="legend-item-text">
+      <span class="legend-item-label${strikeCls}">${esc(d.label)}</span>
+      <span class="legend-item-value${strikeCls}">${valText}</span>
+    </div>
   </div>`;
 }
 

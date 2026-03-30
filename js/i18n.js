@@ -57,7 +57,7 @@ const strings = {
     successBalanced: 'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
     inactiveClassHint: 'Não participa do rebalanceamento.',
     emergencyPriority:
-      'Meta da Reserva de Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
+      'Meta da Reserva Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
 
     // Badges
     badgeAportar: 'aportar',

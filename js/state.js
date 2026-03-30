@@ -9,14 +9,14 @@ const PRICES_TTL = 24 * 60 * 60 * 1000;
 
 /** Visual metadata for each asset class. */
 export const CLASS_META = {
-  brStocks:         { color: '#4ade80', icon: 'trending-up' },
-  brFiis:           { color: '#22d3ee', icon: 'building-2' },
-  usStocks:         { color: '#818cf8', icon: 'globe' },
-  usReits:          { color: '#c084fc', icon: 'landmark' },
-  fixedIncome:      { color: '#fbbf24', icon: 'shield' },
-  emergencyReserve: { color: '#2dd4bf', icon: 'life-buoy' },
-  storeOfValue:     { color: '#fb923c', icon: 'bitcoin' },
-  assets:           { color: '#f472b6', icon: 'home' },
+  brStocks:         { color: '#22c55e', icon: 'trending-up' },
+  brFiis:           { color: '#06b6d4', icon: 'building-2' },
+  usStocks:         { color: '#6366f1', icon: 'globe' },
+  usReits:          { color: '#a855f7', icon: 'landmark' },
+  fixedIncome:      { color: '#eab308', icon: 'shield' },
+  emergencyReserve: { color: '#14b8a6', icon: 'life-buoy' },
+  storeOfValue:     { color: '#f97316', icon: 'bitcoin' },
+  assets:           { color: '#ec4899', icon: 'home' },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);

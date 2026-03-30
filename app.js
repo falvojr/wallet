@@ -1,6 +1,6 @@
 import {
   CLASS_KEYS, portfolio, preferences, prices, settings,
-  setActiveTab, loadTheme, toggleTheme,
+  activeTab, setActiveTab, loadTheme, toggleTheme,
 } from './js/state.js';
 import { t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
@@ -417,6 +417,8 @@ $('#btnExport').addEventListener('click', doExport);
 $('#btnTheme').addEventListener('click', () => {
   toggleTheme();
   if (typeof lucide !== 'undefined') lucide.createIcons();
+  // Re-render chart so getClassColor() picks up the new theme
+  if (activeTab === 'charts') renderChartOnly();
 });
 $('#btnSettings').addEventListener('click', openSettings);
 $('#btnPrices').addEventListener('click', refreshPrices);
