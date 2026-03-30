@@ -72,7 +72,7 @@ const strings = {
 
     // Table
     colName: 'Nome',
-    colAmount: 'Qtd.',
+    colAmount: 'Qtd',
     colPrice: 'Preço',
     colChange: 'Hoje',
     colTotal: 'Total',
@@ -80,7 +80,7 @@ const strings = {
     colActionsA11y: 'Opções',
     addAsset: '+ Adicionar ativo',
     emptyClass: 'Nenhum ativo nesta classe.',
-    declaredPrice: 'Valor declarado',
+    declaredPrice: '-',
     targetPlaceholder: 'auto',
     assetCount: (count) => `${count} ativo${count !== 1 ? 's' : ''}`,
 
