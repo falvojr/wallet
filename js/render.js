@@ -108,35 +108,31 @@ export function renderChartOnly() {
 function renderTabs() {
   const order = preferences.displayOrder();
 
-  // Fixed tabs (overview + portfolio)
   const fixedTabs = [
-    { key: 'overview', label: t('tabOverview'), icon: 'layout-grid', color: 'var(--accent)' },
-    { key: 'charts', label: t('tabPortfolio'), icon: 'pie-chart', color: 'var(--accent)' },
+    { key: 'overview', label: t('tabOverview'), icon: 'layout-grid' },
+    { key: 'charts', label: t('tabPortfolio'), icon: 'pie-chart' },
   ];
 
-  // Class tabs with their icons and colors
   const classTabs = order.map(k => ({
     key: k,
     label: classLabel(k),
     count: portfolio.items(k).length,
     icon: CLASS_META[k].icon,
-    color: CLASS_META[k].color,
   }));
 
   const renderTab = (tab) => {
-    const active = tab.key === activeTab ? ' active' : '';
+    const isActive = tab.key === activeTab;
     const countHtml = tab.count != null ? `<span class="tab-count">${tab.count}</span>` : '';
-    return `<button class="tab-btn${active}" data-tab="${tab.key}">
-      <i data-lucide="${tab.icon}" class="tab-icon"></i>
-      ${esc(tab.label)}${countHtml}
+    // M3: icon visible only on active tab for a cleaner look
+    const iconHtml = isActive ? `<i data-lucide="${tab.icon}" class="tab-icon"></i>` : '';
+    return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}">
+      ${iconHtml}${esc(tab.label)}${countHtml}
     </button>`;
   };
 
-  const fixedHtml = fixedTabs.map(renderTab).join('');
-  const classHtml = classTabs.map(renderTab).join('');
-
-  // M3 uses spacing between tab groups, not a line separator
-  $('#tabNav').innerHTML = `${fixedHtml}<span class="tab-gap" aria-hidden="true"></span>${classHtml}`;
+  $('#tabNav').innerHTML = fixedTabs.map(renderTab).join('')
+    + '<span class="tab-gap" aria-hidden="true"></span>'
+    + classTabs.map(renderTab).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -293,7 +289,27 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 }
 
 // ---------------------------------------------------------------------------
-// Carteira (patrimônio reflects only visible classes)
+// Theme-aware class colors (DRY: CSS is the single source of truth)
+// ---------------------------------------------------------------------------
+
+/** Reads the computed --card-color for a class key from CSS. Works in both themes. */
+function getClassColor(key) {
+  const existing = document.querySelector(`[data-goto="${key}"]`);
+  if (existing) {
+    return getComputedStyle(existing).getPropertyValue('--card-color').trim();
+  }
+  // No card rendered yet — probe via a temporary element
+  const probe = document.createElement('span');
+  probe.setAttribute('data-goto', key);
+  probe.style.display = 'none';
+  document.body.appendChild(probe);
+  const color = getComputedStyle(probe).getPropertyValue('--card-color').trim();
+  probe.remove();
+  return color || '#888';
+}
+
+// ---------------------------------------------------------------------------
+// Carteira
 // ---------------------------------------------------------------------------
 
 function renderChartsTab() {
@@ -302,7 +318,6 @@ function renderChartsTab() {
   const data = populated.map(k => ({
     key: k,
     label: classLabel(k),
-    color: CLASS_META[k].color,
     count: portfolio.items(k).length,
     hasPrices: classTotalBRL(k) !== null,
     total: classTotalBRL(k),
@@ -314,34 +329,25 @@ function renderChartsTab() {
     ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
     : t('assetCount', populated.reduce((s, k) => s + portfolio.items(k).length, 0));
 
-  return `<div class="chart-fullwidth">
-    <div class="chart-header">
-      <span class="chart-header-label">${t('portfolioLabel')}</span>
-      <span class="chart-header-value">${headerVal}</span>
-    </div>
-    <div class="chart-layout">
-      <div class="chart-legend-sidebar">
-        ${data.map(renderLegendItem).join('')}
-      </div>
-      <div id="bubbleChart" class="bubble-container"></div>
-    </div>
-  </div>`;
+  return `<div class="chart-header">
+    <span class="chart-header-label">${t('portfolioLabel')}</span>
+    <span class="chart-header-value">${headerVal}</span>
+  </div>
+  <div class="chart-legend">${data.map(renderLegendItem).join('')}</div>
+  <div id="bubbleChart" class="bubble-container"></div>`;
 }
 
-/** Legend item: fully clickable to toggle chart visibility. */
+/** Legend item: clickable to toggle chart visibility. Color derived from CSS variables. */
 function renderLegendItem(d) {
   const hiddenCls = d.hidden ? ' legend-item--hidden' : '';
   const strikeCls = d.hidden ? ' legend-strike' : '';
-  const dotColor = d.hidden ? 'var(--text-muted)' : d.color;
   const valText = d.hasPrices ? formatBRL(d.total) : t('assetCount', d.count);
 
-  return `<div class="legend-item${hiddenCls}" data-toggle-chart="${d.key}"
+  return `<div class="legend-item${hiddenCls}" data-toggle-chart="${d.key}" data-goto="${d.key}"
     title="${t('a11yToggleChart', d.label, !d.hidden)}">
-    <span class="legend-dot" style="background:${dotColor}"></span>
-    <div class="legend-item-text">
-      <span class="legend-item-label${strikeCls}">${esc(d.label)}</span>
-      <span class="legend-item-value${strikeCls}">${valText}</span>
-    </div>
+    <span class="legend-dot"></span>
+    <span class="legend-item-label${strikeCls}">${esc(d.label)}</span>
+    <span class="legend-item-value${strikeCls}">${valText}</span>
   </div>`;
 }
 
@@ -367,6 +373,10 @@ function renderBubbleChart() {
     return;
   }
 
+  // Resolve theme-aware colors for each asset
+  const colorMap = {};
+  assets.forEach(a => { colorMap[a.classKey] ??= getClassColor(a.classKey); });
+
   const vTotal = assets.reduce((s, a) => s + a.value, 0);
   const w = el.clientWidth || 600;
   const h = Math.max(440, Math.min(w * 0.75, window.innerHeight * 0.68));
@@ -386,12 +396,13 @@ function renderBubbleChart() {
     .join('g')
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
-  // Circles
+  const color = d => colorMap[d.data.classKey];
+
   nodes.append('circle')
     .attr('r', d => d.r)
-    .attr('fill', d => d.data.color)
+    .attr('fill', color)
     .attr('opacity', 0.82)
-    .attr('stroke', d => d.data.color)
+    .attr('stroke', color)
     .attr('stroke-opacity', 0.25)
     .attr('stroke-width', 1.5)
     .style('cursor', 'pointer')
@@ -403,11 +414,9 @@ function renderBubbleChart() {
       d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
     });
 
-  // Tooltips
   nodes.append('title')
     .text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`);
 
-  // Tap toast (mobile)
   nodes.on('click', (_e, d) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
@@ -416,7 +425,6 @@ function renderBubbleChart() {
     setTimeout(() => toast.remove(), 2500);
   });
 
-  // Labels (name)
   nodes.filter(d => d.r > 16)
     .append('text')
     .attr('text-anchor', 'middle')
@@ -428,7 +436,6 @@ function renderBubbleChart() {
     .text(d => fitLabel(d.data.id, d.r))
     .style('pointer-events', 'none');
 
-  // Labels (percentage)
   nodes.filter(d => d.r > 28)
     .append('text')
     .attr('text-anchor', 'middle')
@@ -511,7 +518,6 @@ function renderClassPanel(key) {
 }
 
 function renderAssetRow(key, item, idx, defItems) {
-  const m = CLASS_META[key];
   const isDef = defItems.includes(item.id);
   const quarantined = isQuarantined(item);
   const p = prices.get(item.id);
@@ -539,7 +545,7 @@ function renderAssetRow(key, item, idx, defItems) {
     </td>
     <td class="td-price">${priceStr}</td>
     <td class="td-change">${changeHtml}</td>
-    <td class="td-value" style="color:${m.color}">
+    <td class="td-value" data-goto="${key}">
       ${val !== null ? formatBRL(val) : ''}
     </td>
     <td class="td-r">

@@ -1,4 +1,4 @@
-import { portfolio, preferences, prices, CLASS_META } from './state.js';
+import { portfolio, preferences, prices } from './state.js';
 
 export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -170,16 +170,15 @@ export function deficientItems(key) {
   return ranked.slice(0, recLimit(items.length)).map(r => r.id);
 }
 
-/** All visible assets for the bubble chart (respects chart-only hide toggle). */
+/** All visible assets for the bubble chart. Color is resolved at render time via getClassColor(). */
 export function allAssetsWeighted() {
   const out = [];
   for (const key of portfolio.allKeys()) {
     if (preferences.isChartHidden(key)) continue;
-    const color = CLASS_META[key].color;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);
       if (value !== null && value > 0) {
-        out.push({ id: item.id, value, color, classKey: key });
+        out.push({ id: item.id, value, classKey: key });
       }
     }
   }
