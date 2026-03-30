@@ -314,14 +314,16 @@ function renderChartsTab() {
   const { total, partial } = chartVisibleTotalBRL();
   const headerVal = total > 0
     ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
-    : t('assetCount', populated.reduce((s, k) => s + portfolio.items(k).length, 0));
+    : t('assetCount', populated.reduce((sum, key) => sum + portfolio.items(key).length, 0));
 
-  return `<div class="chart-header">
-    <span class="chart-header-label">${t('portfolioLabel')}</span>
-    <span class="chart-header-value">${headerVal}</span>
-  </div>
-  <div class="chart-layout">
-    <div class="chart-legend-grid">${data.map(renderLegendItem).join('')}</div>
+  return `<div class="chart-layout">
+    <div class="chart-sidebar">
+      <div class="chart-header">
+        <span class="chart-header-label">${t('portfolioLabel')}</span>
+        <span class="chart-header-value">${headerVal}</span>
+      </div>
+      <div class="chart-legend-grid">${data.map(renderLegendItem).join('')}</div>
+    </div>
     <div class="bubble-stage">
       <div id="bubbleChart" class="bubble-container"></div>
     </div>
