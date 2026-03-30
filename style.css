@@ -558,9 +558,8 @@ body {
 
 .chart-header {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .chart-header-label {
@@ -583,8 +582,9 @@ body {
   align-items: start;
 }
 
-.chart-legend-sidebar {
-  min-width: 0;
+.chart-sidebar {
+  display: grid;
+  gap: 14px;
 }
 
 .chart-legend-grid {
@@ -647,7 +647,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: clamp(320px, calc(100vh - 360px), 540px);
+  min-height: clamp(320px, calc(100vh - 340px), 560px);
 }
 
 .bubble-container {
@@ -667,27 +667,6 @@ body {
   padding: 20px;
   font-size: var(--type-subtitle);
   text-align: center;
-}
-
-@media (min-width: 700px) {
-  .chart-legend-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (min-width: 1100px) {
-  .chart-layout {
-    grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
-    gap: 24px;
-  }
-
-  .chart-legend-grid { grid-template-columns: 1fr; }
-
-  .bubble-stage {
-    min-height: clamp(420px, calc(100vh - 230px), 700px);
-  }
-
-  .bubble-container {
-    width: min(100%, clamp(560px, 52vw, 900px));
-  }
 }
 
 /* Asset table */
@@ -934,7 +913,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .asset-table td { padding: 6px 8px; }
   .asset-table thead th { padding: 7px 8px; }
   .summary-cards { grid-template-columns: 1fr; }
-  .chart-legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+  .chart-legend-grid { gap: 6px 10px; }
   .bubble-stage { min-height: clamp(300px, calc(100vh - 320px), 420px); }
 }
 
@@ -963,6 +942,8 @@ tr:hover .remove-btn { opacity: 0.6; }
   .app-container { padding: 0 24px 100px; max-width: 1280px; }
   .header-inner { padding: 0 24px; max-width: 1280px; }
   .chart-header-value { font-size: 1.3rem; }
+  .chart-sidebar { gap: 16px; }
+  .chart-legend-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .summary-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .summary-card { padding: 18px; }
   .summary-card-value { font-size: 1.2rem; }
@@ -979,9 +960,12 @@ tr:hover .remove-btn { opacity: 0.6; }
   .app-container { max-width: 1440px; padding: 0 32px 100px; }
   .header-inner { max-width: 1440px; padding: 0 32px; }
   .header-brand h1 { font-size: 1.4rem; }
+  .chart-layout { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 24px; }
+  .chart-sidebar { position: sticky; top: 84px; }
   .chart-header-value { font-size: 1.4rem; }
+  .chart-legend-grid { grid-template-columns: 1fr; }
   .summary-card-value { font-size: 1.25rem; }
-  .bubble-stage { min-height: clamp(360px, calc(100vh - 340px), 560px); }
+  .bubble-stage { min-height: clamp(360px, calc(100vh - 280px), 560px); }
   .inline-input--qty { width: 110px; }
 }
 

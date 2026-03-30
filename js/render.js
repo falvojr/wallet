@@ -316,12 +316,12 @@ function renderChartsTab() {
     ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
     : t('assetCount', populated.reduce((s, k) => s + portfolio.items(k).length, 0));
 
-  return `<div class="chart-header">
-    <span class="chart-header-label">${t('portfolioLabel')}</span>
-    <span class="chart-header-value">${headerVal}</span>
-  </div>
-  <div class="chart-layout">
-    <aside class="chart-legend-sidebar" aria-label="${t('navAssetClasses')}">
+  return `<div class="chart-layout">
+    <aside class="chart-sidebar">
+      <div class="chart-header">
+        <span class="chart-header-label">${t('portfolioLabel')}</span>
+        <span class="chart-header-value">${headerVal}</span>
+      </div>
       <div class="chart-legend-grid">${data.map(renderLegendItem).join('')}</div>
     </aside>
     <div class="bubble-stage">
@@ -371,9 +371,9 @@ function renderBubbleChart() {
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
   const bounds = el.getBoundingClientRect();
   const width = Math.max(280, Math.floor(bounds.width || el.clientWidth || 320));
-  const height = Math.max(280, Math.floor(bounds.height || el.clientHeight || width));
+  const height = Math.max(280, Math.floor(bounds.height || width));
   const size = Math.max(280, Math.min(width, height));
-  const packPadding = size < 360 ? 2 : size < 560 ? 3 : 4;
+  const packPadding = size < 360 ? 2 : 3;
   const percentOf = node => totalValue > 0 ? ((node.data.value / totalValue) * 100).toFixed(1) : '0';
   const fillColor = node => colorMap[node.data.classKey];
   const labelColor = node => bubbleTextColor(fillColor(node));
