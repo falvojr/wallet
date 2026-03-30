@@ -351,11 +351,6 @@ function fitLabel(name, r) {
   return name.length <= maxChars ? name : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
 }
 
-function keepNodeInBounds(node, width, height, padding = 8) {
-  node.x = Math.max(node.r + padding, Math.min(width - node.r - padding, node.x));
-  node.y = Math.max(node.r + padding, Math.min(height - node.r - padding, node.y));
-}
-
 function renderBubbleChart() {
   const el = document.getElementById('bubbleChart');
   if (!el || typeof d3 === 'undefined') return;
@@ -367,46 +362,33 @@ function renderBubbleChart() {
   }
 
   const colorMap = {};
-  assets.forEach(asset => {
-    colorMap[asset.classKey] ??= getClassColor(asset.classKey);
-  });
+  assets.forEach(asset => { colorMap[asset.classKey] ??= getClassColor(asset.classKey); });
 
   const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
-  const width = el.clientWidth || 720;
-  const height = Math.max(560, Math.min(width * 0.92, window.innerHeight * 0.78));
-  const color = node => colorMap[node.classKey];
-  const pctOf = node => totalValue > 0 ? ((node.value / totalValue) * 100).toFixed(1) : '0';
+  const width = Math.max(el.clientWidth || 0, 280);
+  const isCompact = window.matchMedia('(max-width: 899px)').matches;
+  const height = isCompact
+    ? Math.max(300, Math.min(width * 1.02, window.innerHeight * 0.5))
+    : Math.max(520, Math.min(width * 0.74, window.innerHeight * 0.72));
+  const padding = isCompact ? 2.5 : 4;
+  const pctOf = node => totalValue > 0 ? ((node.data.value / totalValue) * 100).toFixed(1) : '0';
+  const color = node => colorMap[node.data.classKey];
+  const labelColor = node => bubbleTextColor(color(node));
+  const sublabelColor = node => bubbleSubtextColor(color(node));
 
   const root = d3.hierarchy({ children: assets }).sum(asset => asset.value);
-  d3.pack().size([width, height]).padding(4)(root);
+  d3.pack().size([width, height]).padding(padding)(root);
 
-  const nodesData = root.leaves().map((leaf, index) => ({
-    ...leaf.data,
-    r: leaf.r,
-    x: width / 2 + Math.cos(index) * leaf.r,
-    y: height / 2 + Math.sin(index) * leaf.r,
-  }));
-
-  const simulation = d3.forceSimulation(nodesData)
-    .force('x', d3.forceX(width / 2).strength(0.05))
-    .force('y', d3.forceY(height / 2).strength(0.07))
-    .force('charge', d3.forceManyBody().strength(1.5))
-    .force('collide', d3.forceCollide(node => node.r + 3).iterations(2))
-    .stop();
-
-  for (let i = 0; i < 240; i += 1) {
-    simulation.tick();
-    nodesData.forEach(node => keepNodeInBounds(node, width, height));
-  }
-
-  const svg = d3.select(el).html('')
+  const svg = d3.select(el)
+    .html('')
     .append('svg')
     .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
     .attr('role', 'img')
     .attr('aria-label', t('a11yBubbleChart'));
 
   const nodes = svg.selectAll('g')
-    .data(nodesData)
+    .data(root.leaves())
     .join('g')
     .attr('transform', node => `translate(${node.x},${node.y})`);
 
@@ -426,33 +408,38 @@ function renderBubbleChart() {
       d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
     });
 
-  nodes.append('title').text(node => `${node.id}: ${formatBRL(node.value)} (${pctOf(node)}%)`);
+  nodes.append('title').text(node => `${node.data.id}: ${formatBRL(node.data.value)} (${pctOf(node)}%)`);
 
   nodes.on('click', (_event, node) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = `${node.id}: ${formatBRL(node.value)} (${pctOf(node)}%)`;
+    toast.textContent = `${node.data.id}: ${formatBRL(node.data.value)} (${pctOf(node)}%)`;
     document.getElementById('toastContainer')?.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
   });
 
-  nodes.filter(node => node.r > 16).append('text')
+  const labelThreshold = isCompact ? 18 : 16;
+  const sublabelThreshold = isCompact ? 32 : 28;
+  const maxLabelSize = isCompact ? 12 : 14;
+  const maxSubLabelSize = isCompact ? 12 : 14;
+
+  nodes.filter(node => node.r > labelThreshold).append('text')
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')
-    .attr('fill', node => bubbleTextColor(color(node)))
+    .attr('fill', node => labelColor(node))
     .attr('font-family', 'var(--font-h)')
     .attr('font-weight', '700')
-    .attr('font-size', node => Math.min(node.r * 0.45, 14))
-    .text(node => fitLabel(node.id, node.r))
+    .attr('font-size', node => Math.min(node.r * 0.42, maxLabelSize))
+    .text(node => fitLabel(node.data.id, node.r))
     .style('pointer-events', 'none');
 
-  nodes.filter(node => node.r > 28).append('text')
+  nodes.filter(node => node.r > sublabelThreshold).append('text')
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')
-    .attr('dy', node => node.r * 0.35)
-    .attr('fill', node => bubbleSubtextColor(color(node)))
+    .attr('dy', node => node.r * 0.34)
+    .attr('fill', node => sublabelColor(node))
     .attr('font-family', 'var(--font-b)')
-    .attr('font-size', node => Math.min(node.r * 0.28, 10))
+    .attr('font-size', node => Math.max(9, Math.min(node.r * 0.2, maxSubLabelSize)))
     .text(node => `${pctOf(node)}%`)
     .style('pointer-events', 'none');
 }

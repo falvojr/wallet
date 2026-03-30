@@ -106,7 +106,7 @@ const strings = {
     settingsTitle: 'Tokens de API',
     settingsHint: 'Tokens gratuitos para buscar cotações em tempo real.',
     brapiLabel: 'brapi.dev (Ações / FIIs)',
-    brapiHint: 'Crie grátis em brapi.dev/dashboard',
+    brapiHint: 'Crie grátis em brapi.dev',
     brapiCreateAccount: 'Criar conta',
     finnhubLabel: 'Finnhub (Stocks / REITs)',
     finnhubHint: 'Crie grátis em finnhub.io',
