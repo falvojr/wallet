@@ -61,7 +61,7 @@ export function chartVisibleTotalBRL() {
   return { total, partial };
 }
 
-export const isQuarantined = item => item.target === 0;
+export const isSkippedAsset = item => item.target === 0;
 export const classTargetPct = key => portfolio.target(key);
 
 /**
@@ -88,7 +88,7 @@ export function emergencyProgress() {
 
 export function itemTargetPct(key, item) {
   if (item.target !== undefined) return item.target;
-  const active = portfolio.items(key).filter(a => !isQuarantined(a)).length;
+  const active = portfolio.items(key).filter(a => !isSkippedAsset(a)).length;
   return active > 0 ? 100 / active : 0;
 }
 
@@ -105,9 +105,9 @@ export function allocationWarning() {
 // (both class-level and asset-level). This follows the principle that an
 // emergency fund is a prerequisite before investing elsewhere.
 //
-// Otherwise: class-level deficit (target% - actual%) is computed, filtered
-// by a proportional threshold, and the top 1-2 classes are recommended.
-// Within a class, assets are ranked by their gap from within-class target.
+// Otherwise: each class shortfall (target% - actual%) is computed, filtered
+// by a proportional threshold, and the most relevant 1-3 classes are recommended.
+// Within a recommended class, assets are ranked by their gap from within-class target.
 // ---------------------------------------------------------------------------
 
 const THRESHOLD_MIN = 0.5;
@@ -117,44 +117,44 @@ function classThreshold(key) {
   return Math.max(THRESHOLD_MIN, classTargetPct(key) * THRESHOLD_FACTOR);
 }
 
-function classDeficit(key) {
+function classShortfall(key) {
   const actual = classActualPct(key);
   return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
 }
 
-function recLimit(count) {
+function recommendationLimit(count) {
   if (count >= 10) return 3;
-  if (count >= 5) return 2;
+  if (count >= 6) return 2;
   return count >= 2 ? 1 : 0;
 }
 
-/** Returns class keys needing investment. ['emergencyReserve'] if goal unmet. */
-export function deficientClasses() {
+/** Returns class keys that deserve fresh contributions. ['emergencyReserve'] if goal unmet. */
+export function recommendedClasses() {
   if (portfolio.isEmergencyUnmet()) {
     return ['emergencyReserve'];
   }
 
   const ranked = portfolio.activeKeys()
     .filter(key => portfolio.items(key).length > 0)
-    .map(key => ({ key, gap: classDeficit(key) }))
+    .map(key => ({ key, gap: classShortfall(key) }))
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
     .toSorted((a, b) => b.gap - a.gap);
 
-  const limit = ranked.length >= 8 ? 3 : ranked.length >= 3 ? 2 : 1;
+  const limit = ranked.length >= 7 ? 3 : ranked.length >= 3 ? 2 : 1;
   return ranked.slice(0, limit).map(r => r.key);
 }
 
-/** Returns asset IDs within a class that are most underweight. Empty when emergency is unmet. */
-export function deficientItems(key) {
+/** Returns asset IDs within a recommended class that are most underweight. */
+export function recommendedItems(key) {
   if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') {
     return [];
   }
 
-  const items = portfolio.items(key).filter(a => !isQuarantined(a));
+  const items = portfolio.items(key).filter(a => !isSkippedAsset(a));
   const total = classTotalBRL(key);
-  const gap = classDeficit(key);
+  const gap = classShortfall(key);
 
-  if (!total || total <= 0 || items.length < 2 || !gap || gap < classThreshold(key)) {
+  if (!recommendedClasses().includes(key) || !total || total <= 0 || items.length < 2 || !gap || gap < classThreshold(key)) {
     return [];
   }
 
@@ -167,7 +167,7 @@ export function deficientItems(key) {
     .filter(Boolean)
     .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
 
-  return ranked.slice(0, recLimit(items.length)).map(r => r.id);
+  return ranked.slice(0, recommendationLimit(items.length)).map(r => r.id);
 }
 
 /** All visible assets for the bubble chart. Color is resolved at render time via getClassColor(). */

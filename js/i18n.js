@@ -58,15 +58,15 @@ const strings = {
     infoStale: (date) => `Cotações desatualizadas (${date}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices: 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced: 'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
-    inactiveClassHint: 'Não participa do rebalanceamento.',
+    inactiveClassHint: 'Fora da estratégia de rebalanceamento.',
     emergencyPriority:
       'Meta da Reserva Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
 
     // Badges
     badgeInvest: 'aportar',
-    badgeInvestTitle: 'Maior necessidade de aporte',
+    badgeInvestTitle: 'Prioridade de aporte',
     badgeSkip: 'ignorar',
-    badgeSkipTitle: 'Em quarentena',
+    badgeSkipTitle: 'Fora da estratégia de aporte',
 
     // Charts
     portfolioLabel: 'Patrimônio',
@@ -94,7 +94,7 @@ const strings = {
     addFieldAmount: 'Quantidade ou valor (R$)',
     addAmountHint: 'Ex: 100 (0 para incluir sem posição)',
     addFieldTarget: 'Meta % (dentro da classe)',
-    addTargetHint: 'Vazio = distribuição igual, 0 = quarentena',
+    addTargetHint: 'Vazio = distribuição igual, 0 = ignorar',
     btnCancel: 'Cancelar',
     btnAdd: 'Adicionar',
 

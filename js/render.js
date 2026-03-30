@@ -6,8 +6,8 @@ import { t, tn } from './i18n.js';
 import {
   formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL,
   chartVisibleTotalBRL, classTargetPct, classActualPct,
-  isQuarantined, isClassInactive, allocationWarning,
-  deficientClasses, deficientItems, itemTargetPct,
+  isSkippedAsset, isClassInactive, allocationWarning,
+  recommendedClasses, recommendedItems, itemTargetPct,
   allAssetsWeighted, emergencyProgress,
 } from './calc.js';
 
@@ -173,7 +173,7 @@ function renderPanels() {
 // ---------------------------------------------------------------------------
 
 function renderOverview() {
-  const defCls = deficientClasses();
+  const recommendedClassKeys = recommendedClasses();
   const order = preferences.displayOrder();
   const populated = order.filter(k => portfolio.items(k).length > 0);
 
@@ -185,12 +185,12 @@ function renderOverview() {
 
   if (portfolio.isEmergencyUnmet()) {
     html += notice('life-buoy', t('emergencyPriority'), 'warning');
-  } else if (prices.hasData && defCls.length === 0 && populated.some(k => !isClassInactive(k))) {
+  } else if (prices.hasData && recommendedClassKeys.length === 0 && populated.some(k => !isClassInactive(k))) {
     html += notice('check-circle', t('successBalanced'), 'success');
   }
 
   html += '<div class="summary-cards">';
-  html += populated.map((k, i) => renderSummaryCard(k, defCls, i, populated)).join('');
+  html += populated.map((k, i) => renderSummaryCard(k, recommendedClassKeys, i, populated)).join('');
   html += '</div>';
   return html;
 }
@@ -199,11 +199,11 @@ function renderOverview() {
  * Renders a summary card. All cards share the same template:
  * header (icon + label + badges + order arrows) > value > bar > meta > description.
  */
-function renderSummaryCard(key, defCls, idx, orderedKeys) {
+function renderSummaryCard(key, recommendedClassKeys, idx, orderedKeys) {
   const m = CLASS_META[key];
   const label = classLabel(key);
   const total = classTotalBRL(key);
-  const isDef = defCls.includes(key);
+  const isRecommended = recommendedClassKeys.includes(key);
   const inactive = isClassInactive(key);
   const isEmergency = key === 'emergencyReserve';
   const desc = tn('classDescriptions', key);
@@ -232,7 +232,7 @@ function renderSummaryCard(key, defCls, idx, orderedKeys) {
     <div class="summary-card-head">
       <span class="summary-card-label">
         <i data-lucide="${m.icon}" class="summary-icon"></i>
-        ${esc(label)}${isDef ? investBadge() : ''}
+        ${esc(label)}${isRecommended ? investBadge() : ''}
       </span>
       <span class="order-arrows">
         <button class="order-btn${isFirst ? ' order-btn--disabled' : ''}"
@@ -451,7 +451,7 @@ function renderClassPanel(key) {
     </div>`;
   }
 
-  const defItems = deficientItems(key);
+  const recommendedItemIds = recommendedItems(key);
   const sorted = sortedItems(key);
 
   html += `<div class="table-wrap"><table class="asset-table">
@@ -465,16 +465,16 @@ function renderClassPanel(key) {
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
-      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, defItems)).join('')}
+      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedItemIds)).join('')}
       <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr>
     </tbody>
   </table></div>`;
   return html;
 }
 
-function renderAssetRow(key, item, idx, defItems) {
-  const isDef = defItems.includes(item.id);
-  const isSkipped = isQuarantined(item);
+function renderAssetRow(key, item, idx, recommendedItemIds) {
+  const isRecommended = recommendedItemIds.includes(item.id);
+  const isSkipped = isSkippedAsset(item);
   const p = prices.get(item.id);
   const val = assetValueBRL(key, item);
   const id = esc(item.id);
@@ -485,10 +485,10 @@ function renderAssetRow(key, item, idx, defItems) {
   const { priceStr, changeHtml } = fmtPrice(key, item, p);
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
   const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
-  const rowCls = isDef ? ' class="row-target"' : isSkipped ? ' class="row-skipped"' : '';
+  const rowCls = isRecommended ? ' class="row-target"' : isSkipped ? ' class="row-skipped"' : '';
 
   return `<tr${rowCls}>
-    <td class="td-ticker">${ticker}${isDef ? investBadge() : isSkipped ? skipBadge() : ''}</td>
+    <td class="td-ticker">${ticker}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>
     <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}"
       data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yAmountOf', id)}"></td>
@@ -520,5 +520,9 @@ function fmtPrice(key, item, p) {
   const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (p.change === undefined) return { priceStr, changeHtml: '' };
   const up = p.change >= 0;
-  return { priceStr, changeHtml: `<span class="${up ? 'change-up' : 'change-down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>` };
+  const changeLabel = `${up ? '+' : ''}${p.change.toFixed(2)}%`;
+  return {
+    priceStr,
+    changeHtml: `<span class="quote-chip ${up ? 'quote-chip--up' : 'quote-chip--down'}">${changeLabel}</span>`,
+  };
 }
