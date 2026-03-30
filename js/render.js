@@ -36,13 +36,16 @@ function badge(cls, icon, label, title) {
 const aportarBadge = () => badge('aportar', 'sparkles', t('badgeAportar'), t('badgeAportarTitle'));
 const ignorarBadge = () => badge('ignorar', 'circle-pause', t('badgeIgnorar'), t('badgeIgnorarTitle'));
 
-// Sort state
+// Sort
 
-let sortCol = null;
-let sortDir = 'asc';
 export function toggleSort(col) {
-  if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-  else { sortCol = col; sortDir = 'asc'; }
+  const currentCol = preferences.sortCol;
+  const currentDir = preferences.sortDir;
+  if (currentCol === col) {
+    preferences.setSort(col, currentDir === 'asc' ? 'desc' : 'asc');
+  } else {
+    preferences.setSort(col, 'asc');
+  }
 }
 
 function tickerUrl(key, id) {
@@ -58,14 +61,11 @@ function tickerUrl(key, id) {
 
 function getClassColor(key) {
   const el = document.querySelector(`[data-goto="${key}"]`);
-  if (el) return getComputedStyle(el).getPropertyValue('--card-color').trim();
-  const probe = document.createElement('span');
-  probe.setAttribute('data-goto', key);
-  probe.style.display = 'none';
-  document.body.appendChild(probe);
-  const color = getComputedStyle(probe).getPropertyValue('--card-color').trim();
-  probe.remove();
-  return color || '#888';
+  if (el) {
+    const color = getComputedStyle(el).getPropertyValue('--card-color').trim();
+    if (color) return color;
+  }
+  return CLASS_META[key]?.color ?? '#888';
 }
 
 // ---------------------------------------------------------------------------
@@ -263,7 +263,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 
   // Inactive (target = 0)
   return `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-    <div class="summary-card-target-chip summary-card-target-chip--inactive">
+    <div class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
       <input class="target-chip-input" type="text" value="0"
         data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
@@ -390,17 +390,18 @@ function renderBubbleChart() {
 // ---------------------------------------------------------------------------
 
 function sortIndicator(col) {
-  if (sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
-  return `<i data-lucide="${sortDir === 'asc' ? 'arrow-up' : 'arrow-down'}" class="sort-icon"></i>`;
+  if (preferences.sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
+  return `<i data-lucide="${preferences.sortDir === 'asc' ? 'arrow-up' : 'arrow-down'}" class="sort-icon"></i>`;
 }
 
 function sortedItems(key) {
   const items = portfolio.items(key);
-  if (!sortCol || items.length < 2) return items.map((item, idx) => ({ item, idx }));
-  const dir = sortDir === 'asc' ? 1 : -1;
+  const col = preferences.sortCol;
+  if (!col || items.length < 2) return items.map((item, idx) => ({ item, idx }));
+  const dir = preferences.sortDir === 'asc' ? 1 : -1;
   return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
     const [ia, ib] = [a.item, b.item];
-    switch (sortCol) {
+    switch (col) {
       case 'name':   return dir * ia.id.localeCompare(ib.id);
       case 'amount': return dir * (ia.amount - ib.amount);
       case 'price':  return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));

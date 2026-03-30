@@ -498,7 +498,6 @@ body {
 .chart-header-label { font-size: var(--type-label); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .chart-header-value { font-family: var(--font-h); font-size: 1.2rem; font-weight: 700; }
 
-.chart-legend { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .chart-layout { display: flex; gap: 16px; align-items: flex-start; }
 .chart-legend-sidebar { flex-shrink: 0; width: 180px; display: flex; flex-direction: column; gap: 2px; }
 .legend-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: var(--r-sm); cursor: pointer; transition: background var(--ease); }

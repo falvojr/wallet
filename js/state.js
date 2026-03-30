@@ -11,7 +11,7 @@ const PRICES_TTL = 24 * 60 * 60 * 1000;
  * Visual metadata for each asset class.
  * Color families: teal/lime (BR), indigo/blue (US), amber (fixed),
  * rose (emergency), orange (crypto), blue-grey (assets).
- * Used by getClassColor() as fallback when CSS [data-goto] is not rendered.
+ * Used as fallback when CSS [data-goto] is not yet rendered.
  */
 export const CLASS_META = {
   brStocks:         { color: '#0d9488', icon: 'trending-up' },
@@ -119,10 +119,7 @@ export class Portfolio {
   load() {
     try {
       const raw = localStorage.getItem(STORAGE);
-      if (raw) {
-        this.#data = JSON.parse(raw);
-        delete this.#data?.hiddenClasses; // legacy field cleanup
-      }
+      if (raw) this.#data = JSON.parse(raw);
     } catch {
       this.#data = null;
     }
@@ -134,7 +131,6 @@ export class Portfolio {
   }
 
   import(data) {
-    delete data?.hiddenClasses;
     this.#data = data;
     this.save();
   }
@@ -156,6 +152,8 @@ export class Portfolio {
 
 export class Preferences {
   #data = {};
+
+  // Display order
 
   order(key) {
     return this.#data.order?.[key] ?? CLASS_KEYS.indexOf(key) + 1;
@@ -182,6 +180,8 @@ export class Preferences {
     });
   }
 
+  // Chart visibility
+
   isChartHidden(key) {
     return !!this.#data.chartHidden?.[key];
   }
@@ -192,6 +192,24 @@ export class Preferences {
     else this.#data.chartHidden[key] = true;
     this.save();
   }
+
+  // Table sort
+
+  get sortCol() {
+    return this.#data.sortCol ?? null;
+  }
+
+  get sortDir() {
+    return this.#data.sortDir ?? 'asc';
+  }
+
+  setSort(col, dir) {
+    this.#data.sortCol = col;
+    this.#data.sortDir = dir;
+    this.save();
+  }
+
+  // Persistence
 
   load() {
     try {

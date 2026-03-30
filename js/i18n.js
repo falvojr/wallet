@@ -77,7 +77,6 @@ const strings = {
     colChange: 'Hoje',
     colTotal: 'Total',
     colTarget: 'Meta %',
-    colActions: '',
     colActionsA11y: 'Opções',
     addAsset: '+ Adicionar ativo',
     emptyClass: 'Nenhum ativo nesta classe.',
