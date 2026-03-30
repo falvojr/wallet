@@ -351,63 +351,110 @@ function fitLabel(name, r) {
   return name.length <= maxChars ? name : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
 }
 
+function keepNodeInBounds(node, width, height, padding = 8) {
+  node.x = Math.max(node.r + padding, Math.min(width - node.r - padding, node.x));
+  node.y = Math.max(node.r + padding, Math.min(height - node.r - padding, node.y));
+}
+
 function renderBubbleChart() {
   const el = document.getElementById('bubbleChart');
   if (!el || typeof d3 === 'undefined') return;
 
   const assets = allAssetsWeighted();
-  if (!assets.length) { el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
+  if (!assets.length) {
+    el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`;
+    return;
+  }
 
-  // Resolve theme-aware colors
   const colorMap = {};
-  assets.forEach(a => { colorMap[a.classKey] ??= getClassColor(a.classKey); });
+  assets.forEach(asset => {
+    colorMap[asset.classKey] ??= getClassColor(asset.classKey);
+  });
 
-  const vTotal = assets.reduce((s, a) => s + a.value, 0);
-  const w = el.clientWidth || 600;
-  const h = Math.max(440, Math.min(w * 0.75, window.innerHeight * 0.68));
-  const pctOf = d => vTotal > 0 ? ((d.data.value / vTotal) * 100).toFixed(1) : '0';
-  const color = d => colorMap[d.data.classKey];
-  const labelColor = d => bubbleTextColor(color(d));
-  const sublabelColor = d => bubbleSubtextColor(color(d));
+  const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+  const width = el.clientWidth || 720;
+  const height = Math.max(560, Math.min(width * 0.92, window.innerHeight * 0.78));
+  const color = node => colorMap[node.classKey];
+  const pctOf = node => totalValue > 0 ? ((node.value / totalValue) * 100).toFixed(1) : '0';
 
-  const root = d3.hierarchy({ children: assets }).sum(d => d.value);
-  d3.pack().size([w, h]).padding(3)(root);
+  const root = d3.hierarchy({ children: assets }).sum(asset => asset.value);
+  d3.pack().size([width, height]).padding(4)(root);
+
+  const nodesData = root.leaves().map((leaf, index) => ({
+    ...leaf.data,
+    r: leaf.r,
+    x: width / 2 + Math.cos(index) * leaf.r,
+    y: height / 2 + Math.sin(index) * leaf.r,
+  }));
+
+  const simulation = d3.forceSimulation(nodesData)
+    .force('x', d3.forceX(width / 2).strength(0.05))
+    .force('y', d3.forceY(height / 2).strength(0.07))
+    .force('charge', d3.forceManyBody().strength(1.5))
+    .force('collide', d3.forceCollide(node => node.r + 3).iterations(2))
+    .stop();
+
+  for (let i = 0; i < 240; i += 1) {
+    simulation.tick();
+    nodesData.forEach(node => keepNodeInBounds(node, width, height));
+  }
 
   const svg = d3.select(el).html('')
-    .append('svg').attr('viewBox', `0 0 ${w} ${h}`)
-    .attr('role', 'img').attr('aria-label', t('a11yBubbleChart'));
+    .append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('role', 'img')
+    .attr('aria-label', t('a11yBubbleChart'));
 
-  const nodes = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x},${d.y})`);
+  const nodes = svg.selectAll('g')
+    .data(nodesData)
+    .join('g')
+    .attr('transform', node => `translate(${node.x},${node.y})`);
 
-  nodes.append('circle').attr('r', d => d.r)
-    .attr('fill', color).attr('opacity', 0.82)
-    .attr('stroke', color).attr('stroke-opacity', 0.25).attr('stroke-width', 1.5)
-    .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
-    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5); })
-    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25); });
+  nodes.append('circle')
+    .attr('r', node => node.r)
+    .attr('fill', color)
+    .attr('opacity', 0.82)
+    .attr('stroke', color)
+    .attr('stroke-opacity', 0.25)
+    .attr('stroke-width', 1.5)
+    .style('cursor', 'pointer')
+    .style('transition', 'opacity 200ms, stroke-width 200ms')
+    .on('mouseenter', function () {
+      d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5);
+    })
+    .on('mouseleave', function () {
+      d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
+    });
 
-  nodes.append('title').text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`);
+  nodes.append('title').text(node => `${node.id}: ${formatBRL(node.value)} (${pctOf(node)}%)`);
 
-  nodes.on('click', (_e, d) => {
+  nodes.on('click', (_event, node) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`;
+    toast.textContent = `${node.id}: ${formatBRL(node.value)} (${pctOf(node)}%)`;
     document.getElementById('toastContainer')?.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
   });
 
-  nodes.filter(d => d.r > 16).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('fill', d => labelColor(d)).attr('font-family', 'var(--font-h)').attr('font-weight', '700')
-    .attr('font-size', d => Math.min(d.r * 0.45, 14))
-    .text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
+  nodes.filter(node => node.r > 16).append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'central')
+    .attr('fill', node => bubbleTextColor(color(node)))
+    .attr('font-family', 'var(--font-h)')
+    .attr('font-weight', '700')
+    .attr('font-size', node => Math.min(node.r * 0.45, 14))
+    .text(node => fitLabel(node.id, node.r))
+    .style('pointer-events', 'none');
 
-  nodes.filter(d => d.r > 28).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', d => sublabelColor(d))
-    .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
-    .text(d => pctOf(d) + '%').style('pointer-events', 'none');
+  nodes.filter(node => node.r > 28).append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'central')
+    .attr('dy', node => node.r * 0.35)
+    .attr('fill', node => bubbleSubtextColor(color(node)))
+    .attr('font-family', 'var(--font-b)')
+    .attr('font-size', node => Math.min(node.r * 0.28, 10))
+    .text(node => `${pctOf(node)}%`)
+    .style('pointer-events', 'none');
 }
 
 // ---------------------------------------------------------------------------

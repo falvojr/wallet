@@ -97,7 +97,7 @@ const strings = {
 
     // Note modal
     noteModalTitle: 'Comentário',
-    noteHintPrefix: 'Nota sobre',
+    noteHintPrefix: 'Comentário sobre',
     notePlaceholder: 'Ex: Vence em 2027, rendendo 120% do CDI',
     noteTextAria: 'Comentário sobre o ativo',
     btnSave: 'Salvar',

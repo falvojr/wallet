@@ -122,7 +122,7 @@ function classShortfall(key) {
 }
 
 function recommendationLimit(count) {
-  if (count >= 10) return 3;
+  if (count >= 11) return 3;
   if (count >= 6) return 2;
   return count >= 1 ? 1 : 0;
 }
@@ -158,7 +158,7 @@ export function recommendedItems(key) {
   const total = classTotalBRL(key);
   const gap = classShortfall(key);
 
-  if (!total || total <= 0 || items.length < 2 || !gap || gap < classThreshold(key)) {
+  if (!total || total <= 0 || !gap || gap < classThreshold(key)) {
     return [];
   }
 

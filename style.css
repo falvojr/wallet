@@ -560,8 +560,8 @@ body {
 .chart-header-label { font-size: var(--type-label); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .chart-header-value { font-family: var(--font-h); font-size: 1.2rem; font-weight: 700; }
 
-.chart-layout { display: flex; gap: 16px; align-items: flex-start; }
-.chart-legend-sidebar { flex-shrink: 0; width: 180px; display: flex; flex-direction: column; gap: 2px; }
+.chart-layout { display: grid; grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); gap: 18px; align-items: stretch; }
+.chart-legend-sidebar { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .legend-item {
   display: flex;
   align-items: center;
@@ -587,8 +587,8 @@ body {
 }
 .legend-strike { text-decoration: line-through; opacity: 0.6; }
 
-.bubble-container { flex: 1; min-width: 0; }
-.bubble-container svg { width: 100%; height: auto; display: block; }
+.bubble-container { min-width: 0; min-height: clamp(560px, 72vh, 820px); display: flex; align-items: stretch; }
+.bubble-container svg { width: 100%; height: 100%; display: block; }
 .donut-empty { color: var(--text-muted); padding: 20px; font-size: var(--type-subtitle); text-align: center; }
 
 /* Asset table */
