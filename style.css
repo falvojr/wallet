@@ -583,9 +583,13 @@ body {
   align-items: start;
 }
 
+.chart-legend-sidebar {
+  min-width: 0;
+}
+
 .chart-legend-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px 12px;
 }
 
@@ -643,7 +647,7 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: clamp(320px, calc(100vh - 340px), 560px);
+  min-height: clamp(320px, calc(100vh - 360px), 540px);
 }
 
 .bubble-container {
@@ -663,6 +667,27 @@ body {
   padding: 20px;
   font-size: var(--type-subtitle);
   text-align: center;
+}
+
+@media (min-width: 700px) {
+  .chart-legend-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1100px) {
+  .chart-layout {
+    grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .chart-legend-grid { grid-template-columns: 1fr; }
+
+  .bubble-stage {
+    min-height: clamp(420px, calc(100vh - 230px), 700px);
+  }
+
+  .bubble-container {
+    width: min(100%, clamp(560px, 52vw, 900px));
+  }
 }
 
 /* Asset table */
