@@ -322,7 +322,9 @@ function renderChartsTab() {
   </div>
   <div class="chart-layout">
     <div class="chart-legend-grid">${data.map(renderLegendItem).join('')}</div>
-    <div id="bubbleChart" class="bubble-container"></div>
+    <div class="bubble-stage">
+      <div id="bubbleChart" class="bubble-container"></div>
+    </div>
   </div>`;
 }
 
@@ -356,60 +358,87 @@ function renderBubbleChart() {
   if (!el || typeof d3 === 'undefined') return;
 
   const assets = allAssetsWeighted();
-  if (!assets.length) { el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
+  if (!assets.length) {
+    el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`;
+    return;
+  }
 
-  // Resolve theme-aware colors
   const colorMap = {};
-  assets.forEach(a => { colorMap[a.classKey] ??= getClassColor(a.classKey); });
+  assets.forEach((asset) => { colorMap[asset.classKey] ??= getClassColor(asset.classKey); });
 
-  const vTotal = assets.reduce((sum, asset) => sum + asset.value, 0);
-  const containerWidth = el.clientWidth || 600;
-  const containerHeight = el.clientHeight || containerWidth;
-  const size = Math.max(280, Math.min(containerWidth, containerHeight));
-  const padding = size >= 720 ? 5 : size >= 520 ? 4 : 3;
-  const pctOf = d => vTotal > 0 ? ((d.data.value / vTotal) * 100).toFixed(1) : '0';
-  const color = d => colorMap[d.data.classKey];
-  const labelColor = d => bubbleTextColor(color(d));
-  const sublabelColor = d => bubbleSubtextColor(color(d));
+  const totalValue = assets.reduce((sum, asset) => sum + asset.value, 0);
+  const bounds = el.getBoundingClientRect();
+  const width = Math.max(280, Math.floor(bounds.width || el.clientWidth || 320));
+  const height = Math.max(280, Math.floor(bounds.height || width));
+  const size = Math.max(280, Math.min(width, height));
+  const packPadding = size < 360 ? 2 : 3;
+  const percentOf = node => totalValue > 0 ? ((node.data.value / totalValue) * 100).toFixed(1) : '0';
+  const fillColor = node => colorMap[node.data.classKey];
+  const labelColor = node => bubbleTextColor(fillColor(node));
+  const sublabelColor = node => bubbleSubtextColor(fillColor(node));
 
-  const root = d3.hierarchy({ children: assets }).sum(d => d.value);
-  d3.pack().size([size, size]).padding(padding)(root);
+  const root = d3.hierarchy({ children: assets }).sum(asset => asset.value);
+  d3.pack().size([size, size]).padding(packPadding)(root);
 
-  const svg = d3.select(el).html('')
-    .append('svg').attr('viewBox', `0 0 ${size} ${size}`)
-    .attr('role', 'img').attr('aria-label', t('a11yBubbleChart'));
+  const svg = d3.select(el)
+    .html('')
+    .append('svg')
+    .attr('viewBox', `0 0 ${size} ${size}`)
+    .attr('role', 'img')
+    .attr('aria-label', t('a11yBubbleChart'));
 
-  const nodes = svg.selectAll('g').data(root.leaves()).join('g')
-    .attr('transform', d => `translate(${d.x},${d.y})`);
+  const nodes = svg.selectAll('g')
+    .data(root.leaves())
+    .join('g')
+    .attr('transform', node => `translate(${node.x},${node.y})`);
 
-  nodes.append('circle').attr('r', d => d.r)
-    .attr('fill', color).attr('opacity', 0.82)
-    .attr('stroke', color).attr('stroke-opacity', 0.25).attr('stroke-width', 1.5)
-    .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
-    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5); })
-    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25); });
+  nodes.append('circle')
+    .attr('r', node => node.r)
+    .attr('fill', fillColor)
+    .attr('opacity', 0.82)
+    .attr('stroke', fillColor)
+    .attr('stroke-opacity', 0.25)
+    .attr('stroke-width', 1.5)
+    .style('cursor', 'pointer')
+    .style('transition', 'opacity 200ms, stroke-width 200ms')
+    .on('mouseenter', function () {
+      d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5);
+    })
+    .on('mouseleave', function () {
+      d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
+    });
 
-  nodes.append('title').text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`);
+  nodes.append('title').text(node => `${node.data.id}: ${formatBRL(node.data.value)} (${percentOf(node)}%)`);
 
-  nodes.on('click', (_e, d) => {
+  nodes.on('click', (_event, node) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`;
+    toast.textContent = `${node.data.id}: ${formatBRL(node.data.value)} (${percentOf(node)}%)`;
     document.getElementById('toastContainer')?.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
   });
 
-  nodes.filter(d => d.r > 16).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('fill', d => labelColor(d)).attr('font-family', 'var(--font-h)').attr('font-weight', '700')
-    .attr('font-size', d => Math.min(d.r * 0.45, 14))
-    .text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
+  nodes.filter(node => node.r > 16)
+    .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'central')
+    .attr('fill', labelColor)
+    .attr('font-family', 'var(--font-h)')
+    .attr('font-weight', '700')
+    .attr('font-size', node => Math.min(node.r * 0.45, 14))
+    .text(node => fitLabel(node.data.id, node.r))
+    .style('pointer-events', 'none');
 
-  nodes.filter(d => d.r > 28).append('text')
-    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', d => sublabelColor(d))
-    .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
-    .text(d => pctOf(d) + '%').style('pointer-events', 'none');
+  nodes.filter(node => node.r > 28)
+    .append('text')
+    .attr('text-anchor', 'middle')
+    .attr('dominant-baseline', 'central')
+    .attr('dy', node => node.r * 0.35)
+    .attr('fill', sublabelColor)
+    .attr('font-family', 'var(--font-b)')
+    .attr('font-size', node => Math.min(node.r * 0.28, 10))
+    .text(node => `${percentOf(node)}%`)
+    .style('pointer-events', 'none');
 }
 
 // ---------------------------------------------------------------------------
@@ -522,5 +551,8 @@ function fmtPrice(key, item, p) {
   const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (p.change === undefined) return { priceStr, changeHtml: '' };
   const up = p.change >= 0;
-  return { priceStr, changeHtml: `<span class="${up ? 'change-up' : 'change-down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>` };
+  return {
+    priceStr,
+    changeHtml: `<span class="quote-chip ${up ? 'quote-chip--up' : 'quote-chip--down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>`,
+  };
 }
