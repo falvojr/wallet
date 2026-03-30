@@ -472,10 +472,6 @@ function renderClassPanel(key) {
 
   let html = `<h2 class="sr-only">${esc(label)}</h2>`;
 
-  if (inactive) {
-    html += notice('info', t('inactiveClassHint'), 'info');
-  }
-
   if (!items.length) {
     return html + `<div class="empty-class">
       <p>${t('emptyClass')}</p>

@@ -1,5 +1,5 @@
 import {
-  CLASS_KEYS, portfolio, preferences, settings,
+  CLASS_KEYS, portfolio, preferences, prices, settings,
   setActiveTab, loadTheme, toggleTheme,
 } from './js/state.js';
 import { t } from './js/i18n.js';

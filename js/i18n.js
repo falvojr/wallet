@@ -24,8 +24,8 @@ const strings = {
       usStocks: 'Stocks',
       usReits: 'REITs',
       fixedIncome: 'Renda Fixa',
-      emergencyReserve: 'Reserva de Emergência',
-      storeOfValue: 'Reserva de Valor',
+      emergencyReserve: 'Reserva Emergência',
+      storeOfValue: 'Reserva Valor',
       assets: 'Bens',
     },
     classDescription: {
