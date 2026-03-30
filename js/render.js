@@ -427,11 +427,11 @@ function sortedItems(key) {
   return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
     const [ia, ib] = [a.item, b.item];
     switch (col) {
-      case 'name':   return dir * ia.id.localeCompare(ib.id);
+      case 'name': return dir * ia.id.localeCompare(ib.id);
       case 'amount': return dir * (ia.amount - ib.amount);
-      case 'price':  return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
+      case 'price': return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
       case 'change': return dir * ((prices.get(ia.id)?.change ?? 0) - (prices.get(ib.id)?.change ?? 0));
-      case 'total':  return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
+      case 'total': return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
       case 'target': return dir * (itemTargetPct(key, ia) - itemTargetPct(key, ib));
       default: return 0;
     }

@@ -10,8 +10,8 @@ export async function fetchAllPrices(onProgress) {
   if (fetching || !portfolio.loaded || !settings.hasTokens) return false;
   fetching = true;
 
-  const br  = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
-  const us  = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
+  const br = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
+  const us = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
   const sov = portfolio.items('storeOfValue').map(a => a.id);
 
   let step = 0;
@@ -21,8 +21,8 @@ export async function fetchAllPrices(onProgress) {
   try {
     progress(t('loadingExchange'));
     await fetchExchangeRates();
-    for (const ticker of br)  { progress(ticker); await fetchBrQuote(ticker); }
-    for (const ticker of us)  { progress(ticker); await fetchUsQuote(ticker); }
+    for (const ticker of br) { progress(ticker); await fetchBrQuote(ticker); }
+    for (const ticker of us) { progress(ticker); await fetchUsQuote(ticker); }
     for (const ticker of sov) { progress(ticker); await fetchSovQuote(ticker); }
 
     if (prices.hasData) prices.save();
@@ -47,9 +47,9 @@ async function fetchBrQuote(ticker) {
     const r = data?.results?.[0];
     if (r) {
       prices.set(r.symbol, {
-        price:    r.regularMarketPrice,
+        price: r.regularMarketPrice,
         currency: r.currency || 'BRL',
-        change:   r.regularMarketChangePercent,
+        change: r.regularMarketChangePercent,
       });
       prices.markBrQuoted(r.symbol);
     }
@@ -78,7 +78,7 @@ async function fetchSovQuote(ticker) {
   const entry = data?.[`${ticker}BRL`];
   if (entry) {
     prices.set(ticker, {
-      price:  parseFloat(entry.bid),
+      price: parseFloat(entry.bid),
       currency: 'BRL',
       change: parseFloat(entry.pctChange),
     });

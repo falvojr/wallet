@@ -29,25 +29,14 @@ const strings = {
       assets: 'Bens',
     },
     classDescriptions: {
-      brStocks:
-        'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
-      brFiis:
-        'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos '
-        + 'imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
-      usStocks:
-        'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
-      usReits:
-        'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. '
-        + 'Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
-      fixedIncome:
-        'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
-      emergencyReserve:
-        'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. '
-        + 'Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
-      storeOfValue:
-        'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. Servem como proteção contra desvalorização cambial e instabilidade monetária.',
-      assets:
-        'Bens patrimoniais como imóveis de uso pessoal e veículos. Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
+      brStocks: 'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
+      brFiis: 'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
+      usStocks: 'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
+      usReits: 'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
+      fixedIncome: 'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
+      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
+      storeOfValue: 'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. Servem como proteção contra desvalorização cambial e instabilidade monetária.',
+      assets: 'Bens patrimoniais como imóveis de uso pessoal e veículos. Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
     },
 
     // Overview
@@ -58,15 +47,14 @@ const strings = {
     infoStale: (date) => `Cotações desatualizadas (${date}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices: 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced: 'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
-    inactiveClassHint: 'Fora da estratégia de rebalanceamento.',
-    emergencyPriority:
-      'Meta da Reserva Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
+    inactiveClassHint: 'Classe ignorada no rebalanceamento.',
+    emergencyPriority: 'Meta da Reserva de Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
 
     // Badges
     badgeInvest: 'aportar',
-    badgeInvestTitle: 'Prioridade de aporte',
+    badgeInvestTitle: 'Ativo com prioridade de aporte.',
     badgeSkip: 'ignorar',
-    badgeSkipTitle: 'Fora da estratégia de aporte',
+    badgeSkipTitle: 'Ativo ignorado no rebalanceamento.',
 
     // Charts
     portfolioLabel: 'Patrimônio',
