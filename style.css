@@ -14,6 +14,7 @@
   --accent: #b39ddb;
   --accent-light: #ce93d8;
   --accent-dim: rgba(179, 157, 219, 0.15);
+  --accent-fill: #7e57c2;
   /* M3 Status */
   --up: #4ade80;
   --down: #f87171;
@@ -191,8 +192,8 @@ body {
 .btn svg,
 .btn [data-lucide] { width: 18px; height: 18px; flex-shrink: 0; }
 .btn-label { display: none; }
-.btn--filled { background: var(--accent); color: #fff; font-weight: 700; }
-.btn--filled:hover { background: var(--accent-light); color: #fff; }
+.btn--filled { background: var(--accent-fill); color: #fff; font-weight: 700; }
+.btn--filled:hover { background: var(--accent); color: #fff; }
 .btn--filled::after { background: #fff; }
 .btn--text { background: transparent; color: var(--accent-light); padding: 0 12px; }
 .btn--lg { padding: 0 24px; font-size: var(--type-subtitle); min-height: 48px; }
@@ -353,11 +354,8 @@ body {
 }
 
 .summary-card--inactive {
-  opacity: 0.55;
   border-left-style: dashed;
 }
-
-.summary-card--inactive:hover { opacity: 0.75; }
 
 .summary-card-head {
   display: flex;
@@ -463,14 +461,11 @@ body {
 
 .summary-card-target-chip:hover,
 .summary-card-target-chip:focus-within { border-color: var(--accent); }
-.summary-card-target-chip--inactive { opacity: 0.7; }
 
 .target-chip-label { font-size: var(--type-label-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
 .target-chip-input { width: 26px; padding: 0; border: none; background: transparent; color: var(--text-primary); font-family: var(--font-b); font-size: var(--type-body-sm); font-weight: 700; outline: none; text-align: center; cursor: text; }
 .target-chip-input--wide { width: 60px; text-align: right; }
 .target-chip-unit { font-size: var(--type-label-sm); font-weight: 600; color: var(--text-muted); }
-
-/* Card description (clamped for uniform height) */
 
 .summary-card-desc {
   font-size: var(--type-label);
@@ -668,6 +663,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   --accent: #5e35b1;
   --accent-light: #7e57c2;
   --accent-dim: rgba(94, 53, 177, 0.12);
+  --accent-fill: #5e35b1;
   --up: #16a34a;
   --down: #dc2626;
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
