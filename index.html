@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -9,23 +10,38 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 </head>
+
 <body>
   <header class="app-header">
     <div class="header-inner">
-      <div class="header-brand"><h1>Minha Holding</h1></div>
-      <!-- M3: secondary icon buttons → primary FAB-style last -->
+      <div class="header-brand">
+        <h1>Minha Holding</h1>
+      </div>
+
       <div class="header-actions" id="headerActions" hidden>
-        <button class="icon-btn" id="btnImport" title="Importar carteira JSON" aria-label="Importar carteira JSON"><i data-lucide="download"></i></button>
-        <button class="icon-btn" id="btnExport" title="Exportar carteira JSON" aria-label="Exportar carteira JSON"><i data-lucide="upload"></i></button>
-        <button class="icon-btn" id="btnTheme" title="Alternar tema claro e escuro" aria-label="Alternar tema claro e escuro"><i data-lucide="sun-moon"></i></button>
-        <button class="icon-btn" id="btnSettings" title="Configurações de API" aria-label="Configurações de API"><i data-lucide="settings"></i></button>
+        <button class="icon-btn" id="btnImport" title="Importar carteira JSON" aria-label="Importar carteira JSON">
+          <i data-lucide="download"></i>
+        </button>
+        <button class="icon-btn" id="btnExport" title="Exportar carteira JSON" aria-label="Exportar carteira JSON">
+          <i data-lucide="upload"></i>
+        </button>
+        <button class="icon-btn" id="btnTheme" title="Alternar tema claro e escuro"
+          aria-label="Alternar tema claro e escuro">
+          <i data-lucide="sun-moon"></i>
+        </button>
+        <button class="icon-btn" id="btnSettings" title="Configurações de API" aria-label="Configurações de API">
+          <i data-lucide="settings"></i>
+        </button>
         <button class="btn btn--filled" id="btnPrices" title="Atualizar cotações" aria-label="Atualizar cotações">
-          <i data-lucide="refresh-cw"></i><span class="btn-label">Cotar</span>
+          <i data-lucide="refresh-cw"></i>
+          <span class="btn-label">Cotar</span>
         </button>
       </div>
     </div>
@@ -33,18 +49,25 @@
 
   <main class="app-container" id="app">
     <div class="empty-welcome" id="emptyWelcome">
-      <div class="empty-icon"><i data-lucide="download" style="width:40px;height:40px"></i></div>
+      <div class="empty-icon">
+        <i data-lucide="download" style="width: 40px; height: 40px"></i>
+      </div>
       <h2>Importe sua carteira</h2>
       <p>Arraste um arquivo <code>.json</code> ou clique para carregar.</p>
-      <button class="btn btn--filled btn--lg" id="btnWelcomeImport">Importar JSON</button>
+      <button class="btn btn--filled btn--lg" id="btnWelcomeImport">
+        Importar JSON
+      </button>
     </div>
+
     <nav class="tab-nav" id="tabNav" aria-label="Navegação por classe de ativos"></nav>
     <div id="panels"></div>
   </main>
 
   <div class="loading-overlay" id="loadingOverlay" hidden aria-hidden="true">
     <div class="loading-content" role="status">
-      <div class="loading-bar"><div class="loading-bar-fill" id="loadingBarFill"></div></div>
+      <div class="loading-bar">
+        <div class="loading-bar-fill" id="loadingBarFill"></div>
+      </div>
       <p class="loading-text" id="loadingText">Carregando...</p>
     </div>
   </div>
@@ -52,12 +75,20 @@
   <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
     <div class="modal">
       <h3 id="addModalTitle">Adicionar Ativo</h3>
-      <div class="modal-field"><label for="newTicker">Nome / Ticker</label>
-        <input type="text" id="newTicker" placeholder="Ex: PETR4, CDB Inter" autocomplete="off"></div>
-      <div class="modal-field"><label for="newAmount">Quantidade ou valor (R$)</label>
-        <input type="text" id="newAmount" placeholder="Ex: 100 (0 para incluir sem posição)" inputmode="decimal" autocomplete="off"></div>
-      <div class="modal-field"><label for="newTarget">Meta % (dentro da classe)</label>
-        <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal" autocomplete="off"></div>
+      <div class="modal-field">
+        <label for="newTicker">Nome / Ticker</label>
+        <input type="text" id="newTicker" placeholder="Ex: PETR4, CDB Inter" autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label for="newAmount">Quantidade ou valor (R$)</label>
+        <input type="text" id="newAmount" placeholder="Ex: 100 (0 para incluir sem posição)" inputmode="decimal"
+          autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label for="newTarget">Meta % (dentro da classe)</label>
+        <input type="text" id="newTarget" placeholder="Vazio = distribuição igual, 0 = quarentena" inputmode="decimal"
+          autocomplete="off">
+      </div>
       <div class="modal-actions">
         <button class="btn btn--text" id="modalCancel">Cancelar</button>
         <button class="btn btn--filled" id="modalConfirm">Adicionar</button>
@@ -69,7 +100,10 @@
     <div class="modal">
       <h3 id="noteModalTitle">Comentário</h3>
       <p class="modal-hint">Nota sobre <strong id="noteAssetName"></strong></p>
-      <div class="modal-field"><textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI" aria-label="Comentário sobre o ativo"></textarea></div>
+      <div class="modal-field">
+        <textarea id="noteText" rows="3" placeholder="Ex: Vence em 2027, rendendo 120% CDI"
+          aria-label="Comentário sobre o ativo"></textarea>
+      </div>
       <div class="modal-actions">
         <button class="btn btn--text" id="noteCancel">Cancelar</button>
         <button class="btn btn--filled" id="noteSave">Salvar</button>
@@ -81,12 +115,20 @@
     <div class="modal modal--wide">
       <h3 id="settingsModalTitle">Tokens de API</h3>
       <p class="modal-hint">Tokens gratuitos para cotações em tempo real.</p>
-      <div class="modal-field"><label for="brapiToken">brapi.dev (Ações / FIIs)</label>
+      <div class="modal-field">
+        <label for="brapiToken">brapi.dev (Ações / FIIs)</label>
         <input type="text" id="brapiToken" placeholder="Crie grátis em brapi.dev/dashboard" autocomplete="off">
-        <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
-      <div class="modal-field"><label for="finnhubToken">Finnhub (Stocks / REITs)</label>
+        <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener">
+          Criar conta &rarr;
+        </a>
+      </div>
+      <div class="modal-field">
+        <label for="finnhubToken">Finnhub (Stocks / REITs)</label>
         <input type="text" id="finnhubToken" placeholder="Crie grátis em finnhub.io" autocomplete="off">
-        <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">Criar conta &rarr;</a></div>
+        <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener">
+          Criar conta &rarr;
+        </a>
+      </div>
       <div class="modal-actions">
         <button class="btn btn--text" id="settingsCancel">Cancelar</button>
         <button class="btn btn--filled" id="settingsSave">Salvar</button>
@@ -94,9 +136,12 @@
     </div>
   </div>
 
-  <div class="drop-zone" id="dropZone" aria-hidden="true"><div class="drop-zone-inner">Solte o arquivo JSON aqui</div></div>
+  <div class="drop-zone" id="dropZone" aria-hidden="true">
+    <div class="drop-zone-inner">Solte o arquivo JSON aqui</div>
+  </div>
   <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
   <input type="file" id="fileInput" accept=".json" hidden>
   <script type="module" src="app.js"></script>
 </body>
+
 </html>

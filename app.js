@@ -1,45 +1,49 @@
 import {
-  CLASS_KEYS, portfolio, preferences, prices, settings,
-  activeTab, setActiveTab, loadTheme, toggleTheme,
+  CLASS_KEYS,
+  portfolio,
+  preferences,
+  prices,
+  settings,
+  activeTab,
+  setActiveTab,
+  loadTheme,
+  toggleTheme,
 } from './js/state.js';
 import { t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
 import { render, renderOverviewOnly, renderChartOnly, toggleSort } from './js/render.js';
 
-const $ = s => document.querySelector(s);
+const $ = selector => document.querySelector(selector);
 
-// ---------------------------------------------------------------------------
-// Toast
-// ---------------------------------------------------------------------------
-
-function toast(msg, action) {
-  const el = document.createElement('div');
-  el.className = action ? 'toast toast--has-action' : 'toast';
+function showToast(message, action) {
+  const toast = document.createElement('div');
+  toast.className = action ? 'toast toast--has-action' : 'toast';
 
   if (action) {
-    const span = document.createElement('span');
-    span.textContent = msg;
-    const btn = document.createElement('button');
-    btn.className = 'toast-action';
-    btn.textContent = action.label;
-    btn.addEventListener('click', () => { action.handler(); el.remove(); });
-    el.append(span, btn);
+    const text = document.createElement('span');
+    text.textContent = message;
+
+    const button = document.createElement('button');
+    button.className = 'toast-action';
+    button.textContent = action.label;
+    button.addEventListener('click', () => {
+      action.handler();
+      toast.remove();
+    });
+
+    toast.append(text, button);
   } else {
-    el.textContent = msg;
+    toast.textContent = message;
   }
 
-  $('#toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), action ? 5000 : 3000);
+  $('#toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), action ? 5000 : 3000);
 }
 
-// ---------------------------------------------------------------------------
-// Loading overlay
-// ---------------------------------------------------------------------------
-
-function showLoading(text, pct) {
+function showLoading(text, progress) {
   const overlay = $('#loadingOverlay');
   $('#loadingText').textContent = text;
-  $('#loadingBarFill').style.width = pct !== undefined ? `${Math.round(pct * 100)}%` : '0%';
+  $('#loadingBarFill').style.width = progress !== undefined ? `${Math.round(progress * 100)}%` : '0%';
   overlay.hidden = false;
   overlay.setAttribute('aria-hidden', 'false');
 }
@@ -50,9 +54,10 @@ function hideLoading() {
   overlay.setAttribute('aria-hidden', 'true');
 }
 
-// ---------------------------------------------------------------------------
-// Auto-save (debounced for inline edits)
-// ---------------------------------------------------------------------------
+function parseNonNegativeNumber(value) {
+  const number = Number.parseFloat(value.replace(',', '.'));
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
 
 let saveTimer = null;
 
@@ -66,64 +71,83 @@ function scheduleSave() {
 
 async function refreshPrices() {
   if (!settings.hasTokens) {
-    toast(t('toastConfigTokens'));
+    showToast(t('toastConfigTokens'));
     return;
   }
+
   const ok = await fetchAllPrices(showLoading);
   hideLoading();
   render();
-  toast(ok ? t('toastPricesOk') : t('toastPricesFail'));
+  showToast(ok ? t('toastPricesOk') : t('toastPricesFail'));
 }
 
-// ---------------------------------------------------------------------------
-// Modals
-// ---------------------------------------------------------------------------
+function getFocusableElements(container) {
+  return container.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
+}
 
 function trapFocus(modal) {
-  const focusable = modal.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
+  const focusable = getFocusableElements(modal);
   if (!focusable.length) return;
+
   const first = focusable[0];
   const last = focusable[focusable.length - 1];
-  const handler = e => {
-    if (e.key !== 'Tab') return;
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  const handleTab = event => {
+    if (event.key !== 'Tab') return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+
+    if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
   };
-  modal.addEventListener('keydown', handler);
-  modal._focusTrap = handler;
+
+  modal.addEventListener('keydown', handleTab);
+  modal._focusTrapHandler = handleTab;
 }
 
 function releaseFocus(modal) {
-  if (modal._focusTrap) {
-    modal.removeEventListener('keydown', modal._focusTrap);
-    delete modal._focusTrap;
-  }
+  if (!modal._focusTrapHandler) return;
+  modal.removeEventListener('keydown', modal._focusTrapHandler);
+  delete modal._focusTrapHandler;
 }
 
 let previousFocus = null;
 
-function openModal(id, focusSelector) {
+function openModal(modalSelector, focusSelector) {
   previousFocus = document.activeElement;
-  const modal = $(id);
+
+  const modal = $(modalSelector);
   modal.classList.add('open');
   trapFocus(modal);
-  if (focusSelector) setTimeout(() => $(focusSelector)?.focus(), 100);
+
+  if (focusSelector) {
+    setTimeout(() => $(focusSelector)?.focus(), 100);
+  }
 }
 
-function closeModal(id) {
-  const modal = $(id);
+function closeModal(modalSelector) {
+  const modal = $(modalSelector);
   modal.classList.remove('open');
   releaseFocus(modal);
   previousFocus?.focus();
   previousFocus = null;
 }
 
-// Add asset modal
+function bindModalBackdropClose(modalSelector, closeHandler) {
+  $(modalSelector).addEventListener('click', event => {
+    if (event.target.id === modalSelector.slice(1)) closeHandler();
+  });
+}
 
-let addTargetClass = null;
+let addClassKey = null;
 
-function openAddModal(cls) {
-  addTargetClass = cls;
+function openAddModal(classKey) {
+  addClassKey = classKey;
   $('#newTicker').value = '';
   $('#newAmount').value = '';
   $('#newTarget').value = '';
@@ -132,70 +156,76 @@ function openAddModal(cls) {
 
 function closeAddModal() {
   closeModal('#addModal');
-  addTargetClass = null;
+  addClassKey = null;
 }
 
 function confirmAddAsset() {
   const id = $('#newTicker').value.trim();
-  const amount = parseFloat($('#newAmount').value.replace(',', '.'));
+  const amount = parseNonNegativeNumber($('#newAmount').value);
 
-  if (!id) { $('#newTicker').focus(); return; }
-  if (isNaN(amount) || amount < 0) { $('#newAmount').focus(); return; }
-  if (portfolio.items(addTargetClass).find(a => a.id === id)) {
-    toast(t('toastExists', id));
+  if (!id) {
+    $('#newTicker').focus();
+    return;
+  }
+
+  if (amount === null) {
+    $('#newAmount').focus();
+    return;
+  }
+
+  if (portfolio.items(addClassKey).some(item => item.id === id)) {
+    showToast(t('toastExists', id));
     return;
   }
 
   const item = { id, amount };
-  const raw = $('#newTarget').value.trim();
-  if (raw !== '') {
-    const v = parseFloat(raw.replace(',', '.'));
-    if (!isNaN(v) && v >= 0) item.target = v;
+  const targetValue = $('#newTarget').value.trim();
+  const target = targetValue ? parseNonNegativeNumber(targetValue) : null;
+
+  if (targetValue && target !== null) {
+    item.target = target;
   }
 
-  portfolio.addItem(addTargetClass, item);
+  portfolio.addItem(addClassKey, item);
   portfolio.save();
   closeAddModal();
   render();
-  toast(t('toastAdded', id));
+  showToast(t('toastAdded', id));
 }
 
-// Note modal
+let noteClassKey = null;
+let noteItemId = null;
 
-let noteClass = null;
-let noteId = null;
+function openNoteModal(classKey, itemId) {
+  noteClassKey = classKey;
+  noteItemId = itemId;
 
-function openNoteModal(cls, id) {
-  noteClass = cls;
-  noteId = id;
-  const item = portfolio.items(cls).find(a => a.id === id);
-  $('#noteAssetName').textContent = id;
+  const item = portfolio.items(classKey).find(asset => asset.id === itemId);
+  $('#noteAssetName').textContent = itemId;
   $('#noteText').value = item?.note || '';
   openModal('#noteModal', '#noteText');
 }
 
 function closeNoteModal() {
   closeModal('#noteModal');
-  noteClass = noteId = null;
+  noteClassKey = null;
+  noteItemId = null;
 }
 
 function saveNote() {
-  if (noteClass && noteId) {
-    portfolio.setItemNote(noteClass, noteId, $('#noteText').value);
-    closeNoteModal();
-    render();
-  }
+  if (!noteClassKey || !noteItemId) return;
+  portfolio.setItemNote(noteClassKey, noteItemId, $('#noteText').value);
+  closeNoteModal();
+  render();
 }
 
-// Settings modal
-
-function openSettings() {
+function openSettingsModal() {
   $('#brapiToken').value = settings.brapiToken;
   $('#finnhubToken').value = settings.finnhubToken;
   openModal('#settingsModal', '#brapiToken');
 }
 
-function closeSettings() {
+function closeSettingsModal() {
   closeModal('#settingsModal');
 }
 
@@ -203,262 +233,271 @@ function saveSettingsModal() {
   settings.brapiToken = $('#brapiToken').value.trim();
   settings.finnhubToken = $('#finnhubToken').value.trim();
   settings.save();
-  closeSettings();
-  toast(t('toastSettingsSaved'));
+  closeSettingsModal();
+  showToast(t('toastSettingsSaved'));
 }
 
-// ---------------------------------------------------------------------------
-// Import / Export
-// ---------------------------------------------------------------------------
-
-function doExport() {
-  const out = portfolio.export();
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+function exportPortfolio() {
+  const output = portfolio.export();
+  const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
-  const filename = 'portfolio_' + (out.syncedAt || 'export') + '.json';
-  Object.assign(document.createElement('a'), { href: url, download: filename }).click();
-  URL.revokeObjectURL(url);
-  toast(t('toastExported'));
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = `portfolio_${output.syncedAt || 'export'}.json`;
+  link.click();
+
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+  showToast(t('toastExported'));
 }
 
-function doImport(file) {
+function importPortfolio(file) {
   showLoading(t('loadingImporting'));
+
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = event => {
     try {
-      const data = JSON.parse(e.target.result);
-      if (!CLASS_KEYS.some(k => data[k]?.items)) throw new Error(t('toastInvalidFormat'));
+      const data = JSON.parse(event.target.result);
+      const hasSupportedClass = CLASS_KEYS.some(key => data[key]?.items);
+      if (!hasSupportedClass) throw new Error(t('toastInvalidFormat'));
+
       portfolio.import(data);
       setActiveTab('overview');
       render();
       hideLoading();
-      toast(t('toastImported'));
+      showToast(t('toastImported'));
+
       if (settings.hasTokens) refreshPrices();
-    } catch (err) {
+    } catch (error) {
       hideLoading();
-      toast(t('toastErrorPrefix') + err.message);
+      showToast(t('toastErrorPrefix') + error.message);
     }
   };
+
   reader.readAsText(file);
 }
 
-// ---------------------------------------------------------------------------
-// Delegated events
-// ---------------------------------------------------------------------------
-
-// Clicks
-$('#panels').addEventListener('click', e => {
-  // Chart legend toggle
-  const chartToggle = e.target.closest('[data-toggle-chart]');
+$('#panels').addEventListener('click', event => {
+  const chartToggle = event.target.closest('[data-toggle-chart]');
   if (chartToggle) {
-    e.stopPropagation();
+    event.stopPropagation();
     preferences.toggleChartHidden(chartToggle.dataset.toggleChart);
     renderChartOnly();
     return;
   }
 
-  // Order swap (up/down arrows)
-  const orderSwap = e.target.closest('[data-order-swap]');
+  const orderSwap = event.target.closest('[data-order-swap]');
   if (orderSwap) {
-    e.stopPropagation();
-    const [keyA, keyB] = orderSwap.dataset.orderSwap.split(':');
-    preferences.swapOrder(keyA, keyB);
+    event.stopPropagation();
+    const [firstKey, secondKey] = orderSwap.dataset.orderSwap.split(':');
+    preferences.swapOrder(firstKey, secondKey);
     render();
     return;
   }
 
-  // Card navigation
-  const goto = e.target.closest('[data-goto]');
-  if (goto && !e.target.closest('input, button')) {
-    setActiveTab(goto.dataset.goto);
+  const cardTarget = event.target.closest('[data-goto]');
+  if (cardTarget && !event.target.closest('input, button')) {
+    setActiveTab(cardTarget.dataset.goto);
     render();
     return;
   }
 
-  // Add asset
-  const addBtn = e.target.closest('.add-row, .add-to-empty');
-  if (addBtn) { openAddModal(addBtn.dataset.addClass); return; }
+  const addButton = event.target.closest('.add-row, .add-to-empty');
+  if (addButton) {
+    openAddModal(addButton.dataset.addClass);
+    return;
+  }
 
-  // Remove asset
-  const removeBtn = e.target.closest('.remove-btn');
-  if (removeBtn) {
-    const cls = removeBtn.dataset.class;
-    const items = portfolio.items(cls);
-    const idx = parseInt(removeBtn.dataset.idx);
-    const item = { ...items[idx] };
-    items.splice(idx, 1);
+  const removeButton = event.target.closest('.remove-btn');
+  if (removeButton) {
+    const classKey = removeButton.dataset.class;
+    const items = portfolio.items(classKey);
+    const index = Number.parseInt(removeButton.dataset.idx, 10);
+    const removedItem = { ...items[index] };
+
+    items.splice(index, 1);
     portfolio.save();
     render();
-    toast(t('toastRemoved', item.id), {
+    showToast(t('toastRemoved', removedItem.id), {
       label: t('toastUndo'),
-      handler() { portfolio.addItem(cls, item); portfolio.save(); render(); },
+      handler() {
+        portfolio.addItem(classKey, removedItem);
+        portfolio.save();
+        render();
+      },
     });
     return;
   }
 
-  // Note
-  const noteBtn = e.target.closest('.note-btn');
-  if (noteBtn) {
-    openNoteModal(noteBtn.dataset.noteClass, noteBtn.dataset.noteId);
+  const noteButton = event.target.closest('.note-btn');
+  if (noteButton) {
+    openNoteModal(noteButton.dataset.noteClass, noteButton.dataset.noteId);
     return;
   }
 
-  // Table sort
-  const sortTh = e.target.closest('th[data-sort]');
-  if (sortTh) { toggleSort(sortTh.dataset.sort); render(); }
-});
-
-// Prevent card navigation when clicking editable chips
-$('#panels').addEventListener('click', e => {
-  if (e.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
-    e.stopPropagation();
+  const sortHeader = event.target.closest('th[data-sort]');
+  if (sortHeader) {
+    toggleSort(sortHeader.dataset.sort);
+    render();
   }
 });
 
-// Change events (inputs)
-$('#panels').addEventListener('change', e => {
-  // Inline asset inputs
-  const inline = e.target.closest('.inline-input');
-  if (inline) {
-    if (inline.dataset.field === 'amount') {
-      const v = parseFloat(inline.value.replace(',', '.'));
-      if (!isNaN(v) && v >= 0) {
-        portfolio.items(inline.dataset.class)[parseInt(inline.dataset.idx)].amount = v;
+$('#panels').addEventListener('click', event => {
+  if (event.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
+    event.stopPropagation();
+  }
+});
+
+$('#panels').addEventListener('change', event => {
+  const inlineInput = event.target.closest('.inline-input');
+  if (inlineInput) {
+    const classKey = inlineInput.dataset.class;
+    const index = Number.parseInt(inlineInput.dataset.idx, 10);
+    const items = portfolio.items(classKey);
+
+    if (inlineInput.dataset.field === 'amount') {
+      const amount = parseNonNegativeNumber(inlineInput.value);
+      if (amount !== null) {
+        items[index].amount = amount;
         scheduleSave();
       }
       return;
     }
-    if (inline.dataset.field === 'target') {
-      const items = portfolio.items(inline.dataset.class);
-      const idx = parseInt(inline.dataset.idx);
-      const raw = inline.value.trim();
-      if (raw === '') delete items[idx].target;
-      else {
-        const v = parseFloat(raw.replace(',', '.'));
-        if (!isNaN(v) && v >= 0) items[idx].target = v;
+
+    if (inlineInput.dataset.field === 'target') {
+      const rawValue = inlineInput.value.trim();
+      if (!rawValue) {
+        delete items[index].target;
+      } else {
+        const target = parseNonNegativeNumber(rawValue);
+        if (target !== null) items[index].target = target;
       }
+
       scheduleSave();
       return;
     }
   }
 
-  // Class percentage target
-  const ct = e.target.closest('[data-class-target]');
-  if (ct) {
-    const v = parseFloat(ct.value.replace(',', '.'));
-    if (!isNaN(v) && v >= 0) {
-      portfolio.setTarget(ct.dataset.classTarget, v);
+  const classTargetInput = event.target.closest('[data-class-target]');
+  if (classTargetInput) {
+    const target = parseNonNegativeNumber(classTargetInput.value);
+    if (target !== null) {
+      portfolio.setTarget(classTargetInput.dataset.classTarget, target);
       portfolio.save();
       renderOverviewOnly();
     }
     return;
   }
 
-  // Emergency reserve goal
-  const cg = e.target.closest('[data-class-goal]');
-  if (cg) {
-    const v = parseFloat(cg.value.replace(',', '.'));
-    if (!isNaN(v) && v >= 0) {
-      portfolio.setGoal(cg.dataset.classGoal, v);
+  const classGoalInput = event.target.closest('[data-class-goal]');
+  if (classGoalInput) {
+    const goal = parseNonNegativeNumber(classGoalInput.value);
+    if (goal !== null) {
+      portfolio.setGoal(classGoalInput.dataset.classGoal, goal);
       portfolio.save();
       renderOverviewOnly();
     }
-    return;
-  }
-
-});
-
-// Tab navigation
-$('#tabNav').addEventListener('click', e => {
-  const btn = e.target.closest('[data-tab]');
-  if (btn) {
-    setActiveTab(btn.dataset.tab);
-    render();
   }
 });
 
-// ---------------------------------------------------------------------------
-// Drag & Drop (file import)
-// ---------------------------------------------------------------------------
+$('#tabNav').addEventListener('click', event => {
+  const tabButton = event.target.closest('[data-tab]');
+  if (!tabButton) return;
 
-function isFileDrag(e) { return e.dataTransfer?.types?.includes('Files'); }
+  setActiveTab(tabButton.dataset.tab);
+  render();
+});
 
-let dragN = 0;
+function isFileDrag(event) {
+  return event.dataTransfer?.types?.includes('Files');
+}
 
-document.addEventListener('dragenter', e => {
-  if (!isFileDrag(e)) return;
-  e.preventDefault();
-  dragN++;
+let dragDepth = 0;
+
+document.addEventListener('dragenter', event => {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth += 1;
   $('#dropZone').classList.add('visible');
 });
 
-document.addEventListener('dragleave', e => {
-  if (!isFileDrag(e)) return;
-  e.preventDefault();
-  if (--dragN <= 0) { dragN = 0; $('#dropZone').classList.remove('visible'); }
+document.addEventListener('dragleave', event => {
+  if (!isFileDrag(event)) return;
+  event.preventDefault();
+  dragDepth -= 1;
+
+  if (dragDepth <= 0) {
+    dragDepth = 0;
+    $('#dropZone').classList.remove('visible');
+  }
 });
 
-document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
+document.addEventListener('dragover', event => {
+  if (isFileDrag(event)) event.preventDefault();
+});
 
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  dragN = 0;
+document.addEventListener('drop', event => {
+  event.preventDefault();
+  dragDepth = 0;
   $('#dropZone').classList.remove('visible');
-  const f = e.dataTransfer.files[0];
-  if (f?.name.endsWith('.json')) doImport(f);
-  else if (f) toast(t('toastJsonOnly'));
-});
 
-// ---------------------------------------------------------------------------
-// Static event bindings
-// ---------------------------------------------------------------------------
+  const file = event.dataTransfer.files[0];
+  if (file?.name.endsWith('.json')) {
+    importPortfolio(file);
+  } else if (file) {
+    showToast(t('toastJsonOnly'));
+  }
+});
 
 $('#btnImport').addEventListener('click', () => $('#fileInput').click());
-$('#btnExport').addEventListener('click', doExport);
+$('#btnExport').addEventListener('click', exportPortfolio);
 $('#btnTheme').addEventListener('click', () => {
   toggleTheme();
   if (typeof lucide !== 'undefined') lucide.createIcons();
-  // Re-render chart so getClassColor() picks up the new theme
   if (activeTab === 'charts') renderChartOnly();
 });
-$('#btnSettings').addEventListener('click', openSettings);
+$('#btnSettings').addEventListener('click', openSettingsModal);
 $('#btnPrices').addEventListener('click', refreshPrices);
 $('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
-$('#fileInput').addEventListener('change', e => {
-  if (e.target.files[0]) doImport(e.target.files[0]);
-  e.target.value = '';
+$('#fileInput').addEventListener('change', event => {
+  if (event.target.files[0]) importPortfolio(event.target.files[0]);
+  event.target.value = '';
 });
 
 $('#modalCancel').addEventListener('click', closeAddModal);
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
-$('#addModal').addEventListener('click', e => { if (e.target.id === 'addModal') closeAddModal(); });
-
-$('#settingsCancel').addEventListener('click', closeSettings);
+$('#settingsCancel').addEventListener('click', closeSettingsModal);
 $('#settingsSave').addEventListener('click', saveSettingsModal);
-$('#settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
-
 $('#noteCancel').addEventListener('click', closeNoteModal);
 $('#noteSave').addEventListener('click', saveNote);
-$('#noteModal').addEventListener('click', e => { if (e.target.id === 'noteModal') closeNoteModal(); });
 
-// Keyboard shortcuts
-$('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
-$('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
-$('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
-$('#noteText').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); }
+bindModalBackdropClose('#addModal', closeAddModal);
+bindModalBackdropClose('#settingsModal', closeSettingsModal);
+bindModalBackdropClose('#noteModal', closeNoteModal);
+
+$('#newTicker').addEventListener('keydown', event => {
+  if (event.key === 'Enter') $('#newAmount').focus();
+});
+$('#newAmount').addEventListener('keydown', event => {
+  if (event.key === 'Enter') $('#newTarget').focus();
+});
+$('#newTarget').addEventListener('keydown', event => {
+  if (event.key === 'Enter') confirmAddAsset();
+});
+$('#noteText').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    saveNote();
+  }
 });
 
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+
   if ($('#addModal').classList.contains('open')) closeAddModal();
-  else if ($('#settingsModal').classList.contains('open')) closeSettings();
+  else if ($('#settingsModal').classList.contains('open')) closeSettingsModal();
   else if ($('#noteModal').classList.contains('open')) closeNoteModal();
 });
-
-// ---------------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------------
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

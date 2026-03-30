@@ -33,8 +33,8 @@ function badge(cls, icon, label, title) {
   </span>`;
 }
 
-const aportarBadge = () => badge('aportar', 'sparkles', t('badgeAportar'), t('badgeAportarTitle'));
-const ignorarBadge = () => badge('ignorar', 'circle-pause', t('badgeIgnorar'), t('badgeIgnorarTitle'));
+const investBadge = () => badge('invest', 'sparkles', t('badgeInvest'), t('badgeInvestTitle'));
+const skipBadge = () => badge('skip', 'circle-pause', t('badgeSkip'), t('badgeSkipTitle'));
 
 // Sort
 
@@ -206,7 +206,7 @@ function renderSummaryCard(key, defCls, idx, orderedKeys) {
   const isDef = defCls.includes(key);
   const inactive = isClassInactive(key);
   const isEmergency = key === 'emergencyReserve';
-  const desc = tn('classDescription', key);
+  const desc = tn('classDescriptions', key);
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
 
   // Progress bar
@@ -232,7 +232,7 @@ function renderSummaryCard(key, defCls, idx, orderedKeys) {
     <div class="summary-card-head">
       <span class="summary-card-label">
         <i data-lucide="${m.icon}" class="summary-icon"></i>
-        ${esc(label)}${isDef ? aportarBadge() : ''}
+        ${esc(label)}${isDef ? investBadge() : ''}
       </span>
       <span class="order-arrows">
         <button class="order-btn${isFirst ? ' order-btn--disabled' : ''}"
@@ -296,7 +296,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 }
 
 // ---------------------------------------------------------------------------
-// Carteira
+// Portfolio
 // ---------------------------------------------------------------------------
 
 function renderChartsTab() {
@@ -474,7 +474,7 @@ function renderClassPanel(key) {
 
 function renderAssetRow(key, item, idx, defItems) {
   const isDef = defItems.includes(item.id);
-  const quarantined = isQuarantined(item);
+  const isSkipped = isQuarantined(item);
   const p = prices.get(item.id);
   const val = assetValueBRL(key, item);
   const id = esc(item.id);
@@ -485,10 +485,10 @@ function renderAssetRow(key, item, idx, defItems) {
   const { priceStr, changeHtml } = fmtPrice(key, item, p);
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
   const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
-  const rowCls = isDef ? ' class="row-target"' : quarantined ? ' class="row-quarantine"' : '';
+  const rowCls = isDef ? ' class="row-target"' : isSkipped ? ' class="row-skipped"' : '';
 
   return `<tr${rowCls}>
-    <td class="td-ticker">${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}</td>
+    <td class="td-ticker">${ticker}${isDef ? investBadge() : isSkipped ? skipBadge() : ''}</td>
     <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}"
       data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yAmountOf', id)}"></td>

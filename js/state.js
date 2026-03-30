@@ -1,36 +1,32 @@
 import { tn } from './i18n.js';
 
-const STORAGE    = 'holding_portfolio';
-const SETTINGS   = 'holding_settings';
-const PRICES     = 'holding_prices';
-const PREFS      = 'holding_prefs';
-const THEME      = 'holding_theme';
+const STORAGE = 'holding_portfolio';
+const SETTINGS = 'holding_settings';
+const PRICES = 'holding_prices';
+const PREFS = 'holding_prefs';
+const THEME = 'holding_theme';
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
 /**
  * Visual metadata for each asset class.
- * Color families: teal/lime (BR), indigo/blue (US), amber (fixed),
- * rose (emergency), orange (crypto), blue-grey (assets).
- * Used as fallback when CSS [data-goto] is not yet rendered.
+ * Used as a fallback before theme-aware CSS values are available.
  */
 export const CLASS_META = {
-  brStocks:         { color: '#4fd8c8', icon: 'trending-up' },
-  brFiis:           { color: '#9ccc65', icon: 'building-2' },
-  usStocks:         { color: '#a5b4fc', icon: 'globe' },
-  usReits:          { color: '#60a5fa', icon: 'landmark' },
-  fixedIncome:      { color: '#facc15', icon: 'shield' },
+  brStocks: { color: '#4fd8c8', icon: 'trending-up' },
+  brFiis: { color: '#9ccc65', icon: 'building-2' },
+  usStocks: { color: '#a5b4fc', icon: 'globe' },
+  usReits: { color: '#60a5fa', icon: 'landmark' },
+  fixedIncome: { color: '#facc15', icon: 'shield' },
   emergencyReserve: { color: '#fb7185', icon: 'life-buoy' },
-  storeOfValue:     { color: '#fb923c', icon: 'bitcoin' },
-  assets:           { color: '#90a4ae', icon: 'home' },
+  storeOfValue: { color: '#fb923c', icon: 'bitcoin' },
+  assets: { color: '#90a4ae', icon: 'home' },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
 export function classLabel(key) {
-  return tn('className', key);
+  return tn('classLabels', key);
 }
-
-// Portfolio
 
 export class Portfolio {
   #data = null;
@@ -43,78 +39,70 @@ export class Portfolio {
     return this.#data?.[key]?.items ?? [];
   }
 
-  /**
-   * Checks if a class participates in percentage-based rebalancing.
-   * Uses raw stored data to avoid circular dependency with activeKeys().
-   * Emergency reserve uses a BRL goal instead; assets default to 0.
-   */
   #isPercentageActive(key) {
     if (key === 'emergencyReserve') return false;
-    const stored = this.#data?.[key]?.target;
-    return stored !== undefined ? stored > 0 : key !== 'assets';
+
+    const storedTarget = this.#data?.[key]?.target;
+    return storedTarget !== undefined ? storedTarget > 0 : key !== 'assets';
   }
 
-  /**
-   * Returns the allocation target for a class.
-   * Emergency reserve always returns 0 (uses goal instead).
-   * Classes without an explicit target split 100% equally among active classes.
-   */
   target(key) {
-    if (key === 'emergencyReserve') return 0;
-    const stored = this.#data?.[key]?.target;
-    if (stored !== undefined) return stored;
-    if (key === 'assets') return 0;
-    const count = this.activeKeys().length;
-    return count > 0 ? 100 / count : 0;
+    if (key === 'emergencyReserve' || key === 'assets') {
+      return 0;
+    }
+
+    const storedTarget = this.#data?.[key]?.target;
+    if (storedTarget !== undefined) return storedTarget;
+
+    const activeClassCount = this.activeKeys().length;
+    return activeClassCount > 0 ? 100 / activeClassCount : 0;
   }
 
-  setTarget(key, val) {
-    this.#ensure(key);
-    this.#data[key].target = val;
+  setTarget(key, value) {
+    this.#ensureClass(key);
+    this.#data[key].target = value;
   }
 
   activeKeys() {
-    return CLASS_KEYS.filter(k => this.#isPercentageActive(k));
+    return CLASS_KEYS.filter(key => this.#isPercentageActive(key));
   }
 
   allKeys() {
     return CLASS_KEYS;
   }
 
-  // Emergency reserve (BRL fixed goal)
-
   goal(key) {
     return this.#data?.[key]?.goal ?? 0;
   }
 
-  setGoal(key, val) {
-    this.#ensure(key);
-    this.#data[key].goal = val;
+  setGoal(key, value) {
+    this.#ensureClass(key);
+    this.#data[key].goal = value;
   }
 
   isEmergencyUnmet() {
-    const g = this.goal('emergencyReserve');
-    if (g <= 0) return false;
-    return this.items('emergencyReserve').reduce((sum, a) => sum + a.amount, 0) < g;
+    const goal = this.goal('emergencyReserve');
+    if (goal <= 0) return false;
+
+    const currentTotal = this.items('emergencyReserve').reduce((sum, asset) => sum + asset.amount, 0);
+    return currentTotal < goal;
   }
 
-  // Items
-
   addItem(key, item) {
-    this.#ensure(key);
+    this.#ensureClass(key);
     this.#data[key].items.push(item);
   }
 
   setItemNote(key, id, note) {
-    const item = this.items(key).find(a => a.id === id);
+    const item = this.items(key).find(asset => asset.id === id);
     if (!item) return;
-    const trimmed = note.trim();
-    if (trimmed) item.note = trimmed;
+
+    const trimmedNote = note.trim();
+    if (trimmedNote) item.note = trimmedNote;
     else delete item.note;
+
     this.save();
   }
-
-  // Persistence
 
   load() {
     try {
@@ -136,64 +124,61 @@ export class Portfolio {
   }
 
   export() {
-    const out = { syncedAt: this.#data.syncedAt };
-    CLASS_KEYS.forEach(k => {
-      if (this.#data[k]) out[k] = this.#data[k];
+    const output = { syncedAt: this.#data.syncedAt };
+
+    CLASS_KEYS.forEach(key => {
+      if (this.#data[key]) output[key] = this.#data[key];
     });
-    return out;
+
+    return output;
   }
 
-  #ensure(key) {
+  #ensureClass(key) {
     this.#data[key] ??= { items: [] };
   }
 }
 
-// Preferences (local-only, never exported with portfolio JSON)
-
 export class Preferences {
   #data = {};
-
-  // Display order
 
   order(key) {
     return this.#data.order?.[key] ?? CLASS_KEYS.indexOf(key) + 1;
   }
 
-  setOrder(key, val) {
+  setOrder(key, value) {
     this.#data.order ??= {};
-    this.#data.order[key] = val;
+    this.#data.order[key] = value;
     this.save();
   }
 
-  swapOrder(keyA, keyB) {
-    const orderA = this.order(keyA);
-    const orderB = this.order(keyB);
+  swapOrder(firstKey, secondKey) {
+    const firstOrder = this.order(firstKey);
+    const secondOrder = this.order(secondKey);
+
     this.#data.order ??= {};
-    this.#data.order[keyA] = orderB;
-    this.#data.order[keyB] = orderA;
+    this.#data.order[firstKey] = secondOrder;
+    this.#data.order[secondKey] = firstOrder;
     this.save();
   }
 
   displayOrder() {
-    return [...CLASS_KEYS].sort((a, b) => {
-      return this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b);
+    return [...CLASS_KEYS].sort((left, right) => {
+      return this.order(left) - this.order(right) || CLASS_KEYS.indexOf(left) - CLASS_KEYS.indexOf(right);
     });
   }
 
-  // Chart visibility
-
   isChartHidden(key) {
-    return !!this.#data.chartHidden?.[key];
+    return Boolean(this.#data.chartHidden?.[key]);
   }
 
   toggleChartHidden(key) {
     this.#data.chartHidden ??= {};
+
     if (this.#data.chartHidden[key]) delete this.#data.chartHidden[key];
     else this.#data.chartHidden[key] = true;
+
     this.save();
   }
-
-  // Table sort
 
   get sortCol() {
     return this.#data.sortCol ?? null;
@@ -203,13 +188,11 @@ export class Preferences {
     return this.#data.sortDir ?? 'asc';
   }
 
-  setSort(col, dir) {
-    this.#data.sortCol = col;
-    this.#data.sortDir = dir;
+  setSort(column, direction) {
+    this.#data.sortCol = column;
+    this.#data.sortDir = direction;
     this.save();
   }
-
-  // Persistence
 
   load() {
     try {
@@ -225,86 +208,117 @@ export class Preferences {
   }
 }
 
-// Price cache
-
 export class PriceCache {
   #prices = {};
   #rates = {};
   #timestamp = null;
   #brQuoted = new Set();
 
-  get(id)    { return this.#prices[id] ?? null; }
-  set(id, d) { this.#prices[id] = d; }
+  get(id) {
+    return this.#prices[id] ?? null;
+  }
 
-  get usdBrl()    { return this.#rates.USDBRL ?? 0; }
-  set usdBrl(val) { this.#rates.USDBRL = val; }
+  set(id, data) {
+    this.#prices[id] = data;
+  }
 
-  markBrQuoted(ticker) { this.#brQuoted.add(ticker); }
-  isBrQuoted(ticker)   { return this.#brQuoted.has(ticker); }
+  get usdBrl() {
+    return this.#rates.USDBRL ?? 0;
+  }
 
-  get hasData() { return Object.keys(this.#prices).length > 0; }
-  get stale()   { return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false; }
+  set usdBrl(value) {
+    this.#rates.USDBRL = value;
+  }
+
+  markBrQuoted(ticker) {
+    this.#brQuoted.add(ticker);
+  }
+
+  isBrQuoted(ticker) {
+    return this.#brQuoted.has(ticker);
+  }
+
+  get hasData() {
+    return Object.keys(this.#prices).length > 0;
+  }
+
+  get stale() {
+    return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false;
+  }
 
   get dateStr() {
     if (!this.#timestamp) return null;
+
     return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
   load() {
     try {
       const data = JSON.parse(localStorage.getItem(PRICES));
-      if (data) {
-        this.#prices = data.prices ?? {};
-        this.#rates = data.rates ?? {};
-        this.#timestamp = data.ts ?? null;
-      }
-    } catch { /* no cached prices */ }
+      if (!data) return;
+
+      this.#prices = data.prices ?? {};
+      this.#rates = data.rates ?? {};
+      this.#timestamp = data.ts ?? null;
+    } catch {
+      // Keep empty cache on parse errors.
+    }
   }
 
   save() {
     this.#timestamp = Date.now();
-    localStorage.setItem(PRICES, JSON.stringify({
-      ts: this.#timestamp,
-      prices: this.#prices,
-      rates: this.#rates,
-    }));
+    localStorage.setItem(
+      PRICES,
+      JSON.stringify({
+        ts: this.#timestamp,
+        prices: this.#prices,
+        rates: this.#rates,
+      }),
+    );
   }
 }
-
-// Settings
 
 export class Settings {
   brapiToken = '';
   finnhubToken = '';
 
   get hasTokens() {
-    return !!(this.brapiToken || this.finnhubToken);
+    return Boolean(this.brapiToken || this.finnhubToken);
   }
 
   load() {
     try {
       const raw = localStorage.getItem(SETTINGS);
       if (raw) Object.assign(this, JSON.parse(raw));
-    } catch { /* keep defaults */ }
+    } catch {
+      // Keep defaults.
+    }
   }
 
   save() {
-    localStorage.setItem(SETTINGS, JSON.stringify({
-      brapiToken: this.brapiToken,
-      finnhubToken: this.finnhubToken,
-    }));
+    localStorage.setItem(
+      SETTINGS,
+      JSON.stringify({
+        brapiToken: this.brapiToken,
+        finnhubToken: this.finnhubToken,
+      }),
+    );
   }
 }
 
-// Theme
-
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
+
   const themeColor = theme === 'light' ? '#f7f2fa' : '#11131a';
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', themeColor);
 }
 
 export function loadTheme() {
@@ -312,30 +326,26 @@ export function loadTheme() {
 }
 
 export function toggleTheme() {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-  localStorage.setItem(THEME, next);
+  const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+  localStorage.setItem(THEME, nextTheme);
 }
 
-// Singletons
-
-export const portfolio   = new Portfolio();
+export const portfolio = new Portfolio();
 export const preferences = new Preferences();
-export const prices      = new PriceCache();
-export const settings    = new Settings();
-
-// Active tab (with change tracking for animation control)
+export const prices = new PriceCache();
+export const settings = new Settings();
 
 export let activeTab = 'overview';
-let tabChanged = false;
+let didTabChange = false;
 
 export function setActiveTab(tab) {
-  tabChanged = tab !== activeTab;
+  didTabChange = tab !== activeTab;
   activeTab = tab;
 }
 
 export function consumeTabChange() {
-  const changed = tabChanged;
-  tabChanged = false;
+  const changed = didTabChange;
+  didTabChange = false;
   return changed;
 }
