@@ -257,6 +257,16 @@ $('#panels').addEventListener('click', e => {
     return;
   }
 
+  // Order swap (up/down arrows)
+  const orderSwap = e.target.closest('[data-order-swap]');
+  if (orderSwap) {
+    e.stopPropagation();
+    const [keyA, keyB] = orderSwap.dataset.orderSwap.split(':');
+    preferences.swapOrder(keyA, keyB);
+    render();
+    return;
+  }
+
   // Card navigation
   const goto = e.target.closest('[data-goto]');
   if (goto && !e.target.closest('input, button')) {
@@ -300,7 +310,7 @@ $('#panels').addEventListener('click', e => {
 
 // Prevent card navigation when clicking editable chips
 $('#panels').addEventListener('click', e => {
-  if (e.target.closest('[data-class-target], [data-class-goal], [data-class-order], .summary-card-target-chip, .summary-card-order-chip')) {
+  if (e.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
     e.stopPropagation();
   }
 });
@@ -356,15 +366,6 @@ $('#panels').addEventListener('change', e => {
     return;
   }
 
-  // Class display order (local preference, not portfolio data)
-  const co = e.target.closest('[data-class-order]');
-  if (co) {
-    const v = parseInt(co.value);
-    if (!isNaN(v) && v > 0) {
-      preferences.setOrder(co.dataset.classOrder, v);
-      renderOverviewOnly();
-    }
-  }
 });
 
 // Tab navigation

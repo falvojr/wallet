@@ -10,9 +10,9 @@
   --text-primary: #e6e9f4;
   --text-secondary: #a0a8c0;
   --text-muted: #7a839b;
-  --accent: #64748b;
-  --accent-light: #94a3b8;
-  --accent-dim: rgba(100, 116, 139, 0.15);
+  --accent: #5b7fa5;
+  --accent-light: #7b9fc5;
+  --accent-dim: rgba(91, 127, 165, 0.15);
   --up: #4ade80;
   --down: #f87171;
   --type-headline: 1.15rem;
@@ -57,15 +57,15 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
-/* Class colors: single vivid set (Tailwind 500) that works on both dark and light themes */
+/* Class colors: green family (Ações/FIIs), blue family (Stocks/REITs), warm (Renda/BTC), rose (Emergência), slate (Bens) */
 [data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #22c55e; }
-[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #06b6d4; }
-[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #6366f1; }
-[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #a855f7; }
+[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #10b981; }
+[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #3b82f6; }
+[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #8b5cf6; }
 [data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #eab308; }
-[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #14b8a6; }
+[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #f43f5e; }
 [data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #f97316; }
-[data-goto="assets"],      [data-tab="assets"]      { --card-color: #ec4899; }
+[data-goto="assets"],      [data-tab="assets"]      { --card-color: #94a3b8; }
 
 .tab-btn .tab-icon { color: var(--card-color, var(--accent)); }
 
@@ -241,7 +241,7 @@ body {
 .notice-icon { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
 .notice strong { font-weight: 700; }
 .notice--warning { color: #fbbf24; background: rgba(251, 191, 36, 0.07); border-color: rgba(251, 191, 36, 0.18); }
-.notice--info { color: var(--text-secondary); background: rgba(100, 116, 139, 0.06); border-color: rgba(100, 116, 139, 0.14); }
+.notice--info { color: var(--text-secondary); background: rgba(91, 127, 165, 0.06); border-color: rgba(91, 127, 165, 0.14); }
 .notice--success { color: var(--up); background: rgba(74, 222, 128, 0.07); border-color: rgba(74, 222, 128, 0.18); }
 
 /* Tabs */
@@ -379,37 +379,34 @@ body {
 
 .summary-icon { width: 13px; height: 13px; color: var(--card-color); }
 
-/* Order chip (styled like target chip, prevents password manager autofill) */
+/* Order arrows (M3 compact reorder controls) */
 
-.summary-card-order-chip {
+.order-arrows {
   display: inline-flex;
-  align-items: center;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 3px 8px;
+  flex-direction: column;
   flex-shrink: 0;
-  transition: border-color var(--ease);
+  margin-left: auto;
 }
 
-.summary-card-order-chip:hover,
-.summary-card-order-chip:focus-within {
-  border-color: var(--accent);
-}
-
-.summary-card-order-chip input {
-  width: 20px;
-  padding: 0;
+.order-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 14px;
   border: none;
+  border-radius: 3px;
   background: transparent;
   color: var(--text-muted);
-  font-family: var(--font-h);
-  font-size: var(--type-body-sm);
-  font-weight: 600;
-  text-align: center;
-  outline: none;
-  cursor: text;
+  cursor: pointer;
+  transition: all var(--ease);
+  padding: 0;
 }
+
+.order-btn svg { width: 12px; height: 12px; }
+.order-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+.order-btn--disabled { opacity: 0.2; cursor: default; }
+.order-btn--disabled:hover { color: var(--text-muted); background: transparent; }
 
 .summary-card-value {
   font-family: var(--font-h);
@@ -490,7 +487,7 @@ body {
 
 .badge { display: inline-flex; align-items: center; font-size: var(--type-label-sm); font-weight: 700; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; vertical-align: 1px; margin-left: 5px; line-height: 1.4; }
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }
-.badge--aportar { color: #94a3b8; background: rgba(100, 116, 139, 0.18); border: 1px solid rgba(100, 116, 139, 0.3); }
+.badge--aportar { color: #7b9fc5; background: rgba(91, 127, 165, 0.18); border: 1px solid rgba(91, 127, 165, 0.3); }
 .badge--ignorar { color: var(--text-muted); background: rgba(110, 119, 143, 0.12); border: 1px solid rgba(110, 119, 143, 0.2); }
 
 /* Ticker links */
@@ -542,7 +539,7 @@ body {
 
 .change-up { color: var(--up); }
 .change-down { color: var(--down); }
-.row-target { background: rgba(100, 116, 139, 0.04); }
+.row-target { background: rgba(91, 127, 165, 0.04); }
 .row-quarantine .td-ticker { opacity: 0.4; }
 
 .note-btn,
@@ -666,9 +663,9 @@ tr:hover .remove-btn { opacity: 0.6; }
   --text-primary: #1a1d28;
   --text-secondary: #505570;
   --text-muted: #5c6180;
-  --accent: #475569;
-  --accent-light: #64748b;
-  --accent-dim: rgba(71, 85, 105, 0.12);
+  --accent: #3d5a80;
+  --accent-light: #5b7fa5;
+  --accent-dim: rgba(61, 90, 128, 0.12);
   --up: #16a34a;
   --down: #dc2626;
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
@@ -676,12 +673,12 @@ tr:hover .remove-btn { opacity: 0.6; }
 
 [data-theme="light"] .app-header { background: rgba(244, 245, 249, 0.92); }
 [data-theme="light"] .header-brand h1 { background: linear-gradient(135deg, var(--accent), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-[data-theme="light"] .badge--aportar { color: #1e3a5f; background: rgba(71, 85, 105, 0.10); border-color: rgba(71, 85, 105, 0.2); }
+[data-theme="light"] .badge--aportar { color: #1e3a5f; background: rgba(61, 90, 128, 0.10); border-color: rgba(61, 90, 128, 0.2); }
 [data-theme="light"] .badge--ignorar { color: #475569; background: rgba(71, 85, 105, 0.08); border-color: rgba(71, 85, 105, 0.15); }
 [data-theme="light"] .notice--warning { color: #92400e; background: rgba(251, 191, 36, 0.09); border-color: rgba(251, 191, 36, 0.28); }
-[data-theme="light"] .notice--info { color: #404460; background: rgba(71, 85, 105, 0.05); border-color: rgba(71, 85, 105, 0.14); }
+[data-theme="light"] .notice--info { color: #3d5a80; background: rgba(61, 90, 128, 0.05); border-color: rgba(61, 90, 128, 0.14); }
 [data-theme="light"] .notice--success { color: #15803d; background: rgba(22, 163, 74, 0.07); border-color: rgba(22, 163, 74, 0.2); }
-[data-theme="light"] .row-target { background: rgba(71, 85, 105, 0.04); }
+[data-theme="light"] .row-target { background: rgba(61, 90, 128, 0.04); }
 [data-theme="light"] .loading-overlay { background: rgba(244, 245, 249, 0.88); }
 [data-theme="light"] .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
 
@@ -692,5 +689,4 @@ tr:hover .remove-btn { opacity: 0.6; }
 button:focus-visible,
 a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .inline-input:focus-visible,
-.target-chip-input:focus-visible,
-.summary-card-order-chip input:focus-visible { outline: none; }
+.target-chip-input:focus-visible { outline: none; }

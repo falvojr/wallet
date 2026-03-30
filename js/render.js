@@ -23,8 +23,7 @@ function esc(str) {
 
 function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}">
-    <i data-lucide="${icon}" class="notice-icon"></i>
-    <span>${text}</span>
+    <i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span>
   </div>`;
 }
 
@@ -41,7 +40,6 @@ const ignorarBadge = () => badge('ignorar', 'circle-pause', t('badgeIgnorar'), t
 
 let sortCol = null;
 let sortDir = 'asc';
-
 export function toggleSort(col) {
   if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
   else { sortCol = col; sortDir = 'asc'; }
@@ -49,60 +47,55 @@ export function toggleSort(col) {
 
 function tickerUrl(key, id) {
   const p = prices.get(id);
-  if ((key === 'brStocks' || key === 'brFiis') && (prices.isBrQuoted(id) || p)) {
+  if ((key === 'brStocks' || key === 'brFiis') && (prices.isBrQuoted(id) || p))
     return `https://www.google.com/finance/quote/${encodeURIComponent(id)}:BVMF`;
-  }
-  if ((key === 'usStocks' || key === 'usReits') && p) {
+  if ((key === 'usStocks' || key === 'usReits') && p)
     return `https://finance.yahoo.com/quote/${encodeURIComponent(id)}`;
-  }
   return null;
+}
+
+// Theme-aware class color (reads CSS computed value)
+
+function getClassColor(key) {
+  const el = document.querySelector(`[data-goto="${key}"]`);
+  if (el) return getComputedStyle(el).getPropertyValue('--card-color').trim();
+  const probe = document.createElement('span');
+  probe.setAttribute('data-goto', key);
+  probe.style.display = 'none';
+  document.body.appendChild(probe);
+  const color = getComputedStyle(probe).getPropertyValue('--card-color').trim();
+  probe.remove();
+  return color || '#888';
 }
 
 // ---------------------------------------------------------------------------
 // Render entry points
 // ---------------------------------------------------------------------------
 
-/** Full render (tabs + all panels). */
 export function render() {
   const has = portfolio.loaded;
   $('#emptyWelcome').hidden = has;
   $('#headerActions').hidden = !has;
-
-  if (!has) {
-    $('#tabNav').innerHTML = '';
-    $('#panels').innerHTML = '';
-    refreshIcons();
-    return;
-  }
-
+  if (!has) { $('#tabNav').innerHTML = ''; $('#panels').innerHTML = ''; refreshIcons(); return; }
   renderTabs();
   renderPanels();
   refreshIcons();
-
   if (activeTab === 'charts') renderBubbleChart();
 }
 
-/** Surgical: re-renders only the overview panel. */
 export function renderOverviewOnly() {
   const panel = $('[data-panel="overview"]');
-  if (panel) {
-    panel.innerHTML = renderOverview();
-    refreshIcons();
-  }
+  if (panel) { panel.innerHTML = renderOverview(); refreshIcons(); }
+  renderTabs();
 }
 
-/** Surgical: re-renders only the chart panel. */
 export function renderChartOnly() {
   const panel = $('[data-panel="charts"]');
-  if (panel) {
-    panel.innerHTML = renderChartsTab();
-    refreshIcons();
-    renderBubbleChart();
-  }
+  if (panel) { panel.innerHTML = renderChartsTab(); refreshIcons(); renderBubbleChart(); }
 }
 
 // ---------------------------------------------------------------------------
-// Tabs (follows preferences.displayOrder)
+// Tabs
 // ---------------------------------------------------------------------------
 
 function renderTabs() {
@@ -123,7 +116,6 @@ function renderTabs() {
   const renderTab = (tab) => {
     const isActive = tab.key === activeTab;
     const countHtml = tab.count != null ? `<span class="tab-count">${tab.count}</span>` : '';
-    // M3: icon visible only on active tab for a cleaner look
     const iconHtml = isActive ? `<i data-lucide="${tab.icon}" class="tab-icon"></i>` : '';
     return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}">
       ${iconHtml}${esc(tab.label)}${countHtml}
@@ -136,20 +128,16 @@ function renderTabs() {
 }
 
 // ---------------------------------------------------------------------------
-// Panels (animation only on tab switch to prevent flicker)
+// Panels
 // ---------------------------------------------------------------------------
 
 function renderPanels() {
   const animated = consumeTabChange();
-
   const wrap = (key, html) => {
     const isActive = key === activeTab;
-    const cls = isActive
-      ? (animated ? ' active tab-panel--enter' : ' active')
-      : '';
+    const cls = isActive ? (animated ? ' active tab-panel--enter' : ' active') : '';
     return `<div class="tab-panel${cls}" data-panel="${key}">${html}</div>`;
   };
-
   $('#panels').innerHTML = [
     wrap('overview', renderOverview()),
     wrap('charts', renderChartsTab()),
@@ -167,15 +155,10 @@ function renderOverview() {
   const populated = order.filter(k => portfolio.items(k).length > 0);
 
   let html = '';
-
   const warn = allocationWarning();
   if (warn) html += notice('triangle-alert', t('warningTargetSum', warn.sum));
-
-  if (prices.hasData && prices.stale) {
-    html += notice('clock', t('infoStale', prices.dateStr), 'info');
-  } else if (!prices.hasData) {
-    html += notice('clock', t('infoNoPrices'), 'info');
-  }
+  if (prices.hasData && prices.stale) html += notice('clock', t('infoStale', prices.dateStr), 'info');
+  else if (!prices.hasData) html += notice('clock', t('infoNoPrices'), 'info');
 
   if (portfolio.isEmergencyUnmet()) {
     html += notice('life-buoy', t('emergencyPriority'), 'warning');
@@ -184,18 +167,16 @@ function renderOverview() {
   }
 
   html += '<div class="summary-cards">';
-  html += populated.map(k => renderSummaryCard(k, defCls)).join('');
+  html += populated.map((k, i) => renderSummaryCard(k, defCls, i, populated)).join('');
   html += '</div>';
-
   return html;
 }
 
 /**
  * Renders a summary card. All cards share the same template:
- * header (icon + label + badges + order) > value > bar > meta row > description.
- * Only the meta chip content varies by type (percentage vs BRL goal vs inactive).
+ * header (icon + label + badges + order arrows) > value > bar > meta > description.
  */
-function renderSummaryCard(key, defCls) {
+function renderSummaryCard(key, defCls, idx, orderedKeys) {
   const m = CLASS_META[key];
   const label = classLabel(key);
   const total = classTotalBRL(key);
@@ -204,7 +185,6 @@ function renderSummaryCard(key, defCls) {
   const isEmergency = key === 'emergencyReserve';
   const desc = tn('classDescription', key);
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
-  const order = preferences.order(key);
 
   // Progress bar
   let pct = 0;
@@ -216,9 +196,14 @@ function renderSummaryCard(key, defCls) {
     pct = actual !== null && tgt > 0 ? Math.min((actual / tgt) * 100, 100) : 0;
   }
 
-  // Meta row content (left side + chip)
   const metaContent = buildMetaContent(key, label, inactive, isEmergency);
   const cardCls = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
+
+  // Order arrows: up enabled if not first, down if not last
+  const isFirst = idx === 0;
+  const isLast = idx === orderedKeys.length - 1;
+  const prevKey = isFirst ? null : orderedKeys[idx - 1];
+  const nextKey = isLast ? null : orderedKeys[idx + 1];
 
   return `<div class="${cardCls}" data-goto="${key}">
     <div class="summary-card-head">
@@ -226,10 +211,13 @@ function renderSummaryCard(key, defCls) {
         <i data-lucide="${m.icon}" class="summary-icon"></i>
         ${esc(label)}${isDef ? aportarBadge() : ''}
       </span>
-      <span class="summary-card-order-chip">
-        <input type="text" value="${order}" data-class-order="${key}"
-          inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-1p-ignore data-lpignore="true"
-          aria-label="Ordem de ${esc(label)}">
+      <span class="order-arrows">
+        <button class="order-btn${isFirst ? ' order-btn--disabled' : ''}"
+          ${prevKey ? `data-order-swap="${key}:${prevKey}"` : 'disabled'}
+          aria-label="Mover para cima"><i data-lucide="chevron-up"></i></button>
+        <button class="order-btn${isLast ? ' order-btn--disabled' : ''}"
+          ${nextKey ? `data-order-swap="${key}:${nextKey}"` : 'disabled'}
+          aria-label="Mover para baixo"><i data-lucide="chevron-down"></i></button>
       </span>
     </div>
     <div class="summary-card-value">${valueStr}</div>
@@ -241,7 +229,6 @@ function renderSummaryCard(key, defCls) {
   </div>`;
 }
 
-/** Builds the left-side text and chip for the card meta row. */
 function buildMetaContent(key, label, inactive, isEmergency) {
   if (isEmergency) {
     const prog = emergencyProgress();
@@ -249,15 +236,14 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     const left = prog !== null
       ? `<span class="summary-card-actual">${prog.toFixed(1)}%</span>`
       : '<span></span>';
-    const chip = `<div class="summary-card-target-chip">
+    return left + `<div class="summary-card-target-chip">
       <span class="target-chip-label">${t('goalLabel')}</span>
       <span class="target-chip-unit">R$</span>
       <input class="target-chip-input target-chip-input--wide" type="text"
         value="${goal > 0 ? Math.round(goal) : ''}" data-class-goal="emergencyReserve"
-        placeholder="0" inputmode="decimal" autocomplete="off"
+        placeholder="0" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yGoalClass', esc(label))}">
     </div>`;
-    return left + chip;
   }
 
   if (!inactive) {
@@ -266,46 +252,24 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     const left = actual !== null
       ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>`
       : '<span></span>';
-    const chip = `<div class="summary-card-target-chip">
+    return left + `<div class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
       <input class="target-chip-input" type="text" value="${tgt.toFixed(0)}"
-        data-class-target="${key}" inputmode="decimal" autocomplete="off"
+        data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yTargetClass', esc(label))}">
       <span class="target-chip-unit">%</span>
     </div>`;
-    return left + chip;
   }
 
   // Inactive (target = 0)
-  const left = `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`;
-  const chip = `<div class="summary-card-target-chip summary-card-target-chip--inactive">
-    <span class="target-chip-label">${t('metaLabel')}</span>
-    <input class="target-chip-input" type="text" value="0"
-      data-class-target="${key}" inputmode="decimal" autocomplete="off"
-      aria-label="${t('a11yTargetClass', esc(label))}">
-    <span class="target-chip-unit">%</span>
-  </div>`;
-  return left + chip;
-}
-
-// ---------------------------------------------------------------------------
-// Theme-aware class colors (DRY: CSS is the single source of truth)
-// ---------------------------------------------------------------------------
-
-/** Reads the computed --card-color for a class key from CSS. Works in both themes. */
-function getClassColor(key) {
-  const existing = document.querySelector(`[data-goto="${key}"]`);
-  if (existing) {
-    return getComputedStyle(existing).getPropertyValue('--card-color').trim();
-  }
-  // No card rendered yet — probe via a temporary element
-  const probe = document.createElement('span');
-  probe.setAttribute('data-goto', key);
-  probe.style.display = 'none';
-  document.body.appendChild(probe);
-  const color = getComputedStyle(probe).getPropertyValue('--card-color').trim();
-  probe.remove();
-  return color || '#888';
+  return `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
+    <div class="summary-card-target-chip summary-card-target-chip--inactive">
+      <span class="target-chip-label">${t('metaLabel')}</span>
+      <input class="target-chip-input" type="text" value="0"
+        data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
+        aria-label="${t('a11yTargetClass', esc(label))}">
+      <span class="target-chip-unit">%</span>
+    </div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -339,7 +303,6 @@ function renderChartsTab() {
   </div>`;
 }
 
-/** Legend item: clickable to toggle chart visibility. */
 function renderLegendItem(d) {
   const hiddenCls = d.hidden ? ' legend-item--hidden' : '';
   const strikeCls = d.hidden ? ' legend-strike' : '';
@@ -362,9 +325,7 @@ function renderLegendItem(d) {
 function fitLabel(name, r) {
   const fontSize = Math.min(r * 0.45, 14);
   const maxChars = Math.floor((r * 1.6) / (fontSize * 0.6));
-
-  if (name.length <= maxChars) return name;
-  return maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
+  return name.length <= maxChars ? name : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
 }
 
 function renderBubbleChart() {
@@ -372,12 +333,9 @@ function renderBubbleChart() {
   if (!el || typeof d3 === 'undefined') return;
 
   const assets = allAssetsWeighted();
-  if (!assets.length) {
-    el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`;
-    return;
-  }
+  if (!assets.length) { el.innerHTML = `<p class="donut-empty">${t('noData')}</p>`; return; }
 
-  // Resolve theme-aware colors for each asset
+  // Resolve theme-aware colors
   const colorMap = {};
   assets.forEach(a => { colorMap[a.classKey] ??= getClassColor(a.classKey); });
 
@@ -385,41 +343,26 @@ function renderBubbleChart() {
   const w = el.clientWidth || 600;
   const h = Math.max(440, Math.min(w * 0.75, window.innerHeight * 0.68));
   const pctOf = d => vTotal > 0 ? ((d.data.value / vTotal) * 100).toFixed(1) : '0';
+  const color = d => colorMap[d.data.classKey];
 
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
   d3.pack().size([w, h]).padding(3)(root);
 
   const svg = d3.select(el).html('')
-    .append('svg')
-    .attr('viewBox', `0 0 ${w} ${h}`)
-    .attr('role', 'img')
-    .attr('aria-label', t('a11yBubbleChart'));
+    .append('svg').attr('viewBox', `0 0 ${w} ${h}`)
+    .attr('role', 'img').attr('aria-label', t('a11yBubbleChart'));
 
-  const nodes = svg.selectAll('g')
-    .data(root.leaves())
-    .join('g')
+  const nodes = svg.selectAll('g').data(root.leaves()).join('g')
     .attr('transform', d => `translate(${d.x},${d.y})`);
 
-  const color = d => colorMap[d.data.classKey];
+  nodes.append('circle').attr('r', d => d.r)
+    .attr('fill', color).attr('opacity', 0.82)
+    .attr('stroke', color).attr('stroke-opacity', 0.25).attr('stroke-width', 1.5)
+    .style('cursor', 'pointer').style('transition', 'opacity 200ms, stroke-width 200ms')
+    .on('mouseenter', function () { d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5); })
+    .on('mouseleave', function () { d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25); });
 
-  nodes.append('circle')
-    .attr('r', d => d.r)
-    .attr('fill', color)
-    .attr('opacity', 0.82)
-    .attr('stroke', color)
-    .attr('stroke-opacity', 0.25)
-    .attr('stroke-width', 1.5)
-    .style('cursor', 'pointer')
-    .style('transition', 'opacity 200ms, stroke-width 200ms')
-    .on('mouseenter', function () {
-      d3.select(this).attr('opacity', 1).attr('stroke-width', 2.5).attr('stroke-opacity', 0.5);
-    })
-    .on('mouseleave', function () {
-      d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
-    });
-
-  nodes.append('title')
-    .text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`);
+  nodes.append('title').text(d => `${d.data.id}: ${formatBRL(d.data.value)} (${pctOf(d)}%)`);
 
   nodes.on('click', (_e, d) => {
     const toast = document.createElement('div');
@@ -429,27 +372,17 @@ function renderBubbleChart() {
     setTimeout(() => toast.remove(), 2500);
   });
 
-  nodes.filter(d => d.r > 16)
-    .append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dominant-baseline', 'central')
-    .attr('fill', '#fff')
-    .attr('font-family', 'var(--font-h)')
-    .attr('font-weight', '700')
+  nodes.filter(d => d.r > 16).append('text')
+    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+    .attr('fill', '#fff').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
     .attr('font-size', d => Math.min(d.r * 0.45, 14))
-    .text(d => fitLabel(d.data.id, d.r))
-    .style('pointer-events', 'none');
+    .text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
 
-  nodes.filter(d => d.r > 28)
-    .append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35)
-    .attr('fill', 'rgba(255,255,255,0.65)')
-    .attr('font-family', 'var(--font-b)')
-    .attr('font-size', d => Math.min(d.r * 0.28, 10))
-    .text(d => pctOf(d) + '%')
-    .style('pointer-events', 'none');
+  nodes.filter(d => d.r > 28).append('text')
+    .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.65)')
+    .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
+    .text(d => pctOf(d) + '%').style('pointer-events', 'none');
 }
 
 // ---------------------------------------------------------------------------
@@ -457,19 +390,13 @@ function renderBubbleChart() {
 // ---------------------------------------------------------------------------
 
 function sortIndicator(col) {
-  if (sortCol !== col) {
-    return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
-  }
-  const icon = sortDir === 'asc' ? 'arrow-up' : 'arrow-down';
-  return `<i data-lucide="${icon}" class="sort-icon"></i>`;
+  if (sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
+  return `<i data-lucide="${sortDir === 'asc' ? 'arrow-up' : 'arrow-down'}" class="sort-icon"></i>`;
 }
 
 function sortedItems(key) {
   const items = portfolio.items(key);
-  if (!sortCol || items.length < 2) {
-    return items.map((item, idx) => ({ item, idx }));
-  }
-
+  if (!sortCol || items.length < 2) return items.map((item, idx) => ({ item, idx }));
   const dir = sortDir === 'asc' ? 1 : -1;
   return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
     const [ia, ib] = [a.item, b.item];
@@ -488,7 +415,6 @@ function sortedItems(key) {
 function renderClassPanel(key) {
   const label = classLabel(key);
   const items = portfolio.items(key);
-  const inactive = isClassInactive(key);
 
   let html = `<h2 class="sr-only">${esc(label)}</h2>`;
 
@@ -517,7 +443,6 @@ function renderClassPanel(key) {
       <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr>
     </tbody>
   </table></div>`;
-
   return html;
 }
 
@@ -527,72 +452,47 @@ function renderAssetRow(key, item, idx, defItems) {
   const p = prices.get(item.id);
   const val = assetValueBRL(key, item);
   const id = esc(item.id);
-
   const url = tickerUrl(key, item.id);
   const ticker = url
     ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${id}</a>`
     : `<span class="ticker-name">${id}</span>`;
-
   const { priceStr, changeHtml } = fmtPrice(key, item, p);
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
   const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
   const rowCls = isDef ? ' class="row-target"' : quarantined ? ' class="row-quarantine"' : '';
 
   return `<tr${rowCls}>
-    <td class="td-ticker">
-      ${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}
-    </td>
-    <td class="td-r">
-      <input class="inline-input inline-input--qty" type="text" value="${item.amount}"
-        data-class="${key}" data-idx="${idx}" data-field="amount"
-        inputmode="decimal" autocomplete="off" aria-label="${t('a11yAmountOf', id)}">
-    </td>
+    <td class="td-ticker">${ticker}${isDef ? aportarBadge() : quarantined ? ignorarBadge() : ''}</td>
+    <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}"
+      data-class="${key}" data-idx="${idx}" data-field="amount" inputmode="decimal" autocomplete="off"
+      aria-label="${t('a11yAmountOf', id)}"></td>
     <td class="td-price">${priceStr}</td>
     <td class="td-change">${changeHtml}</td>
-    <td class="td-value" data-goto="${key}">
-      ${val !== null ? formatBRL(val) : ''}
-    </td>
-    <td class="td-r">
-      <input class="inline-input inline-input--target" type="text"
-        value="${item.target !== undefined ? item.target : ''}"
-        data-class="${key}" data-idx="${idx}" data-field="target"
-        placeholder="${t('targetPlaceholder')}" inputmode="decimal"
-        autocomplete="off" aria-label="${t('a11yTargetOf', id)}">
-    </td>
+    <td class="td-value" data-goto="${key}">${val !== null ? formatBRL(val) : ''}</td>
+    <td class="td-r"><input class="inline-input inline-input--target" type="text"
+      value="${item.target !== undefined ? item.target : ''}"
+      data-class="${key}" data-idx="${idx}" data-field="target"
+      placeholder="${t('targetPlaceholder')}" inputmode="decimal" autocomplete="off"
+      aria-label="${t('a11yTargetOf', id)}"></td>
     <td class="td-actions">
       <button class="icon-btn icon-btn--ghost note-btn${item.note ? ' has-note' : ''}"
-        data-note-class="${key}" data-note-id="${id}"
-        title="${noteTitle}" aria-label="${t('a11yNote', id)}">
-        <i data-lucide="${noteIcon}"></i>
-      </button>
-      <button class="icon-btn icon-btn--ghost remove-btn"
-        data-class="${key}" data-idx="${idx}"
+        data-note-class="${key}" data-note-id="${id}" title="${noteTitle}"
+        aria-label="${t('a11yNote', id)}"><i data-lucide="${noteIcon}"></i></button>
+      <button class="icon-btn icon-btn--ghost remove-btn" data-class="${key}" data-idx="${idx}"
         title="${t('a11yRemove', id)}" aria-label="${t('a11yRemove', id)}">
-        <i data-lucide="trash-2"></i>
-      </button>
+        <i data-lucide="trash-2"></i></button>
     </td>
   </tr>`;
 }
 
 function fmtPrice(key, item, p) {
   const declared = ['fixedIncome', 'assets', 'emergencyReserve'];
-  if (declared.includes(key) || (key === 'storeOfValue' && !p)) {
+  if (declared.includes(key) || (key === 'storeOfValue' && !p))
     return { priceStr: t('declaredPrice'), changeHtml: '' };
-  }
   if (!p) return { priceStr: '', changeHtml: '' };
-
   const prefix = p.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
-  const priceStr = prefix + p.price.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
+  const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (p.change === undefined) return { priceStr, changeHtml: '' };
-
   const up = p.change >= 0;
-  const changeHtml = `<span class="${up ? 'change-up' : 'change-down'}">
-    ${up ? '+' : ''}${p.change.toFixed(2)}%
-  </span>`;
-
-  return { priceStr, changeHtml };
+  return { priceStr, changeHtml: `<span class="${up ? 'change-up' : 'change-down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>` };
 }
