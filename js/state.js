@@ -14,14 +14,14 @@ const PRICES_TTL = 24 * 60 * 60 * 1000;
  * Used as fallback when CSS [data-goto] is not yet rendered.
  */
 export const CLASS_META = {
-  brStocks:         { color: '#0d9488', icon: 'trending-up' },
-  brFiis:           { color: '#65a30d', icon: 'building-2' },
-  usStocks:         { color: '#6366f1', icon: 'globe' },
-  usReits:          { color: '#3b82f6', icon: 'landmark' },
-  fixedIncome:      { color: '#eab308', icon: 'shield' },
-  emergencyReserve: { color: '#f43f5e', icon: 'life-buoy' },
-  storeOfValue:     { color: '#f97316', icon: 'bitcoin' },
-  assets:           { color: '#78909c', icon: 'home' },
+  brStocks:         { color: '#4fd8c8', icon: 'trending-up' },
+  brFiis:           { color: '#9ccc65', icon: 'building-2' },
+  usStocks:         { color: '#a5b4fc', icon: 'globe' },
+  usReits:          { color: '#60a5fa', icon: 'landmark' },
+  fixedIncome:      { color: '#facc15', icon: 'shield' },
+  emergencyReserve: { color: '#fb7185', icon: 'life-buoy' },
+  storeOfValue:     { color: '#fb923c', icon: 'bitcoin' },
+  assets:           { color: '#90a4ae', icon: 'home' },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
@@ -301,13 +301,19 @@ export class Settings {
 
 // Theme
 
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const themeColor = theme === 'light' ? '#f7f2fa' : '#11131a';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
+}
+
 export function loadTheme() {
-  document.documentElement.dataset.theme = localStorage.getItem(THEME) || 'dark';
+  applyTheme(localStorage.getItem(THEME) || 'dark');
 }
 
 export function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
+  applyTheme(next);
   localStorage.setItem(THEME, next);
 }
 

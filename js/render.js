@@ -68,6 +68,29 @@ function getClassColor(key) {
   return CLASS_META[key]?.color ?? '#888';
 }
 
+
+function hexToRgb(color) {
+  const match = color.trim().match(/^#([\da-f]{6})$/i);
+  if (!match) return null;
+  const hex = match[1];
+  return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+}
+
+function relativeLuminance(color) {
+  const rgb = hexToRgb(color);
+  if (!rgb) return 0;
+  const linear = rgb.map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function bubbleTextColor(fill) {
+  return relativeLuminance(fill) > 0.42 ? '#11131a' : '#ffffff';
+}
+
+function bubbleSubtextColor(fill) {
+  return relativeLuminance(fill) > 0.42 ? 'rgba(17,19,26,0.72)' : 'rgba(255,255,255,0.72)';
+}
+
 // ---------------------------------------------------------------------------
 // Render entry points
 // ---------------------------------------------------------------------------
@@ -344,6 +367,8 @@ function renderBubbleChart() {
   const h = Math.max(440, Math.min(w * 0.75, window.innerHeight * 0.68));
   const pctOf = d => vTotal > 0 ? ((d.data.value / vTotal) * 100).toFixed(1) : '0';
   const color = d => colorMap[d.data.classKey];
+  const labelColor = d => bubbleTextColor(color(d));
+  const sublabelColor = d => bubbleSubtextColor(color(d));
 
   const root = d3.hierarchy({ children: assets }).sum(d => d.value);
   d3.pack().size([w, h]).padding(3)(root);
@@ -374,13 +399,13 @@ function renderBubbleChart() {
 
   nodes.filter(d => d.r > 16).append('text')
     .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('fill', '#fff').attr('font-family', 'var(--font-h)').attr('font-weight', '700')
+    .attr('fill', d => labelColor(d)).attr('font-family', 'var(--font-h)').attr('font-weight', '700')
     .attr('font-size', d => Math.min(d.r * 0.45, 14))
     .text(d => fitLabel(d.data.id, d.r)).style('pointer-events', 'none');
 
   nodes.filter(d => d.r > 28).append('text')
     .attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
-    .attr('dy', d => d.r * 0.35).attr('fill', 'rgba(255,255,255,0.65)')
+    .attr('dy', d => d.r * 0.35).attr('fill', d => sublabelColor(d))
     .attr('font-family', 'var(--font-b)').attr('font-size', d => Math.min(d.r * 0.28, 10))
     .text(d => pctOf(d) + '%').style('pointer-events', 'none');
 }

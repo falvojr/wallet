@@ -1,23 +1,22 @@
 /* Minha Holding — Design System */
 
 :root {
-  --bg-root: #0c0e15;
-  --bg-surface: #12151e;
-  --bg-elevated: #191d29;
-  --bg-hover: #1f2435;
-  --border: #252c3d;
-  --border-focus: #3d4669;
-  --text-primary: #e6e9f4;
-  --text-secondary: #a0a8c0;
-  --text-muted: #7a839b;
-  /* M3 Primary (Deep Purple): title, Cotar, active tab, badges */
-  --accent: #b39ddb;
-  --accent-light: #ce93d8;
-  --accent-dim: rgba(179, 157, 219, 0.15);
-  --accent-fill: #7e57c2;
-  /* M3 Status */
-  --up: #4ade80;
-  --down: #f87171;
+  /* Material 3-inspired roles tuned for contrast in dark mode */
+  --bg-root: #11131a;
+  --bg-surface: #171a22;
+  --bg-elevated: #1d212b;
+  --bg-hover: #252a36;
+  --border: #343947;
+  --border-focus: #5b6075;
+  --text-primary: #e4e2ec;
+  --text-secondary: #c8c4d0;
+  --text-muted: #9b96a6;
+  --accent: #d0bcff;
+  --accent-light: #e9ddff;
+  --accent-dim: rgba(208, 188, 255, 0.16);
+  --accent-fill: #6750a4;
+  --up: #7adf9a;
+  --down: #ff8a80;
   --type-headline: 1.15rem;
   --type-title: 1.05rem;
   --type-subtitle: 0.88rem;
@@ -42,7 +41,7 @@
 *::before,
 *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; overflow-x: hidden; color-scheme: dark; }
 
 body {
   font-family: var(--font-b);
@@ -51,6 +50,7 @@ body {
   min-height: 100dvh;
   line-height: 1.5;
   overflow-x: hidden;
+  accent-color: var(--accent-fill);
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
@@ -60,15 +60,15 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
-/* Class colors: teal/lime (BR market), indigo/blue (US market), warm (fixed/crypto), rose (emergency), blue-grey (assets) */
-[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #0d9488; }
-[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #65a30d; }
-[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #6366f1; }
-[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #3b82f6; }
-[data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #eab308; }
-[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #f43f5e; }
-[data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #f97316; }
-[data-goto="assets"],      [data-tab="assets"]      { --card-color: #78909c; }
+/* Theme-aware class accents: lighter in dark mode, deeper in light mode */
+[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #4fd8c8; }
+[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #9ccc65; }
+[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #a5b4fc; }
+[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #60a5fa; }
+[data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #facc15; }
+[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #fb7185; }
+[data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #fb923c; }
+[data-goto="assets"],      [data-tab="assets"]      { --card-color: #90a4ae; }
 
 .tab-btn .tab-icon { color: var(--card-color, var(--accent)); }
 
@@ -82,7 +82,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(12, 14, 21, 0.9);
+  background: rgba(17, 19, 26, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -193,7 +193,7 @@ body {
 .btn [data-lucide] { width: 18px; height: 18px; flex-shrink: 0; }
 .btn-label { display: none; }
 .btn--filled { background: var(--accent-fill); color: #fff; font-weight: 700; }
-.btn--filled:hover { background: var(--accent); color: #fff; }
+.btn--filled:hover { background: #7b61bb; color: #fff; }
 .btn--filled::after { background: #fff; }
 .btn--text { background: transparent; color: var(--accent-light); padding: 0 12px; }
 .btn--lg { padding: 0 24px; font-size: var(--type-subtitle); min-height: 48px; }
@@ -231,7 +231,7 @@ body {
 
 /* Loading */
 
-.loading-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(12, 14, 21, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; }
+.loading-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(17, 19, 26, 0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; }
 .loading-overlay[hidden] { display: none; }
 .loading-content { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 14px; width: min(320px, 80vw); }
 .loading-bar { width: 100%; height: 4px; border-radius: 2px; background: var(--bg-hover); overflow: hidden; }
@@ -243,9 +243,9 @@ body {
 .notice { display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; margin-bottom: 12px; border: 1px solid; border-radius: var(--r-md); font-size: var(--type-body); line-height: 1.5; }
 .notice-icon { width: 15px; height: 15px; flex-shrink: 0; margin-top: 2px; }
 .notice strong { font-weight: 700; }
-.notice--warning { color: #fbbf24; background: rgba(251, 191, 36, 0.07); border-color: rgba(251, 191, 36, 0.18); }
-.notice--info { color: var(--text-secondary); background: rgba(179, 157, 219, 0.06); border-color: rgba(179, 157, 219, 0.14); }
-.notice--success { color: var(--up); background: rgba(74, 222, 128, 0.07); border-color: rgba(74, 222, 128, 0.18); }
+.notice--warning { color: #f6c453; background: rgba(246, 196, 83, 0.10); border-color: rgba(246, 196, 83, 0.24); }
+.notice--info { color: var(--accent); background: rgba(208, 188, 255, 0.10); border-color: rgba(208, 188, 255, 0.22); }
+.notice--success { color: var(--up); background: rgba(122, 223, 154, 0.10); border-color: rgba(122, 223, 154, 0.22); }
 
 /* Tabs */
 
@@ -460,7 +460,7 @@ body {
 }
 
 .summary-card-target-chip:hover,
-.summary-card-target-chip:focus-within { border-color: var(--accent); }
+.summary-card-target-chip:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(208, 188, 255, 0.18); }
 
 .target-chip-label { font-size: var(--type-label-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
 .target-chip-input { width: 26px; padding: 0; border: none; background: transparent; color: var(--text-primary); font-family: var(--font-b); font-size: var(--type-body-sm); font-weight: 700; outline: none; text-align: center; cursor: text; }
@@ -484,8 +484,8 @@ body {
 
 .badge { display: inline-flex; align-items: center; font-size: var(--type-label-sm); font-weight: 700; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 4px; text-transform: uppercase; vertical-align: 1px; margin-left: 5px; line-height: 1.4; }
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }
-.badge--aportar { color: #ce93d8; background: rgba(179, 157, 219, 0.18); border: 1px solid rgba(179, 157, 219, 0.3); }
-.badge--ignorar { color: var(--text-muted); background: rgba(110, 119, 143, 0.12); border: 1px solid rgba(110, 119, 143, 0.2); }
+.badge--aportar { color: var(--accent-light); background: rgba(208, 188, 255, 0.18); border: 1px solid rgba(208, 188, 255, 0.30); }
+.badge--ignorar { color: var(--text-secondary); background: rgba(155, 150, 166, 0.12); border: 1px solid rgba(155, 150, 166, 0.22); }
 
 /* Ticker links */
 
@@ -535,7 +535,7 @@ body {
 
 .change-up { color: var(--up); }
 .change-down { color: var(--down); }
-.row-target { background: rgba(179, 157, 219, 0.04); }
+.row-target { background: rgba(208, 188, 255, 0.07); }
 .row-quarantine .td-ticker { opacity: 0.4; }
 
 .note-btn,
@@ -582,7 +582,7 @@ tr:hover .remove-btn { opacity: 0.6; }
 
 /* Drop zone */
 
-.drop-zone { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(12, 14, 21, 0.92); align-items: center; justify-content: center; pointer-events: none; }
+.drop-zone { display: none; position: fixed; inset: 0; z-index: 300; background: rgba(17, 19, 26, 0.92); align-items: center; justify-content: center; pointer-events: none; }
 .drop-zone.visible { display: flex; pointer-events: all; }
 .drop-zone-inner { border: 2px dashed var(--accent); border-radius: var(--r-lg); padding: 48px 60px; text-align: center; color: var(--accent-light); font-family: var(--font-h); font-size: var(--type-headline); font-weight: 600; }
 
@@ -650,33 +650,51 @@ tr:hover .remove-btn { opacity: 0.6; }
 /* Light theme */
 
 [data-theme="light"] {
-  --bg-root: #f4f5f9;
-  --bg-surface: #ffffff;
-  --bg-elevated: #eceef4;
-  --bg-hover: #e2e5ee;
-  --border: #d0d4e0;
-  --border-focus: #aab0c6;
-  --text-primary: #1a1d28;
-  --text-secondary: #505570;
-  --text-muted: #5c6180;
-  --accent: #5e35b1;
-  --accent-light: #7e57c2;
-  --accent-dim: rgba(94, 53, 177, 0.12);
-  --accent-fill: #5e35b1;
-  --up: #16a34a;
-  --down: #dc2626;
+  color-scheme: light;
+  --bg-root: #f7f2fa;
+  --bg-surface: #fffbfe;
+  --bg-elevated: #f2ecf4;
+  --bg-hover: #ebe4ee;
+  --border: #cbc3cf;
+  --border-focus: #938f99;
+  --text-primary: #1d1b20;
+  --text-secondary: #49454f;
+  --text-muted: #645f6b;
+  --accent: #6750a4;
+  --accent-light: #7f67be;
+  --accent-dim: rgba(103, 80, 164, 0.10);
+  --accent-fill: #6750a4;
+  --up: #2e7d32;
+  --down: #b3261e;
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-[data-theme="light"] .app-header { background: rgba(244, 245, 249, 0.92); }
+[data-theme="light"] .app-header { background: rgba(247, 242, 250, 0.94); }
 [data-theme="light"] .header-brand h1 { background: linear-gradient(135deg, var(--accent), var(--accent-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-[data-theme="light"] .badge--aportar { color: #4527a0; background: rgba(94, 53, 177, 0.10); border-color: rgba(94, 53, 177, 0.2); }
-[data-theme="light"] .badge--ignorar { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.15); }
-[data-theme="light"] .notice--warning { color: #92400e; background: rgba(251, 191, 36, 0.09); border-color: rgba(251, 191, 36, 0.28); }
-[data-theme="light"] .notice--info { color: #4527a0; background: rgba(94, 53, 177, 0.05); border-color: rgba(94, 53, 177, 0.14); }
-[data-theme="light"] .notice--success { color: #15803d; background: rgba(22, 163, 74, 0.07); border-color: rgba(22, 163, 74, 0.2); }
-[data-theme="light"] .row-target { background: rgba(94, 53, 177, 0.04); }
-[data-theme="light"] .loading-overlay { background: rgba(244, 245, 249, 0.88); }
+
+[data-theme="light"] [data-goto="brStocks"],
+[data-theme="light"] [data-tab="brStocks"] { --card-color: #0f766e; }
+[data-theme="light"] [data-goto="brFiis"],
+[data-theme="light"] [data-tab="brFiis"] { --card-color: #4d7c0f; }
+[data-theme="light"] [data-goto="usStocks"],
+[data-theme="light"] [data-tab="usStocks"] { --card-color: #4f46e5; }
+[data-theme="light"] [data-goto="usReits"],
+[data-theme="light"] [data-tab="usReits"] { --card-color: #2563eb; }
+[data-theme="light"] [data-goto="fixedIncome"],
+[data-theme="light"] [data-tab="fixedIncome"] { --card-color: #a16207; }
+[data-theme="light"] [data-goto="emergencyReserve"],
+[data-theme="light"] [data-tab="emergencyReserve"] { --card-color: #be123c; }
+[data-theme="light"] [data-goto="storeOfValue"],
+[data-theme="light"] [data-tab="storeOfValue"] { --card-color: #c2410c; }
+[data-theme="light"] [data-goto="assets"],
+[data-theme="light"] [data-tab="assets"] { --card-color: #546e7a; }
+[data-theme="light"] .badge--aportar { color: #4a357c; background: rgba(103, 80, 164, 0.10); border-color: rgba(103, 80, 164, 0.22); }
+[data-theme="light"] .badge--ignorar { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.16); }
+[data-theme="light"] .notice--warning { color: #7a4900; background: rgba(161, 98, 7, 0.08); border-color: rgba(161, 98, 7, 0.20); }
+[data-theme="light"] .notice--info { color: #4a357c; background: rgba(103, 80, 164, 0.06); border-color: rgba(103, 80, 164, 0.16); }
+[data-theme="light"] .notice--success { color: #1b5e20; background: rgba(46, 125, 50, 0.08); border-color: rgba(46, 125, 50, 0.18); }
+[data-theme="light"] .row-target { background: rgba(103, 80, 164, 0.05); }
+[data-theme="light"] .loading-overlay { background: rgba(247, 242, 250, 0.88); }
 [data-theme="light"] .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
 
 /* Utilities */
