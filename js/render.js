@@ -35,7 +35,7 @@ function badge(cls, icon, label, title) {
 }
 
 const aportarBadge = () => badge('aportar', 'sparkles', t('badgeAportar'), t('badgeAportarTitle'));
-const ignorarBadge = () => badge('ignorar', 'circle-off', t('badgeIgnorar'), t('badgeIgnorarTitle'));
+const ignorarBadge = () => badge('ignorar', 'circle-pause', t('badgeIgnorar'), t('badgeIgnorarTitle'));
 
 // Sort state
 
@@ -107,27 +107,36 @@ export function renderChartOnly() {
 
 function renderTabs() {
   const order = preferences.displayOrder();
-  const tabs = [
-    { key: 'overview', label: t('tabOverview') },
-    { key: 'charts', label: t('tabPortfolio') },
-    { key: '_sep' },
-    ...order.map(k => ({
-      key: k,
-      label: classLabel(k),
-      count: portfolio.items(k).length,
-    })),
+
+  // Fixed tabs (overview + portfolio)
+  const fixedTabs = [
+    { key: 'overview', label: t('tabOverview'), icon: 'layout-grid', color: 'var(--accent)' },
+    { key: 'charts', label: t('tabPortfolio'), icon: 'pie-chart', color: 'var(--accent)' },
   ];
 
-  $('#tabNav').innerHTML = tabs.map(tab => {
-    if (tab.key === '_sep') return '<span class="tab-sep" aria-hidden="true"></span>';
+  // Class tabs with their icons and colors
+  const classTabs = order.map(k => ({
+    key: k,
+    label: classLabel(k),
+    count: portfolio.items(k).length,
+    icon: CLASS_META[k].icon,
+    color: CLASS_META[k].color,
+  }));
+
+  const renderTab = (tab) => {
     const active = tab.key === activeTab ? ' active' : '';
-    const countHtml = tab.count != null
-      ? `<span class="tab-count">${tab.count}</span>`
-      : '';
+    const countHtml = tab.count != null ? `<span class="tab-count">${tab.count}</span>` : '';
     return `<button class="tab-btn${active}" data-tab="${tab.key}">
+      <i data-lucide="${tab.icon}" class="tab-icon"></i>
       ${esc(tab.label)}${countHtml}
     </button>`;
-  }).join('');
+  };
+
+  const fixedHtml = fixedTabs.map(renderTab).join('');
+  const classHtml = classTabs.map(renderTab).join('');
+
+  // M3 uses spacing between tab groups, not a line separator
+  $('#tabNav').innerHTML = `${fixedHtml}<span class="tab-gap" aria-hidden="true"></span>${classHtml}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +224,7 @@ function renderSummaryCard(key, defCls) {
   const metaContent = buildMetaContent(key, label, inactive, isEmergency);
   const cardCls = inactive ? 'summary-card summary-card--inactive' : 'summary-card';
 
-  return `<div class="${cardCls}" data-goto="${key}" style="--card-color:${m.color}">
+  return `<div class="${cardCls}" data-goto="${key}">
     <div class="summary-card-head">
       <span class="summary-card-label">
         <i data-lucide="${m.icon}" class="summary-icon"></i>
@@ -297,7 +306,7 @@ function renderChartsTab() {
     count: portfolio.items(k).length,
     hasPrices: classTotalBRL(k) !== null,
     total: classTotalBRL(k),
-    hidden: portfolio.isChartHidden(k),
+    hidden: preferences.isChartHidden(k),
   }));
 
   const { total, partial } = chartVisibleTotalBRL();
@@ -490,7 +499,7 @@ function renderClassPanel(key) {
       <th data-sort="change" class="col-r sortable">${t('colChange')} ${sortIndicator('change')}</th>
       <th data-sort="total" class="col-r sortable">${t('colTotal')} ${sortIndicator('total')}</th>
       <th data-sort="target" class="col-r sortable">${t('colTarget')} ${sortIndicator('target')}</th>
-      <th class="col-actions">${t('colActions')}</th>
+      <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
       ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, defItems)).join('')}

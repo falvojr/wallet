@@ -252,7 +252,7 @@ $('#panels').addEventListener('click', e => {
   const chartToggle = e.target.closest('[data-toggle-chart]');
   if (chartToggle) {
     e.stopPropagation();
-    portfolio.toggleChartHidden(chartToggle.dataset.toggleChart);
+    preferences.toggleChartHidden(chartToggle.dataset.toggleChart);
     renderChartOnly();
     return;
   }

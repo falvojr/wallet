@@ -57,6 +57,19 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
+/* M3 tonal palette: class colors mapped to cards (data-goto) and tabs (data-tab).
+   Dark theme uses tone 80 (lighter). Light theme overrides to tone 40 (darker). */
+[data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #4ade80; }
+[data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #22d3ee; }
+[data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #818cf8; }
+[data-goto="usReits"],     [data-tab="usReits"]     { --card-color: #c084fc; }
+[data-goto="fixedIncome"], [data-tab="fixedIncome"] { --card-color: #fbbf24; }
+[data-goto="emergencyReserve"], [data-tab="emergencyReserve"] { --card-color: #2dd4bf; }
+[data-goto="storeOfValue"], [data-tab="storeOfValue"] { --card-color: #fb923c; }
+[data-goto="assets"],      [data-tab="assets"]      { --card-color: #f472b6; }
+
+.tab-btn .tab-icon { color: var(--card-color, var(--text-muted)); }
+
 /* Layout */
 
 .app-container { max-width: 1120px; margin: 0 auto; padding: 0 12px 80px; }
@@ -296,7 +309,9 @@ body {
 }
 
 .tab-btn.active .tab-count { background: var(--accent-dim); color: var(--accent-light); }
-.tab-sep { width: 1px; height: 20px; background: var(--border); align-self: center; margin: 0 4px; flex-shrink: 0; }
+.tab-icon { width: 14px; height: 14px; flex-shrink: 0; margin-right: 4px; opacity: 0.7; }
+.tab-btn.active .tab-icon { opacity: 1; }
+.tab-gap { width: 12px; flex-shrink: 0; }
 
 /* Tab panels: no animation by default. --enter class added only on tab switch. */
 
@@ -672,6 +687,16 @@ tr:hover .remove-btn { opacity: 0.6; }
 [data-theme="light"] .row-target { background: rgba(91, 78, 224, 0.04); }
 [data-theme="light"] .loading-overlay { background: rgba(244, 245, 249, 0.88); }
 [data-theme="light"] .toast { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
+
+/* M3 light theme: darker class colors for contrast on white surfaces */
+[data-theme="light"] [data-goto="brStocks"],    [data-theme="light"] [data-tab="brStocks"]    { --card-color: #16a34a; }
+[data-theme="light"] [data-goto="brFiis"],      [data-theme="light"] [data-tab="brFiis"]      { --card-color: #0891b2; }
+[data-theme="light"] [data-goto="usStocks"],    [data-theme="light"] [data-tab="usStocks"]    { --card-color: #4f46e5; }
+[data-theme="light"] [data-goto="usReits"],     [data-theme="light"] [data-tab="usReits"]     { --card-color: #7c3aed; }
+[data-theme="light"] [data-goto="fixedIncome"], [data-theme="light"] [data-tab="fixedIncome"] { --card-color: #d97706; }
+[data-theme="light"] [data-goto="emergencyReserve"], [data-theme="light"] [data-tab="emergencyReserve"] { --card-color: #0d9488; }
+[data-theme="light"] [data-goto="storeOfValue"], [data-theme="light"] [data-tab="storeOfValue"] { --card-color: #ea580c; }
+[data-theme="light"] [data-goto="assets"],      [data-theme="light"] [data-tab="assets"]      { --card-color: #db2777; }
 
 /* Utilities */
 

@@ -1,4 +1,4 @@
-import { portfolio, prices, CLASS_META } from './state.js';
+import { portfolio, preferences, prices, CLASS_META } from './state.js';
 
 export function formatBRL(val) {
   return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -52,7 +52,7 @@ export function chartVisibleTotalBRL() {
   let partial = false;
 
   for (const key of portfolio.allKeys()) {
-    if (portfolio.isChartHidden(key)) continue;
+    if (preferences.isChartHidden(key)) continue;
     const val = classTotalBRL(key);
     if (val !== null) total += val;
     else if (portfolio.items(key).length) partial = true;
@@ -174,7 +174,7 @@ export function deficientItems(key) {
 export function allAssetsWeighted() {
   const out = [];
   for (const key of portfolio.allKeys()) {
-    if (portfolio.isChartHidden(key)) continue;
+    if (preferences.isChartHidden(key)) continue;
     const color = CLASS_META[key].color;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);

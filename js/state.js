@@ -14,7 +14,7 @@ export const CLASS_META = {
   usStocks:         { color: '#818cf8', icon: 'globe' },
   usReits:          { color: '#c084fc', icon: 'landmark' },
   fixedIncome:      { color: '#fbbf24', icon: 'shield' },
-  emergencyReserve: { color: '#34d399', icon: 'life-buoy' },
+  emergencyReserve: { color: '#2dd4bf', icon: 'life-buoy' },
   storeOfValue:     { color: '#fb923c', icon: 'bitcoin' },
   assets:           { color: '#f472b6', icon: 'home' },
 };
@@ -112,19 +112,6 @@ export class Portfolio {
     this.save();
   }
 
-  // Chart visibility (transient, not persisted)
-
-  #chartHidden = new Set();
-
-  isChartHidden(key) {
-    return this.#chartHidden.has(key);
-  }
-
-  toggleChartHidden(key) {
-    if (this.#chartHidden.has(key)) this.#chartHidden.delete(key);
-    else this.#chartHidden.add(key);
-  }
-
   // Persistence
 
   load() {
@@ -186,6 +173,19 @@ export class Preferences {
     return [...CLASS_KEYS].sort((a, b) => {
       return this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b);
     });
+  }
+
+  // Chart visibility (persisted)
+
+  isChartHidden(key) {
+    return !!this.#data.chartHidden?.[key];
+  }
+
+  toggleChartHidden(key) {
+    this.#data.chartHidden ??= {};
+    if (this.#data.chartHidden[key]) delete this.#data.chartHidden[key];
+    else this.#data.chartHidden[key] = true;
+    this.save();
   }
 
   load() {
