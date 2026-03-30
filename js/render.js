@@ -237,10 +237,10 @@ function renderSummaryCard(key, recommendedClassKeys, idx, orderedKeys) {
       <span class="order-arrows">
         <button class="order-btn${isFirst ? ' order-btn--disabled' : ''}"
           ${prevKey ? `data-order-swap="${key}:${prevKey}"` : 'disabled'}
-          aria-label="Mover para cima"><i data-lucide="chevron-up"></i></button>
+          aria-label="${t('a11yMoveUp')}"><i data-lucide="chevron-up"></i></button>
         <button class="order-btn${isLast ? ' order-btn--disabled' : ''}"
           ${nextKey ? `data-order-swap="${key}:${nextKey}"` : 'disabled'}
-          aria-label="Mover para baixo"><i data-lucide="chevron-down"></i></button>
+          aria-label="${t('a11yMoveDown')}"><i data-lucide="chevron-down"></i></button>
       </span>
     </div>
     <div class="summary-card-value">${valueStr}</div>
@@ -427,11 +427,11 @@ function sortedItems(key) {
   return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
     const [ia, ib] = [a.item, b.item];
     switch (col) {
-      case 'name': return dir * ia.id.localeCompare(ib.id);
+      case 'name':   return dir * ia.id.localeCompare(ib.id);
       case 'amount': return dir * (ia.amount - ib.amount);
-      case 'price': return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
+      case 'price':  return dir * ((prices.get(ia.id)?.price ?? 0) - (prices.get(ib.id)?.price ?? 0));
       case 'change': return dir * ((prices.get(ia.id)?.change ?? 0) - (prices.get(ib.id)?.change ?? 0));
-      case 'total': return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
+      case 'total':  return dir * ((assetValueBRL(key, ia) ?? 0) - (assetValueBRL(key, ib) ?? 0));
       case 'target': return dir * (itemTargetPct(key, ia) - itemTargetPct(key, ib));
       default: return 0;
     }
@@ -451,7 +451,7 @@ function renderClassPanel(key) {
     </div>`;
   }
 
-  const recommendedItemIds = recommendedItems(key);
+  const recommendedAssetIds = recommendedItems(key);
   const sorted = sortedItems(key);
 
   html += `<div class="table-wrap"><table class="asset-table">
@@ -465,15 +465,15 @@ function renderClassPanel(key) {
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
-      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedItemIds)).join('')}
+      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedAssetIds)).join('')}
       <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr>
     </tbody>
   </table></div>`;
   return html;
 }
 
-function renderAssetRow(key, item, idx, recommendedItemIds) {
-  const isRecommended = recommendedItemIds.includes(item.id);
+function renderAssetRow(key, item, idx, recommendedAssetIds) {
+  const isRecommended = recommendedAssetIds.includes(item.id);
   const isSkipped = isSkippedAsset(item);
   const p = prices.get(item.id);
   const val = assetValueBRL(key, item);
@@ -520,9 +520,5 @@ function fmtPrice(key, item, p) {
   const priceStr = prefix + p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   if (p.change === undefined) return { priceStr, changeHtml: '' };
   const up = p.change >= 0;
-  const changeLabel = `${up ? '+' : ''}${p.change.toFixed(2)}%`;
-  return {
-    priceStr,
-    changeHtml: `<span class="quote-chip ${up ? 'quote-chip--up' : 'quote-chip--down'}">${changeLabel}</span>`,
-  };
+  return { priceStr, changeHtml: `<span class="${up ? 'change-up' : 'change-down'}">${up ? '+' : ''}${p.change.toFixed(2)}%</span>` };
 }

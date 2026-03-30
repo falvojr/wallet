@@ -9,11 +9,38 @@ import {
   loadTheme,
   toggleTheme,
 } from './js/state.js';
-import { t } from './js/i18n.js';
+import { getLocale, t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
 import { render, renderOverviewOnly, renderChartOnly, toggleSort } from './js/render.js';
 
 const $ = selector => document.querySelector(selector);
+
+function applyTranslations(root = document) {
+  document.documentElement.lang = getLocale();
+
+  const title = root.querySelector('title[data-i18n]');
+  if (title) document.title = t(title.dataset.i18n);
+
+  root.querySelectorAll('[data-i18n]').forEach(element => {
+    element.textContent = t(element.dataset.i18n);
+  });
+
+  root.querySelectorAll('[data-i18n-html]').forEach(element => {
+    element.innerHTML = t(element.dataset.i18nHtml);
+  });
+
+  root.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+
+  root.querySelectorAll('[data-i18n-title]').forEach(element => {
+    element.title = t(element.dataset.i18nTitle);
+  });
+
+  root.querySelectorAll('[data-i18n-aria-label]').forEach(element => {
+    element.setAttribute('aria-label', t(element.dataset.i18nAriaLabel));
+  });
+}
 
 function showToast(message, action) {
   const toast = document.createElement('div');
@@ -508,4 +535,5 @@ settings.load();
 preferences.load();
 portfolio.load();
 prices.load();
+applyTranslations();
 render();

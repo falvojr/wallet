@@ -12,6 +12,15 @@ const strings = {
     btnImport: 'Importar JSON',
     btnExport: 'Exportar JSON',
     btnPrices: 'Cotar',
+    pageTitle: 'Minha Holding',
+
+    // Header and navigation
+    navAssetClasses: 'Navegação por classe de ativos',
+    importJsonTitle: 'Importar carteira JSON',
+    exportJsonTitle: 'Exportar carteira JSON',
+    themeToggleTitle: 'Alternar tema claro e escuro',
+    settingsTitleShort: 'Configurações de API',
+    refreshPricesTitle: 'Atualizar cotações',
 
     // Tabs
     tabOverview: 'Metas',
@@ -40,15 +49,15 @@ const strings = {
     },
 
     // Overview
-    metaLabel: 'meta',
+    metaLabel: 'Meta',
     targetLabel: 'Meta %',
-    goalLabel: 'meta',
-    warningTargetSum: (sum) => `As metas somam <strong>${sum}%</strong>, mas deveriam totalizar 100%.`,
+    goalLabel: 'Meta',
+    warningTargetSum: (sum) => `As metas somam <strong>${sum}%</strong>, mas o total ideal é 100%.`,
     infoStale: (date) => `Cotações desatualizadas (${date}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices: 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced: 'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
     inactiveClassHint: 'Classe ignorada no rebalanceamento.',
-    emergencyPriority: 'Meta da Reserva de Emergência não atingida. Priorize aportes nela antes de investir em outras classes.',
+    emergencyPriority: 'A meta da Reserva de Emergência ainda não foi atingida. Priorize novos aportes nela antes das demais classes.',
 
     // Badges
     badgeInvest: 'aportar',
@@ -63,7 +72,7 @@ const strings = {
 
     // Table
     colName: 'Nome',
-    colAmount: 'Qtd',
+    colAmount: 'Qtd.',
     colPrice: 'Preço',
     colChange: 'Hoje',
     colTotal: 'Total',
@@ -71,39 +80,43 @@ const strings = {
     colActionsA11y: 'Opções',
     addAsset: '+ Adicionar ativo',
     emptyClass: 'Nenhum ativo nesta classe.',
-    declaredPrice: 'Declarado',
+    declaredPrice: 'Valor declarado',
     targetPlaceholder: 'auto',
     assetCount: (count) => `${count} ativo${count !== 1 ? 's' : ''}`,
 
     // Add modal
-    addModalTitle: 'Adicionar Ativo',
+    addModalTitle: 'Adicionar ativo',
     addFieldTicker: 'Nome / Ticker',
-    addTickerHint: 'Ex: PETR4, CDB Inter',
+    addTickerHint: 'Ex: WEG3, CDB Nubank',
     addFieldAmount: 'Quantidade ou valor (R$)',
-    addAmountHint: 'Ex: 100 (0 para incluir sem posição)',
-    addFieldTarget: 'Meta % (dentro da classe)',
-    addTargetHint: 'Vazio = distribuição igual, 0 = ignorar',
+    addAmountHint: 'Ex: 100 (use 0 para incluir sem posição)',
+    addFieldTarget: 'Meta % na Classe',
+    addTargetHint: 'Deixe em branco para distribuição igual; use 0 para ignorar',
     btnCancel: 'Cancelar',
     btnAdd: 'Adicionar',
 
     // Note modal
     noteModalTitle: 'Comentário',
     noteHintPrefix: 'Nota sobre',
-    notePlaceholder: 'Ex: Vence em 2027, rendendo 120% CDI',
+    notePlaceholder: 'Ex: Vence em 2027, rendendo 120% do CDI',
+    noteTextAria: 'Comentário sobre o ativo',
     btnSave: 'Salvar',
 
     // Settings
     settingsTitle: 'Tokens de API',
-    settingsHint: 'Tokens gratuitos para cotações em tempo real.',
+    settingsHint: 'Tokens gratuitos para buscar cotações em tempo real.',
     brapiLabel: 'brapi.dev (Ações / FIIs)',
     brapiHint: 'Crie grátis em brapi.dev/dashboard',
+    brapiCreateAccount: 'Criar conta',
     finnhubLabel: 'Finnhub (Stocks / REITs)',
     finnhubHint: 'Crie grátis em finnhub.io',
+    finnhubCreateAccount: 'Criar conta',
+    externalLinkLabel: 'Abrir link externo',
 
     // Toasts
     toastConfigTokens: 'Configure os tokens de API em ⚙️',
     toastPricesOk: 'Cotações atualizadas',
-    toastPricesFail: 'Erro ao buscar cotações',
+    toastPricesFail: 'Não foi possível buscar as cotações',
     toastImported: 'Carteira importada',
     toastExported: 'JSON exportado',
     toastSettingsSaved: 'Configurações salvas',
@@ -111,7 +124,7 @@ const strings = {
     toastRemoved: (id) => `${id} removido`,
     toastExists: (id) => `${id} já existe`,
     toastUndo: 'Desfazer',
-    toastJsonOnly: 'Apenas arquivos .json',
+    toastJsonOnly: 'Envie apenas arquivos .json',
     toastErrorPrefix: 'Erro: ',
     toastInvalidFormat: 'Formato inválido',
 
@@ -123,7 +136,7 @@ const strings = {
     // Loading
     loadingDefault: 'Carregando...',
     loadingImporting: 'Importando...',
-    loadingExchange: 'Câmbio',
+    loadingExchange: 'Atualizando câmbio',
     dropHint: 'Solte o arquivo JSON aqui',
 
     // Accessibility
@@ -136,6 +149,8 @@ const strings = {
     a11yAmountOf: (id) => `Quantidade de ${id}`,
     a11yTargetOf: (id) => `Meta % de ${id} na classe`,
     a11yToggleChart: (label, hidden) => `${hidden ? 'Ocultar' : 'Mostrar'} ${label} no gráfico`,
+    a11yMoveUp: 'Mover para cima',
+    a11yMoveDown: 'Mover para baixo',
   },
 };
 
@@ -143,6 +158,10 @@ let locale = 'pt-BR';
 
 export function setLocale(nextLocale) {
   if (strings[nextLocale]) locale = nextLocale;
+}
+
+export function getLocale() {
+  return locale;
 }
 
 export function t(key, ...args) {
