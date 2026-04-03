@@ -1,16 +1,15 @@
 import { tn } from './i18n.js';
 
-const STORAGE = 'holding_portfolio';
-const SETTINGS = 'holding_settings';
-const PRICES = 'holding_prices';
-const PREFS = 'holding_prefs';
-const THEME = 'holding_theme';
+const STORAGE_KEYS = {
+  portfolio: 'holding_portfolio',
+  settings: 'holding_settings',
+  prices: 'holding_prices',
+  preferences: 'holding_prefs',
+  theme: 'holding_theme',
+};
+
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
-/**
- * Visual metadata for each asset class.
- * Used as a fallback before theme-aware CSS values are available.
- */
 export const CLASS_META = {
   brStocks: { color: '#4fd8c8', icon: 'trending-up' },
   brFiis: { color: '#9ccc65', icon: 'building-2' },
@@ -24,11 +23,119 @@ export const CLASS_META = {
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
+const CLASS_DEFAULTS = {
+  brStocks: { target: 0, goal: 0, items: [] },
+  brFiis: { target: 0, goal: 0, items: [] },
+  usStocks: { target: 0, goal: 0, items: [] },
+  usReits: { target: 0, goal: 0, items: [] },
+  fixedIncome: { target: 0, goal: 0, items: [] },
+  emergencyReserve: { target: 0, goal: 0, items: [] },
+  storeOfValue: { target: 0, goal: 0, items: [] },
+  assets: { target: 0, goal: 0, items: [] },
+};
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function normalizeNumber(value, fallback = 0) {
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+function normalizeItem(item) {
+  if (!item || typeof item !== 'object') return null;
+
+  const id = String(item.id ?? '').trim();
+  if (!id) return null;
+
+  const normalizedItem = {
+    id,
+    amount: normalizeNumber(Number(item.amount)),
+  };
+
+  if (item.target !== undefined && item.target !== null && item.target !== '') {
+    normalizedItem.target = normalizeNumber(Number(item.target));
+  }
+
+  if (typeof item.note === 'string' && item.note.trim()) {
+    normalizedItem.note = item.note.trim();
+  }
+
+  return normalizedItem;
+}
+
+function normalizeClassEntry(classKey, classEntry = {}) {
+  const defaults = CLASS_DEFAULTS[classKey];
+  const normalizedItems = Array.isArray(classEntry?.items)
+    ? classEntry.items.map(normalizeItem).filter(Boolean)
+    : [];
+
+  const normalizedEntry = {
+    items: normalizedItems,
+    goal: normalizeNumber(Number(classEntry?.goal), defaults.goal),
+    target: normalizeNumber(Number(classEntry?.target), defaults.target),
+  };
+
+  if (classKey === 'emergencyReserve') {
+    normalizedEntry.target = 0;
+  }
+
+  if (classKey === 'assets') {
+    normalizedEntry.target = 0;
+  }
+
+  return normalizedEntry;
+}
+
+function createEmptyPortfolioData() {
+  const data = { syncedAt: null };
+
+  CLASS_KEYS.forEach(classKey => {
+    data[classKey] = clone(CLASS_DEFAULTS[classKey]);
+  });
+
+  return data;
+}
+
+function normalizePortfolioData(data = {}) {
+  const normalizedData = createEmptyPortfolioData();
+
+  if (typeof data?.syncedAt === 'string' && data.syncedAt.trim()) {
+    normalizedData.syncedAt = data.syncedAt.trim();
+  }
+
+  CLASS_KEYS.forEach(classKey => {
+    normalizedData[classKey] = normalizeClassEntry(classKey, data?.[classKey]);
+  });
+
+  return normalizedData;
+}
+
+class LocalStorageRepository {
+  constructor(storageKey) {
+    this.storageKey = storageKey;
+  }
+
+  read(fallbackValue = null) {
+    try {
+      const raw = localStorage.getItem(this.storageKey);
+      return raw ? JSON.parse(raw) : fallbackValue;
+    } catch {
+      return fallbackValue;
+    }
+  }
+
+  write(value) {
+    localStorage.setItem(this.storageKey, JSON.stringify(value));
+  }
+}
+
 export function classLabel(key) {
   return tn('classLabels', key);
 }
 
 export class Portfolio {
+  #repository = new LocalStorageRepository(STORAGE_KEYS.portfolio);
   #data = null;
 
   get loaded() {
@@ -37,6 +144,16 @@ export class Portfolio {
 
   items(key) {
     return this.#data?.[key]?.items ?? [];
+  }
+
+  #ensureLoaded() {
+    this.#data ??= createEmptyPortfolioData();
+  }
+
+  #ensureClass(key) {
+    this.#ensureLoaded();
+    this.#data[key] ??= clone(CLASS_DEFAULTS[key] ?? { target: 0, goal: 0, items: [] });
+    this.#data[key].items ??= [];
   }
 
   #isPercentageActive(key) {
@@ -51,16 +168,12 @@ export class Portfolio {
       return 0;
     }
 
-    const storedTarget = this.#data?.[key]?.target;
-    if (storedTarget !== undefined) return storedTarget;
-
-    const activeClassCount = this.activeKeys().length;
-    return activeClassCount > 0 ? 100 / activeClassCount : 0;
+    return normalizeNumber(this.#data?.[key]?.target);
   }
 
   setTarget(key, value) {
     this.#ensureClass(key);
-    this.#data[key].target = value;
+    this.#data[key].target = normalizeNumber(value);
   }
 
   activeKeys() {
@@ -72,12 +185,12 @@ export class Portfolio {
   }
 
   goal(key) {
-    return this.#data?.[key]?.goal ?? 0;
+    return normalizeNumber(this.#data?.[key]?.goal);
   }
 
   setGoal(key, value) {
     this.#ensureClass(key);
-    this.#data[key].goal = value;
+    this.#data[key].goal = normalizeNumber(value);
   }
 
   isEmergencyUnmet() {
@@ -90,7 +203,11 @@ export class Portfolio {
 
   addItem(key, item) {
     this.#ensureClass(key);
-    this.#data[key].items.push(item);
+
+    const normalizedItem = normalizeItem(item);
+    if (!normalizedItem) return;
+
+    this.#data[key].items.push(normalizedItem);
   }
 
   setItemNote(key, id, note) {
@@ -105,40 +222,29 @@ export class Portfolio {
   }
 
   load() {
-    try {
-      const raw = localStorage.getItem(STORAGE);
-      if (raw) this.#data = JSON.parse(raw);
-    } catch {
-      this.#data = null;
-    }
+    const rawData = this.#repository.read(null);
+    this.#data = rawData ? normalizePortfolioData(rawData) : null;
   }
 
   save() {
+    this.#ensureLoaded();
     this.#data.syncedAt = new Date().toISOString().slice(0, 10);
-    localStorage.setItem(STORAGE, JSON.stringify(this.#data));
+    this.#repository.write(this.#data);
   }
 
   import(data) {
-    this.#data = data;
+    this.#data = normalizePortfolioData(data);
     this.save();
   }
 
   export() {
-    const output = { syncedAt: this.#data.syncedAt };
-
-    CLASS_KEYS.forEach(key => {
-      if (this.#data[key]) output[key] = this.#data[key];
-    });
-
-    return output;
-  }
-
-  #ensureClass(key) {
-    this.#data[key] ??= { items: [] };
+    this.#ensureLoaded();
+    return normalizePortfolioData(this.#data);
   }
 }
 
 export class Preferences {
+  #repository = new LocalStorageRepository(STORAGE_KEYS.preferences);
   #data = {};
 
   order(key) {
@@ -195,20 +301,16 @@ export class Preferences {
   }
 
   load() {
-    try {
-      const raw = localStorage.getItem(PREFS);
-      if (raw) this.#data = JSON.parse(raw);
-    } catch {
-      this.#data = {};
-    }
+    this.#data = this.#repository.read({}) ?? {};
   }
 
   save() {
-    localStorage.setItem(PREFS, JSON.stringify(this.#data));
+    this.#repository.write(this.#data);
   }
 }
 
 export class PriceCache {
+  #repository = new LocalStorageRepository(STORAGE_KEYS.prices);
   #prices = {};
   #rates = {};
   #timestamp = null;
@@ -259,32 +361,26 @@ export class PriceCache {
   }
 
   load() {
-    try {
-      const data = JSON.parse(localStorage.getItem(PRICES));
-      if (!data) return;
+    const data = this.#repository.read(null);
+    if (!data) return;
 
-      this.#prices = data.prices ?? {};
-      this.#rates = data.rates ?? {};
-      this.#timestamp = data.ts ?? null;
-    } catch {
-      // Keep empty cache on parse errors.
-    }
+    this.#prices = data.prices ?? {};
+    this.#rates = data.rates ?? {};
+    this.#timestamp = data.ts ?? null;
   }
 
   save() {
     this.#timestamp = Date.now();
-    localStorage.setItem(
-      PRICES,
-      JSON.stringify({
-        ts: this.#timestamp,
-        prices: this.#prices,
-        rates: this.#rates,
-      }),
-    );
+    this.#repository.write({
+      ts: this.#timestamp,
+      prices: this.#prices,
+      rates: this.#rates,
+    });
   }
 }
 
 export class Settings {
+  #repository = new LocalStorageRepository(STORAGE_KEYS.settings);
   brapiToken = '';
   finnhubToken = '';
 
@@ -293,22 +389,14 @@ export class Settings {
   }
 
   load() {
-    try {
-      const raw = localStorage.getItem(SETTINGS);
-      if (raw) Object.assign(this, JSON.parse(raw));
-    } catch {
-      // Keep defaults.
-    }
+    Object.assign(this, this.#repository.read({}) ?? {});
   }
 
   save() {
-    localStorage.setItem(
-      SETTINGS,
-      JSON.stringify({
-        brapiToken: this.brapiToken,
-        finnhubToken: this.finnhubToken,
-      }),
-    );
+    this.#repository.write({
+      brapiToken: this.brapiToken,
+      finnhubToken: this.finnhubToken,
+    });
   }
 }
 
@@ -322,13 +410,13 @@ function applyTheme(theme) {
 }
 
 export function loadTheme() {
-  applyTheme(localStorage.getItem(THEME) || 'dark');
+  applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'dark');
 }
 
 export function toggleTheme() {
   const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   applyTheme(nextTheme);
-  localStorage.setItem(THEME, nextTheme);
+  localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
 }
 
 export const portfolio = new Portfolio();

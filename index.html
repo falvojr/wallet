@@ -26,24 +26,24 @@
       </div>
 
       <div class="header-actions" id="headerActions" hidden>
-        <button class="icon-btn" id="btnImport" data-i18n-title="importJsonTitle" data-i18n-aria-label="importJsonTitle"
+        <button type="button" class="icon-btn" id="btnImport" data-i18n-title="importJsonTitle" data-i18n-aria-label="importJsonTitle"
           title="Importar carteira JSON" aria-label="Importar carteira JSON">
           <i data-lucide="download"></i>
         </button>
-        <button class="icon-btn" id="btnExport" data-i18n-title="exportJsonTitle" data-i18n-aria-label="exportJsonTitle"
+        <button type="button" class="icon-btn" id="btnExport" data-i18n-title="exportJsonTitle" data-i18n-aria-label="exportJsonTitle"
           title="Exportar carteira JSON" aria-label="Exportar carteira JSON">
           <i data-lucide="upload"></i>
         </button>
-        <button class="icon-btn" id="btnTheme" data-i18n-title="themeToggleTitle"
+        <button type="button" class="icon-btn" id="btnTheme" data-i18n-title="themeToggleTitle"
           data-i18n-aria-label="themeToggleTitle" title="Alternar tema claro e escuro"
           aria-label="Alternar tema claro e escuro">
           <i data-lucide="sun-moon"></i>
         </button>
-        <button class="icon-btn" id="btnSettings" data-i18n-title="settingsTitleShort"
+        <button type="button" class="icon-btn" id="btnSettings" data-i18n-title="settingsTitleShort"
           data-i18n-aria-label="settingsTitleShort" title="Configurações de API" aria-label="Configurações de API">
           <i data-lucide="settings"></i>
         </button>
-        <button class="btn btn--filled" id="btnPrices" data-i18n-title="refreshPricesTitle"
+        <button type="button" class="btn btn--filled" id="btnPrices" data-i18n-title="refreshPricesTitle"
           data-i18n-aria-label="refreshPricesTitle" title="Atualizar cotações" aria-label="Atualizar cotações">
           <i data-lucide="refresh-cw"></i>
           <span class="btn-label" data-i18n="btnPrices">Cotar</span>
@@ -59,7 +59,7 @@
       </div>
       <h2 data-i18n="welcomeTitle">Importe sua carteira</h2>
       <p data-i18n-html="welcomeText">Arraste um arquivo <code>.json</code> ou clique para carregar.</p>
-      <button class="btn btn--filled btn--lg" id="btnWelcomeImport" data-i18n="welcomeBtn">
+      <button type="button" class="btn btn--filled btn--lg" id="btnWelcomeImport" data-i18n="welcomeBtn">
         Importar JSON
       </button>
     </div>
@@ -70,7 +70,7 @@
   </main>
 
   <div class="loading-overlay" id="loadingOverlay" hidden aria-hidden="true">
-    <div class="loading-content" role="status">
+    <div class="loading-content" role="status" aria-live="polite">
       <div class="loading-bar">
         <div class="loading-bar-fill" id="loadingBarFill"></div>
       </div>
@@ -78,7 +78,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+  <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="addModalTitle" data-i18n="addModalTitle">Adicionar ativo</h3>
       <div class="modal-field">
@@ -98,13 +98,13 @@
           autocomplete="off">
       </div>
       <div class="modal-actions">
-        <button class="btn btn--text" id="modalCancel" data-i18n="btnCancel">Cancelar</button>
-        <button class="btn btn--filled" id="modalConfirm" data-i18n="btnAdd">Adicionar</button>
+        <button type="button" class="btn btn--text" id="modalCancel" data-i18n="btnCancel">Cancelar</button>
+        <button type="button" class="btn btn--filled" id="modalConfirm" data-i18n="btnAdd">Adicionar</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle">
+  <div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle" aria-hidden="true">
     <div class="modal">
       <h3 id="noteModalTitle" data-i18n="noteModalTitle">Comentário</h3>
       <p class="modal-hint"><span data-i18n="noteHintPrefix">Comentário sobre</span> <strong
@@ -114,13 +114,13 @@
           placeholder="Ex.: Vence em 2027, rendendo 120% do CDI" aria-label="Comentário sobre o ativo"></textarea>
       </div>
       <div class="modal-actions">
-        <button class="btn btn--text" id="noteCancel" data-i18n="btnCancel">Cancelar</button>
-        <button class="btn btn--filled" id="noteSave" data-i18n="btnSave">Salvar</button>
+        <button type="button" class="btn btn--text" id="noteCancel" data-i18n="btnCancel">Cancelar</button>
+        <button type="button" class="btn btn--filled" id="noteSave" data-i18n="btnSave">Salvar</button>
       </div>
     </div>
   </div>
 
-  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-hidden="true">
     <div class="modal modal--wide">
       <h3 id="settingsModalTitle" data-i18n="settingsTitle">Tokens de API</h3>
       <p class="modal-hint" data-i18n="settingsHint">Tokens gratuitos para buscar cotações em tempo real.</p>
@@ -145,8 +145,8 @@
         </a>
       </div>
       <div class="modal-actions">
-        <button class="btn btn--text" id="settingsCancel" data-i18n="btnCancel">Cancelar</button>
-        <button class="btn btn--filled" id="settingsSave" data-i18n="btnSave">Salvar</button>
+        <button type="button" class="btn btn--text" id="settingsCancel" data-i18n="btnCancel">Cancelar</button>
+        <button type="button" class="btn btn--filled" id="settingsSave" data-i18n="btnSave">Salvar</button>
       </div>
     </div>
   </div>

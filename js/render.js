@@ -175,7 +175,7 @@ function renderPanels() {
 function renderOverview() {
   const recommendedClassKeys = recommendedClasses();
   const order = preferences.displayOrder();
-  const populated = order.filter(k => portfolio.items(k).length > 0);
+  const visibleClassKeys = order;
 
   let html = '';
   const warn = allocationWarning();
@@ -185,12 +185,12 @@ function renderOverview() {
 
   if (portfolio.isEmergencyUnmet()) {
     html += notice('life-buoy', t('emergencyPriority'), 'warning');
-  } else if (prices.hasData && recommendedClassKeys.length === 0 && populated.some(k => !isClassInactive(k))) {
+  } else if (prices.hasData && recommendedClassKeys.length === 0 && visibleClassKeys.some(k => !isClassInactive(k))) {
     html += notice('check-circle', t('successBalanced'), 'success');
   }
 
   html += '<div class="summary-cards">';
-  html += populated.map((k, i) => renderSummaryCard(k, recommendedClassKeys, i, populated)).join('');
+  html += visibleClassKeys.map((k, i) => renderSummaryCard(k, recommendedClassKeys, i, visibleClassKeys)).join('');
   html += '</div>';
   return html;
 }
@@ -272,9 +272,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
   if (!inactive) {
     const actual = classActualPct(key);
     const tgt = classTargetPct(key);
-    const left = actual !== null
-      ? `<span class="summary-card-actual">${actual.toFixed(1)}%</span>`
-      : '<span></span>';
+    const left = `<span class="summary-card-actual">${(actual ?? 0).toFixed(1)}%</span>`;
     return left + `<div class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
       <input class="target-chip-input" type="text" value="${tgt.toFixed(0)}"
@@ -301,7 +299,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 
 function renderChartsTab() {
   const order = preferences.displayOrder();
-  const populated = order.filter(k => portfolio.items(k).length > 0);
+  const visibleClassKeys = order;
   const data = populated.map(k => ({
     key: k,
     label: classLabel(k),

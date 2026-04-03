@@ -15,6 +15,18 @@ import { render, renderOverviewOnly, renderChartOnly, toggleSort } from './js/re
 
 const $ = selector => document.querySelector(selector);
 
+const elements = {
+  toastContainer: $('#toastContainer'),
+  loadingOverlay: $('#loadingOverlay'),
+  loadingText: $('#loadingText'),
+  loadingBarFill: $('#loadingBarFill'),
+  headerActions: $('#headerActions'),
+  emptyWelcome: $('#emptyWelcome'),
+  tabNav: $('#tabNav'),
+  panels: $('#panels'),
+  fileInput: $('#fileInput'),
+};
+
 function applyTranslations(root = document) {
   document.documentElement.lang = getLocale();
 
@@ -63,20 +75,20 @@ function showToast(message, action) {
     toast.textContent = message;
   }
 
-  $('#toastContainer').appendChild(toast);
+  elements.toastContainer.appendChild(toast);
   setTimeout(() => toast.remove(), action ? 5000 : 3000);
 }
 
 function showLoading(text, progress) {
-  const overlay = $('#loadingOverlay');
-  $('#loadingText').textContent = text;
-  $('#loadingBarFill').style.width = progress !== undefined ? `${Math.round(progress * 100)}%` : '0%';
+  const overlay = elements.loadingOverlay;
+  elements.loadingText.textContent = text;
+  elements.loadingBarFill.style.width = progress !== undefined ? `${Math.round(progress * 100)}%` : '0%';
   overlay.hidden = false;
   overlay.setAttribute('aria-hidden', 'false');
 }
 
 function hideLoading() {
-  const overlay = $('#loadingOverlay');
+  const overlay = elements.loadingOverlay;
   overlay.hidden = true;
   overlay.setAttribute('aria-hidden', 'true');
 }
@@ -150,6 +162,7 @@ function openModal(modalSelector, focusSelector) {
 
   const modal = $(modalSelector);
   modal.classList.add('open');
+  modal.setAttribute('aria-hidden', 'false');
   trapFocus(modal);
 
   if (focusSelector) {
@@ -160,6 +173,7 @@ function openModal(modalSelector, focusSelector) {
 function closeModal(modalSelector) {
   const modal = $(modalSelector);
   modal.classList.remove('open');
+  modal.setAttribute('aria-hidden', 'true');
   releaseFocus(modal);
   previousFocus?.focus();
   previousFocus = null;
@@ -285,7 +299,7 @@ function importPortfolio(file) {
   reader.onload = event => {
     try {
       const data = JSON.parse(event.target.result);
-      const hasSupportedClass = CLASS_KEYS.some(key => data[key]?.items);
+      const hasSupportedClass = CLASS_KEYS.some(key => Array.isArray(data?.[key]?.items));
       if (!hasSupportedClass) throw new Error(t('toastInvalidFormat'));
 
       portfolio.import(data);
@@ -304,7 +318,7 @@ function importPortfolio(file) {
   reader.readAsText(file);
 }
 
-$('#panels').addEventListener('click', event => {
+elements.panels.addEventListener('click', event => {
   const chartToggle = event.target.closest('[data-toggle-chart]');
   if (chartToggle) {
     event.stopPropagation();
@@ -369,13 +383,13 @@ $('#panels').addEventListener('click', event => {
   }
 });
 
-$('#panels').addEventListener('click', event => {
+elements.panels.addEventListener('click', event => {
   if (event.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
     event.stopPropagation();
   }
 });
 
-$('#panels').addEventListener('change', event => {
+elements.panels.addEventListener('change', event => {
   const inlineInput = event.target.closest('.inline-input');
   if (inlineInput) {
     const classKey = inlineInput.dataset.class;
@@ -427,7 +441,7 @@ $('#panels').addEventListener('change', event => {
   }
 });
 
-$('#tabNav').addEventListener('click', event => {
+elements.tabNav.addEventListener('click', event => {
   const tabButton = event.target.closest('[data-tab]');
   if (!tabButton) return;
 
@@ -476,7 +490,7 @@ document.addEventListener('drop', event => {
   }
 });
 
-$('#btnImport').addEventListener('click', () => $('#fileInput').click());
+$('#btnImport').addEventListener('click', () => elements.fileInput.click());
 $('#btnExport').addEventListener('click', exportPortfolio);
 $('#btnTheme').addEventListener('click', () => {
   toggleTheme();
@@ -485,8 +499,8 @@ $('#btnTheme').addEventListener('click', () => {
 });
 $('#btnSettings').addEventListener('click', openSettingsModal);
 $('#btnPrices').addEventListener('click', refreshPrices);
-$('#btnWelcomeImport').addEventListener('click', () => $('#fileInput').click());
-$('#fileInput').addEventListener('change', event => {
+$('#btnWelcomeImport').addEventListener('click', () => elements.fileInput.click());
+elements.fileInput.addEventListener('change', event => {
   if (event.target.files[0]) importPortfolio(event.target.files[0]);
   event.target.value = '';
 });
