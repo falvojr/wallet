@@ -300,7 +300,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 function renderChartsTab() {
   const order = preferences.displayOrder();
   const visibleClassKeys = order;
-  const data = populated.map(k => ({
+  const data = visibleClassKeys.map(k => ({
     key: k,
     label: classLabel(k),
     count: portfolio.items(k).length,
@@ -312,7 +312,7 @@ function renderChartsTab() {
   const { total, partial } = chartVisibleTotalBRL();
   const headerVal = total > 0
     ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
-    : t('assetCount', populated.reduce((sum, key) => sum + portfolio.items(key).length, 0));
+    : t('assetCount', visibleClassKeys.reduce((sum, key) => sum + portfolio.items(key).length, 0));
 
   return `<div class="chart-layout">
     <div class="chart-sidebar">
