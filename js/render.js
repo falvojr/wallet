@@ -259,38 +259,38 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     const left = goal > 0 && prog !== null
       ? `<span class="summary-card-actual">${prog.toFixed(1)}%</span>`
       : `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`;
-    return left + `<div class="summary-card-target-chip">
+    return left + `<label class="summary-card-target-chip">
       <span class="target-chip-label">${t('goalLabel')}</span>
       <span class="target-chip-unit">R$</span>
       <input class="target-chip-input target-chip-input--wide" type="text"
         value="${goal > 0 ? Math.round(goal) : ''}" data-class-goal="emergencyReserve"
         placeholder="0" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yGoalClass', esc(label))}">
-    </div>`;
+    </label>`;
   }
 
   if (!inactive) {
     const actual = classActualPct(key);
     const tgt = classTargetPct(key);
     const left = `<span class="summary-card-actual">${(actual ?? 0).toFixed(1)}%</span>`;
-    return left + `<div class="summary-card-target-chip">
+    return left + `<label class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
       <input class="target-chip-input" type="text" value="${tgt.toFixed(0)}"
         data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yTargetClass', esc(label))}">
       <span class="target-chip-unit">%</span>
-    </div>`;
+    </label>`;
   }
 
   // Inactive (target = 0)
   return `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-    <div class="summary-card-target-chip">
+    <label class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
       <input class="target-chip-input" type="text" value="0"
         data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yTargetClass', esc(label))}">
       <span class="target-chip-unit">%</span>
-    </div>`;
+    </label>`;
 }
 
 // ---------------------------------------------------------------------------

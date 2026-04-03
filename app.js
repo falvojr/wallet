@@ -336,8 +336,19 @@ elements.panels.addEventListener('click', event => {
     return;
   }
 
+  const targetChip = event.target.closest('.summary-card-target-chip');
+  if (targetChip) {
+    event.stopPropagation();
+    const input = targetChip.querySelector('input');
+    if (input && event.target !== input) {
+      input.focus();
+      input.select?.();
+    }
+    return;
+  }
+
   const cardTarget = event.target.closest('[data-goto]');
-  if (cardTarget && !event.target.closest('input, button')) {
+  if (cardTarget && !event.target.closest('input, button, label')) {
     setActiveTab(cardTarget.dataset.goto);
     render();
     return;

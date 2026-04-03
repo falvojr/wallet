@@ -56,7 +56,7 @@ const strings = {
     infoStale: (date) => `Cotações desatualizadas (${date}). Atualize em <strong>Cotar</strong>.`,
     infoNoPrices: 'Nenhuma cotação carregada. Clique em <strong>Cotar</strong> para buscar preços.',
     successBalanced: 'Carteira balanceada. Nenhuma classe precisa de aporte no momento.',
-    inactiveClassHint: 'Classe ignorada no rebalanceamento.',
+    inactiveClassHint: 'Fora do rebalanceamento.',
     emergencyPriority: 'A meta da Reserva de Emergência ainda não foi atingida. Priorize novos aportes nela antes das demais classes.',
 
     // Badges

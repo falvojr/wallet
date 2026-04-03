@@ -423,9 +423,6 @@ body {
   color: color-mix(in srgb, var(--text-muted) 82%, var(--card-color, var(--text-muted)) 18%);
 }
 
-.summary-card--inactive .summary-card-target-chip {
-  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--card-color, transparent) 12%);
-}
 
 .summary-card-head {
   display: flex;
@@ -534,14 +531,17 @@ body {
   gap: 3px;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
-  border-radius: 20px;
+  border-radius: 999px;
   padding: 3px 10px 3px 8px;
-  transition: border-color var(--ease);
+  transition: border-color var(--ease), box-shadow var(--ease), background-color var(--ease);
   cursor: text;
 }
 
 .summary-card-target-chip:hover,
-.summary-card-target-chip:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(208, 188, 255, 0.18); }
+.summary-card-target-chip:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 16%, transparent);
+}
 
 .target-chip-label {
   font-size: var(--type-label-sm);
