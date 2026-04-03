@@ -282,23 +282,25 @@ body {
 
 .tab-nav {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 4px 0;
+  padding: 0 4px 4px;
   margin-bottom: 16px;
+  scroll-padding-inline: 4px;
   -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(to right, black 0%, black calc(100% - 24px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 24px), transparent 100%);
+  align-items: center;
 }
 
 .tab-nav::-webkit-scrollbar { display: none; }
 
 .tab-btn {
   position: relative;
-  padding: 7px 12px;
-  border: none;
-  border-radius: var(--r-sm);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-b);
@@ -306,24 +308,31 @@ body {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all var(--ease);
+  transition: background-color var(--ease), color var(--ease);
   min-height: var(--touch-min);
   display: inline-flex;
   align-items: center;
 }
 
-.tab-btn:hover { color: var(--text-primary); background: var(--bg-elevated); }
-.tab-btn.active { color: var(--text-primary); background: transparent; }
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: #f4ebff;
+  background: rgba(191, 161, 255, 0.10);
+}
+
 .tab-btn.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(48px, 80%);
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--card-color, var(--accent));
+  left: 14px;
+  right: 14px;
+  bottom: 5px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-color, var(--accent)) 55%, #ffffff 45%);
 }
 
 .tab-count {
@@ -336,13 +345,17 @@ body {
   margin-left: 5px;
   font-size: var(--type-label-sm);
   font-weight: 700;
-  border-radius: 9px;
+  border-radius: 999px;
   background: var(--bg-hover);
   color: var(--text-muted);
   vertical-align: middle;
 }
 
-.tab-btn.active .tab-count { background: var(--bg-hover); color: var(--text-secondary); }
+.tab-btn.active .tab-count {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+}
+
 .tab-icon { width: 14px; height: 14px; flex-shrink: 0; margin-right: 4px; color: var(--card-color, var(--accent)); }
 .tab-gap { width: 1px; height: 18px; background: var(--border); align-self: center; margin: 0 6px; flex-shrink: 0; }
 
