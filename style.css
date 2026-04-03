@@ -411,7 +411,7 @@ body {
 
 .summary-card--inactive .summary-card-value,
 .summary-card--inactive .summary-card-actual {
-  color: color-mix(in srgb, var(--card-color, var(--text-muted)) 62%, var(--text-muted) 38%);
+  color: var(--text-primary);
 }
 
 .summary-card--inactive .summary-card-bar-fill {

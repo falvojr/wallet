@@ -263,8 +263,8 @@ function buildMetaContent(key, label, inactive, isEmergency) {
       <span class="target-chip-label">${t('goalLabel')}</span>
       <span class="target-chip-unit">R$</span>
       <input class="target-chip-input target-chip-input--wide" type="text"
-        value="${goal > 0 ? Math.round(goal) : ''}" data-class-goal="emergencyReserve"
-        placeholder="0" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
+        value="${Math.round(goal)}" data-class-goal="emergencyReserve"
+        inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yGoalClass', esc(label))}">
     </label>`;
   }
