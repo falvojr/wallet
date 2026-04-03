@@ -418,9 +418,11 @@ body {
   opacity: 0.58;
 }
 
+.summary-card--inactive .summary-card-label,
 .summary-card--inactive .summary-card-desc,
-.summary-card--inactive .summary-card-inactive-hint {
-  color: color-mix(in srgb, var(--text-muted) 82%, var(--card-color, var(--text-muted)) 18%);
+.summary-card--inactive .summary-card-inactive-hint,
+.summary-card--inactive .summary-card-actual {
+  color: var(--text-muted);
 }
 
 
