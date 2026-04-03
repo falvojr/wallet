@@ -204,8 +204,8 @@ function renderSummaryCard(key, recommendedClassKeys, idx, orderedKeys) {
   const label = classLabel(key);
   const total = classTotalBRL(key);
   const isRecommended = recommendedClassKeys.includes(key);
-  const inactive = isClassInactive(key);
   const isEmergency = key === 'emergencyReserve';
+  const inactive = isClassInactive(key) || (isEmergency && portfolio.goal('emergencyReserve') <= 0);
   const desc = tn('classDescriptions', key);
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
 
@@ -256,9 +256,9 @@ function buildMetaContent(key, label, inactive, isEmergency) {
   if (isEmergency) {
     const prog = emergencyProgress();
     const goal = portfolio.goal('emergencyReserve');
-    const left = prog !== null
+    const left = goal > 0 && prog !== null
       ? `<span class="summary-card-actual">${prog.toFixed(1)}%</span>`
-      : '<span></span>';
+      : `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`;
     return left + `<div class="summary-card-target-chip">
       <span class="target-chip-label">${t('goalLabel')}</span>
       <span class="target-chip-unit">R$</span>

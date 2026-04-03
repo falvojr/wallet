@@ -327,7 +327,7 @@ body {
 }
 
 .tab-btn.active {
-  color: color-mix(in srgb, var(--card-color, var(--accent)) 52%, #ffffff 48%);
+  color: var(--card-color, var(--accent));
   background: color-mix(in srgb, var(--card-color, var(--accent)) 10%, transparent);
 }
 
@@ -407,6 +407,24 @@ body {
 
 .summary-card--inactive {
   border-left-style: dashed;
+}
+
+.summary-card--inactive .summary-card-value,
+.summary-card--inactive .summary-card-actual {
+  color: color-mix(in srgb, var(--card-color, var(--text-muted)) 62%, var(--text-muted) 38%);
+}
+
+.summary-card--inactive .summary-card-bar-fill {
+  opacity: 0.58;
+}
+
+.summary-card--inactive .summary-card-desc,
+.summary-card--inactive .summary-card-inactive-hint {
+  color: color-mix(in srgb, var(--text-muted) 82%, var(--card-color, var(--text-muted)) 18%);
+}
+
+.summary-card--inactive .summary-card-target-chip {
+  background: color-mix(in srgb, var(--bg-elevated) 88%, var(--card-color, transparent) 12%);
 }
 
 .summary-card-head {
