@@ -1,19 +1,19 @@
-import { portfolio, preferences, prices } from './state.js';
+import { DECLARED_CLASSES, portfolio, preferences, prices } from './state.js';
 
-export function formatBRL(val) {
-  return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export function formatBRL(value) {
+  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 /** Returns asset value in BRL. Declared classes use amount directly; others need price data. */
 export function assetValueBRL(key, asset) {
-  if (key === 'fixedIncome' || key === 'assets' || key === 'emergencyReserve') {
-    return asset.amount;
-  }
+  if (DECLARED_CLASSES.has(key)) return asset.amount;
 
   const priceData = prices.get(asset.id);
   if (!priceData) return key === 'storeOfValue' ? asset.amount : null;
 
-  const price = priceData.currency === 'USD' ? priceData.price * prices.usdBrl : priceData.price;
+  const price = priceData.currency === 'USD'
+    ? priceData.price * prices.usdBrl
+    : priceData.price;
   return price * asset.amount;
 }
 
@@ -68,9 +68,8 @@ export const classTargetPct = key => portfolio.target(key);
  * A class with target = 0 does not participate in percentage rebalancing.
  * Emergency reserve remains active because it uses a BRL goal instead.
  */
-export const isClassInactive = key => {
-  return key !== 'emergencyReserve' && portfolio.target(key) === 0;
-};
+export const isClassInactive = key =>
+  key !== 'emergencyReserve' && portfolio.target(key) === 0;
 
 export function classActualPct(key) {
   const value = classTotalBRL(key);
@@ -88,8 +87,8 @@ export function emergencyProgress() {
 
 export function itemTargetPct(key, item) {
   if (item.target !== undefined) return item.target;
-  const activeItems = portfolio.items(key).filter(asset => !isSkippedAsset(asset)).length;
-  return activeItems > 0 ? 100 / activeItems : 0;
+  const activeCount = portfolio.items(key).filter(a => !isSkippedAsset(a)).length;
+  return activeCount > 0 ? 100 / activeCount : 0;
 }
 
 /** Checks whether active-class targets sum to 100%. */
@@ -129,15 +128,13 @@ function recommendationLimit(count) {
 
 /** Returns class keys prioritized for investment. ['emergencyReserve'] if goal is unmet. */
 export function recommendedClasses() {
-  if (portfolio.isEmergencyUnmet()) {
-    return ['emergencyReserve'];
-  }
+  if (portfolio.isEmergencyUnmet()) return ['emergencyReserve'];
 
   const ranked = portfolio.activeKeys()
     .filter(key => portfolio.items(key).length > 0)
     .map(key => ({ key, gap: classShortfall(key) }))
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
-    .toSorted((left, right) => right.gap - left.gap);
+    .toSorted((a, b) => b.gap - a.gap);
 
   const limit = ranked.length >= 8 ? 3 : ranked.length >= 3 ? 2 : 1;
   return ranked.slice(0, limit).map(item => item.key);
@@ -149,32 +146,28 @@ export function recommendedItems(key) {
     return [];
   }
 
-  const prioritizedClasses = recommendedClasses();
-  if (!prioritizedClasses.includes(key)) {
-    return [];
-  }
+  if (!recommendedClasses().includes(key)) return [];
 
-  const items = portfolio.items(key).filter(asset => !isSkippedAsset(asset));
+  const items = portfolio.items(key).filter(a => !isSkippedAsset(a));
   const total = classTotalBRL(key);
   const gap = classShortfall(key);
 
-  if (!total || total <= 0 || !gap || gap < classThreshold(key)) {
-    return [];
-  }
+  if (!total || total <= 0 || !gap || gap < classThreshold(key)) return [];
 
-  const ranked = items.map(item => {
-    const value = assetValueBRL(key, item);
-    if (value === null) return null;
-    const itemGap = Math.max(0, itemTargetPct(key, item) - (value / total) * 100);
-    return itemGap > 0 ? { id: item.id, score: itemGap * gap, gap: itemGap } : null;
-  })
+  const ranked = items
+    .map(item => {
+      const value = assetValueBRL(key, item);
+      if (value === null) return null;
+      const itemGap = Math.max(0, itemTargetPct(key, item) - (value / total) * 100);
+      return itemGap > 0 ? { id: item.id, score: itemGap * gap, gap: itemGap } : null;
+    })
     .filter(Boolean)
-    .toSorted((left, right) => right.score - left.score || right.gap - left.gap);
+    .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
 
   return ranked.slice(0, recommendationLimit(items.length)).map(item => item.id);
 }
 
-/** All visible assets for the bubble chart. Color is resolved at render time via getClassColor(). */
+/** All visible assets for the bubble chart. */
 export function allAssetsWeighted() {
   const output = [];
   for (const key of portfolio.allKeys()) {

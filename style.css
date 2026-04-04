@@ -1,7 +1,6 @@
 /* Minha Holding — Design System */
 
 :root {
-  /* Material 3-inspired roles tuned for contrast in dark mode */
   --bg-root: #11131a;
   --bg-surface: #171a22;
   --bg-elevated: #1d212b;
@@ -70,7 +69,7 @@ body {
 /* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
-/* Theme-aware class accents: lighter in dark mode, deeper in light mode */
+/* Theme-aware class accents */
 [data-goto="brStocks"],    [data-tab="brStocks"]    { --card-color: #4fd8c8; }
 [data-goto="brFiis"],      [data-tab="brFiis"]      { --card-color: #9ccc65; }
 [data-goto="usStocks"],    [data-tab="usStocks"]    { --card-color: #a5b4fc; }
@@ -94,7 +93,6 @@ body {
   z-index: 100;
   background: rgba(17, 19, 26, 0.9);
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 10px 0;
   margin-bottom: 16px;
@@ -116,9 +114,9 @@ body {
   font-weight: 700;
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
   white-space: nowrap;
 }
 
@@ -288,7 +286,6 @@ body {
   padding: 10px 10px 12px;
   margin-bottom: 16px;
   scroll-padding-inline: 8px;
-  -webkit-overflow-scrolling: touch;
   align-items: center;
 }
 
@@ -367,7 +364,7 @@ body {
 .tab-icon { width: 14px; height: 14px; flex-shrink: 0; margin-right: 4px; color: var(--card-color, var(--accent)); }
 .tab-gap { width: 1px; height: 18px; background: var(--border); align-self: center; margin: 0 6px; flex-shrink: 0; }
 
-/* Tab panels: no animation by default. --enter class added only on tab switch. */
+/* Tab panels */
 
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
@@ -405,26 +402,17 @@ body {
   border-left-color: var(--card-color, var(--border-focus));
 }
 
-.summary-card--inactive {
-  border-left-style: dashed;
-}
+.summary-card--inactive { border-left-style: dashed; }
 
 .summary-card--inactive .summary-card-value,
-.summary-card--inactive .summary-card-actual {
-  color: var(--text-primary);
-}
+.summary-card--inactive .summary-card-actual { color: var(--text-primary); }
 
-.summary-card--inactive .summary-card-bar-fill {
-  opacity: 0.58;
-}
+.summary-card--inactive .summary-card-bar-fill { opacity: 0.58; }
 
 .summary-card--inactive .summary-card-label,
 .summary-card--inactive .summary-card-desc,
 .summary-card--inactive .summary-card-inactive-hint,
-.summary-card--inactive .summary-card-actual {
-  color: var(--text-muted);
-}
-
+.summary-card--inactive .summary-card-actual { color: var(--text-muted); }
 
 .summary-card-head {
   display: flex;
@@ -448,7 +436,7 @@ body {
 
 .summary-icon { width: 13px; height: 13px; color: var(--card-color); }
 
-/* Order arrows (M3 compact reorder controls) */
+/* Order arrows */
 
 .order-arrows {
   display: inline-flex;
@@ -484,9 +472,7 @@ body {
 }
 .order-btn--disabled { opacity: 0.2; cursor: default; }
 .order-btn--disabled:hover { color: var(--text-muted); background: transparent; }
-.order-btn--disabled:focus-visible {
-  box-shadow: none;
-}
+.order-btn--disabled:focus-visible { box-shadow: none; }
 
 .summary-card-value {
   font-family: var(--font-h);
@@ -602,7 +588,7 @@ body {
 
 /* Ticker links */
 
-.ticker-link { color: var(--link); text-decoration: none; border-bottom: 1px dotted color-mix(in srgb, var(--link) 50%, transparent); transition: color var(--ease), border-color var(--ease), background var(--ease); }
+.ticker-link { color: var(--link); text-decoration: none; border-bottom: 1px dotted color-mix(in srgb, var(--link) 50%, transparent); transition: color var(--ease), border-color var(--ease); }
 .ticker-link:hover,
 .ticker-link:focus-visible { color: var(--link-hover); border-bottom-color: var(--link-hover); }
 
@@ -640,13 +626,8 @@ body {
   gap: 16px;
 }
 
-.chart-sidebar .chart-header {
-  margin: 0;
-}
-
-.chart-sidebar .chart-header-value {
-  font-size: 1.25rem;
-}
+.chart-sidebar .chart-header { margin: 0; }
+.chart-sidebar .chart-header-value { font-size: 1.25rem; }
 
 .chart-legend-grid {
   display: grid;
@@ -715,7 +696,6 @@ body {
   width: min(100%, 760px);
   aspect-ratio: 1;
   min-width: 0;
-  margin: 0;
 }
 
 .bubble-container svg {
@@ -733,7 +713,7 @@ body {
 
 /* Asset table */
 
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--r-md); border: 1px solid var(--border); }
+.table-wrap { overflow-x: auto; border-radius: var(--r-md); border: 1px solid var(--border); }
 .asset-table { width: 100%; border-collapse: collapse; min-width: 380px; background: var(--bg-surface); }
 .asset-table thead th {
   position: sticky;
@@ -1004,6 +984,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .app-container { padding: 0 24px 100px; max-width: 1280px; }
   .header-inner { padding: 0 24px; max-width: 1280px; }
   .chart-header-value { font-size: 1.3rem; }
+  .chart-legend-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .summary-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .summary-card { padding: 18px; }
   .summary-card-value { font-size: 1.2rem; }
@@ -1023,34 +1004,16 @@ tr:hover .remove-btn { opacity: 0.6; }
   .chart-header-value { font-size: 1.4rem; }
   .summary-card-value { font-size: 1.25rem; }
   .inline-input--qty { width: 110px; }
-}
 
-@media (min-width: 768px) {
-  .chart-legend-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (min-width: 1100px) {
   .chart-layout {
     grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
     gap: 24px;
   }
 
-  .chart-sidebar {
-    gap: 20px;
-  }
-
-  .chart-legend-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .bubble-stage {
-    min-height: clamp(360px, calc(100vh - 340px), 560px);
-  }
-
-  .bubble-container {
-    width: min(100%, 840px);
-  }
+  .chart-sidebar { gap: 20px; }
+  .chart-legend-grid { grid-template-columns: 1fr; gap: 10px; }
+  .bubble-stage { min-height: clamp(360px, calc(100vh - 340px), 560px); }
+  .bubble-container { width: min(100%, 840px); }
 }
 
 /* Light theme */
@@ -1088,9 +1051,9 @@ tr:hover .remove-btn { opacity: 0.6; }
 [data-theme="light"] .app-header { background: rgba(247, 242, 250, 0.94); }
 [data-theme="light"] .header-brand h1 {
   background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 [data-theme="light"] [data-goto="brStocks"],

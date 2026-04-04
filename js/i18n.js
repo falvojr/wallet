@@ -7,12 +7,8 @@ const strings = {
   'pt-BR': {
     // App
     appTitle: 'Minha Holding',
-    btnSettings: 'Configurações de API',
-    btnTheme: 'Alternar tema',
-    btnImport: 'Importar JSON',
-    btnExport: 'Exportar JSON',
-    btnPrices: 'Cotar',
     pageTitle: 'Minha Holding',
+    btnPrices: 'Cotar',
 
     // Header and navigation
     navAssetClasses: 'Navegação por classe de ativos',

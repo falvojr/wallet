@@ -11,35 +11,33 @@ const STORAGE_KEYS = {
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
 export const CLASS_META = {
-  brStocks: { color: '#4fd8c8', icon: 'trending-up' },
-  brFiis: { color: '#9ccc65', icon: 'building-2' },
-  usStocks: { color: '#a5b4fc', icon: 'globe' },
-  usReits: { color: '#60a5fa', icon: 'landmark' },
-  fixedIncome: { color: '#facc15', icon: 'shield' },
-  emergencyReserve: { color: '#fb7185', icon: 'life-buoy' },
-  storeOfValue: { color: '#fb923c', icon: 'bitcoin' },
-  assets: { color: '#90a4ae', icon: 'home' },
+  brStocks: { icon: 'trending-up' },
+  brFiis:   { icon: 'building-2' },
+  usStocks: { icon: 'globe' },
+  usReits:  { icon: 'landmark' },
+  fixedIncome:      { icon: 'shield' },
+  emergencyReserve: { icon: 'life-buoy' },
+  storeOfValue:     { icon: 'bitcoin' },
+  assets:           { icon: 'home' },
 };
 
 export const CLASS_KEYS = Object.keys(CLASS_META);
 
-const CLASS_DEFAULTS = {
-  brStocks: { target: 0, goal: 0, items: [] },
-  brFiis: { target: 0, goal: 0, items: [] },
-  usStocks: { target: 0, goal: 0, items: [] },
-  usReits: { target: 0, goal: 0, items: [] },
-  fixedIncome: { target: 0, goal: 0, items: [] },
-  emergencyReserve: { target: 0, goal: 0, items: [] },
-  storeOfValue: { target: 0, goal: 0, items: [] },
-  assets: { target: 0, goal: 0, items: [] },
-};
+/** Classes where the user declares a monetary amount directly (no price lookup). */
+const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
+
+/** Classes excluded from percentage-based rebalancing. */
+const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
+
+export { DECLARED_CLASSES, NON_REBALANCED_CLASSES };
 
 function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+  return structuredClone(value);
 }
 
 function normalizeNumber(value, fallback = 0) {
-  return Number.isFinite(value) && value >= 0 ? value : fallback;
+  const num = Number(value);
+  return Number.isFinite(num) && num >= 0 ? num : fallback;
 }
 
 function normalizeItem(item) {
@@ -48,85 +46,74 @@ function normalizeItem(item) {
   const id = String(item.id ?? '').trim();
   if (!id) return null;
 
-  const normalizedItem = {
+  const normalized = {
     id,
-    amount: normalizeNumber(Number(item.amount)),
+    amount: normalizeNumber(item.amount),
   };
 
   if (item.target !== undefined && item.target !== null && item.target !== '') {
-    normalizedItem.target = normalizeNumber(Number(item.target));
+    normalized.target = normalizeNumber(item.target);
   }
 
   if (typeof item.note === 'string' && item.note.trim()) {
-    normalizedItem.note = item.note.trim();
+    normalized.note = item.note.trim();
   }
 
-  return normalizedItem;
+  return normalized;
 }
 
-function normalizeClassEntry(classKey, classEntry = {}) {
-  const defaults = CLASS_DEFAULTS[classKey];
-  const normalizedItems = Array.isArray(classEntry?.items)
-    ? classEntry.items.map(normalizeItem).filter(Boolean)
+function normalizeClassEntry(classKey, entry = {}) {
+  const items = Array.isArray(entry?.items)
+    ? entry.items.map(normalizeItem).filter(Boolean)
     : [];
 
-  const normalizedEntry = {
-    items: normalizedItems,
-    goal: normalizeNumber(Number(classEntry?.goal), defaults.goal),
-    target: normalizeNumber(Number(classEntry?.target), defaults.target),
+  return {
+    items,
+    goal: normalizeNumber(entry?.goal),
+    target: NON_REBALANCED_CLASSES.has(classKey) ? 0 : normalizeNumber(entry?.target),
   };
-
-  if (classKey === 'emergencyReserve') {
-    normalizedEntry.target = 0;
-  }
-
-  if (classKey === 'assets') {
-    normalizedEntry.target = 0;
-  }
-
-  return normalizedEntry;
 }
 
-function createEmptyPortfolioData() {
+function createEmptyData() {
   const data = { syncedAt: null };
-
-  CLASS_KEYS.forEach(classKey => {
-    data[classKey] = clone(CLASS_DEFAULTS[classKey]);
-  });
-
+  for (const key of CLASS_KEYS) {
+    data[key] = { target: 0, goal: 0, items: [] };
+  }
   return data;
 }
 
 function normalizePortfolioData(data = {}) {
-  const normalizedData = createEmptyPortfolioData();
+  const normalized = createEmptyData();
 
   if (typeof data?.syncedAt === 'string' && data.syncedAt.trim()) {
-    normalizedData.syncedAt = data.syncedAt.trim();
+    normalized.syncedAt = data.syncedAt.trim();
   }
 
-  CLASS_KEYS.forEach(classKey => {
-    normalizedData[classKey] = normalizeClassEntry(classKey, data?.[classKey]);
-  });
+  for (const key of CLASS_KEYS) {
+    normalized[key] = normalizeClassEntry(key, data?.[key]);
+  }
 
-  return normalizedData;
+  return normalized;
 }
 
-class LocalStorageRepository {
-  constructor(storageKey) {
-    this.storageKey = storageKey;
+class LocalStorage {
+  #key;
+
+  constructor(key) {
+    this.#key = key;
   }
 
-  read(fallbackValue = null) {
+  read(fallback = null) {
     try {
-      const raw = localStorage.getItem(this.storageKey);
-      return raw ? JSON.parse(raw) : fallbackValue;
+      const raw = localStorage.getItem(this.#key);
+      return raw ? JSON.parse(raw) : fallback;
     } catch {
-      return fallbackValue;
+      return fallback;
     }
   }
 
   write(value) {
-    localStorage.setItem(this.storageKey, JSON.stringify(value));
+    localStorage.setItem(this.#key, JSON.stringify(value));
   }
 }
 
@@ -135,7 +122,7 @@ export function classLabel(key) {
 }
 
 export class Portfolio {
-  #repository = new LocalStorageRepository(STORAGE_KEYS.portfolio);
+  #storage = new LocalStorage(STORAGE_KEYS.portfolio);
   #data = null;
 
   get loaded() {
@@ -146,42 +133,14 @@ export class Portfolio {
     return this.#data?.[key]?.items ?? [];
   }
 
-  #ensureLoaded() {
-    this.#data ??= createEmptyPortfolioData();
-  }
-
-  #ensureClass(key) {
-    this.#ensureLoaded();
-    this.#data[key] ??= clone(CLASS_DEFAULTS[key] ?? { target: 0, goal: 0, items: [] });
-    this.#data[key].items ??= [];
-  }
-
-  #isPercentageActive(key) {
-    if (key === 'emergencyReserve') return false;
-
-    const storedTarget = this.#data?.[key]?.target;
-    return storedTarget !== undefined ? storedTarget > 0 : key !== 'assets';
-  }
-
   target(key) {
-    if (key === 'emergencyReserve' || key === 'assets') {
-      return 0;
-    }
-
+    if (NON_REBALANCED_CLASSES.has(key)) return 0;
     return normalizeNumber(this.#data?.[key]?.target);
   }
 
   setTarget(key, value) {
     this.#ensureClass(key);
     this.#data[key].target = normalizeNumber(value);
-  }
-
-  activeKeys() {
-    return CLASS_KEYS.filter(key => this.#isPercentageActive(key));
-  }
-
-  allKeys() {
-    return CLASS_KEYS;
   }
 
   goal(key) {
@@ -193,43 +152,49 @@ export class Portfolio {
     this.#data[key].goal = normalizeNumber(value);
   }
 
+  activeKeys() {
+    return CLASS_KEYS.filter(key =>
+      !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0
+    );
+  }
+
+  allKeys() {
+    return CLASS_KEYS;
+  }
+
   isEmergencyUnmet() {
     const goal = this.goal('emergencyReserve');
     if (goal <= 0) return false;
-
-    const currentTotal = this.items('emergencyReserve').reduce((sum, asset) => sum + asset.amount, 0);
-    return currentTotal < goal;
+    const total = this.items('emergencyReserve').reduce((sum, a) => sum + a.amount, 0);
+    return total < goal;
   }
 
   addItem(key, item) {
     this.#ensureClass(key);
-
-    const normalizedItem = normalizeItem(item);
-    if (!normalizedItem) return;
-
-    this.#data[key].items.push(normalizedItem);
+    const normalized = normalizeItem(item);
+    if (normalized) this.#data[key].items.push(normalized);
   }
 
   setItemNote(key, id, note) {
-    const item = this.items(key).find(asset => asset.id === id);
+    const item = this.items(key).find(a => a.id === id);
     if (!item) return;
 
-    const trimmedNote = note.trim();
-    if (trimmedNote) item.note = trimmedNote;
+    const trimmed = note.trim();
+    if (trimmed) item.note = trimmed;
     else delete item.note;
 
     this.save();
   }
 
   load() {
-    const rawData = this.#repository.read(null);
-    this.#data = rawData ? normalizePortfolioData(rawData) : null;
+    const raw = this.#storage.read(null);
+    this.#data = raw ? normalizePortfolioData(raw) : null;
   }
 
   save() {
-    this.#ensureLoaded();
+    this.#data ??= createEmptyData();
     this.#data.syncedAt = new Date().toISOString().slice(0, 10);
-    this.#repository.write(this.#data);
+    this.#storage.write(this.#data);
   }
 
   import(data) {
@@ -238,29 +203,28 @@ export class Portfolio {
   }
 
   export() {
-    this.#ensureLoaded();
+    this.#data ??= createEmptyData();
     return normalizePortfolioData(this.#data);
+  }
+
+  #ensureClass(key) {
+    this.#data ??= createEmptyData();
+    this.#data[key] ??= { target: 0, goal: 0, items: [] };
+    this.#data[key].items ??= [];
   }
 }
 
 export class Preferences {
-  #repository = new LocalStorageRepository(STORAGE_KEYS.preferences);
+  #storage = new LocalStorage(STORAGE_KEYS.preferences);
   #data = {};
 
   order(key) {
     return this.#data.order?.[key] ?? CLASS_KEYS.indexOf(key) + 1;
   }
 
-  setOrder(key, value) {
-    this.#data.order ??= {};
-    this.#data.order[key] = value;
-    this.save();
-  }
-
   swapOrder(firstKey, secondKey) {
     const firstOrder = this.order(firstKey);
     const secondOrder = this.order(secondKey);
-
     this.#data.order ??= {};
     this.#data.order[firstKey] = secondOrder;
     this.#data.order[secondKey] = firstOrder;
@@ -268,9 +232,9 @@ export class Preferences {
   }
 
   displayOrder() {
-    return [...CLASS_KEYS].sort((left, right) => {
-      return this.order(left) - this.order(right) || CLASS_KEYS.indexOf(left) - CLASS_KEYS.indexOf(right);
-    });
+    return [...CLASS_KEYS].sort((a, b) =>
+      this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b)
+    );
   }
 
   isChartHidden(key) {
@@ -279,10 +243,8 @@ export class Preferences {
 
   toggleChartHidden(key) {
     this.#data.chartHidden ??= {};
-
     if (this.#data.chartHidden[key]) delete this.#data.chartHidden[key];
     else this.#data.chartHidden[key] = true;
-
     this.save();
   }
 
@@ -301,16 +263,16 @@ export class Preferences {
   }
 
   load() {
-    this.#data = this.#repository.read({}) ?? {};
+    this.#data = this.#storage.read({}) ?? {};
   }
 
   save() {
-    this.#repository.write(this.#data);
+    this.#storage.write(this.#data);
   }
 }
 
 export class PriceCache {
-  #repository = new LocalStorageRepository(STORAGE_KEYS.prices);
+  #storage = new LocalStorage(STORAGE_KEYS.prices);
   #prices = {};
   #rates = {};
   #timestamp = null;
@@ -350,20 +312,15 @@ export class PriceCache {
 
   get dateStr() {
     if (!this.#timestamp) return null;
-
     return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
     });
   }
 
   load() {
-    const data = this.#repository.read(null);
+    const data = this.#storage.read(null);
     if (!data) return;
-
     this.#prices = data.prices ?? {};
     this.#rates = data.rates ?? {};
     this.#timestamp = data.ts ?? null;
@@ -371,7 +328,7 @@ export class PriceCache {
 
   save() {
     this.#timestamp = Date.now();
-    this.#repository.write({
+    this.#storage.write({
       ts: this.#timestamp,
       prices: this.#prices,
       rates: this.#rates,
@@ -380,7 +337,7 @@ export class PriceCache {
 }
 
 export class Settings {
-  #repository = new LocalStorageRepository(STORAGE_KEYS.settings);
+  #storage = new LocalStorage(STORAGE_KEYS.settings);
   brapiToken = '';
   finnhubToken = '';
 
@@ -389,11 +346,11 @@ export class Settings {
   }
 
   load() {
-    Object.assign(this, this.#repository.read({}) ?? {});
+    Object.assign(this, this.#storage.read({}) ?? {});
   }
 
   save() {
-    this.#repository.write({
+    this.#storage.write({
       brapiToken: this.brapiToken,
       finnhubToken: this.finnhubToken,
     });
@@ -402,11 +359,8 @@ export class Settings {
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-
-  const themeColor = theme === 'light' ? '#f7f2fa' : '#11131a';
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', themeColor);
+  const color = theme === 'light' ? '#f7f2fa' : '#11131a';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
 }
 
 export function loadTheme() {
@@ -414,9 +368,9 @@ export function loadTheme() {
 }
 
 export function toggleTheme() {
-  const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  applyTheme(nextTheme);
-  localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem(STORAGE_KEYS.theme, next);
 }
 
 export const portfolio = new Portfolio();
@@ -425,15 +379,15 @@ export const prices = new PriceCache();
 export const settings = new Settings();
 
 export let activeTab = 'overview';
-let didTabChange = false;
+let tabChanged = false;
 
 export function setActiveTab(tab) {
-  didTabChange = tab !== activeTab;
+  tabChanged = tab !== activeTab;
   activeTab = tab;
 }
 
 export function consumeTabChange() {
-  const changed = didTabChange;
-  didTabChange = false;
+  const changed = tabChanged;
+  tabChanged = false;
   return changed;
 }

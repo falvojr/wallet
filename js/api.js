@@ -10,25 +10,26 @@ export async function fetchAllPrices(onProgress) {
   if (fetching || !portfolio.loaded || !settings.hasTokens) return false;
   fetching = true;
 
-  const br = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
-  const us = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
-  const sov = portfolio.items('storeOfValue').map(a => a.id);
+  const brTickers = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
+  const usTickers = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
+  const sovTickers = portfolio.items('storeOfValue').map(a => a.id);
 
   let step = 0;
-  const total = br.length + us.length + sov.length + 1;
+  const total = brTickers.length + usTickers.length + sovTickers.length + 1;
   const progress = label => onProgress?.(`${label} (${++step}/${total})`, step / total);
 
   try {
     progress(t('loadingExchange'));
     await fetchExchangeRates();
-    for (const ticker of br) { progress(ticker); await fetchBrQuote(ticker); }
-    for (const ticker of us) { progress(ticker); await fetchUsQuote(ticker); }
-    for (const ticker of sov) { progress(ticker); await fetchSovQuote(ticker); }
+
+    for (const ticker of brTickers)  { progress(ticker); await fetchBrQuote(ticker); }
+    for (const ticker of usTickers)  { progress(ticker); await fetchUsQuote(ticker); }
+    for (const ticker of sovTickers) { progress(ticker); await fetchSovQuote(ticker); }
 
     if (prices.hasData) prices.save();
     return prices.hasData;
-  } catch (err) {
-    console.error('fetchAllPrices:', err);
+  } catch (error) {
+    console.error('fetchAllPrices:', error);
     return false;
   } finally {
     fetching = false;
@@ -44,17 +45,17 @@ async function fetchBrQuote(ticker) {
   if (!settings.brapiToken) return;
   try {
     const data = await fetchJson(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
-    const r = data?.results?.[0];
-    if (r) {
-      prices.set(r.symbol, {
-        price: r.regularMarketPrice,
-        currency: r.currency || 'BRL',
-        change: r.regularMarketChangePercent,
+    const result = data?.results?.[0];
+    if (result) {
+      prices.set(result.symbol, {
+        price: result.regularMarketPrice,
+        currency: result.currency || 'BRL',
+        change: result.regularMarketChangePercent,
       });
-      prices.markBrQuoted(r.symbol);
+      prices.markBrQuoted(result.symbol);
     }
-  } catch (e) {
-    console.warn(`brapi (${ticker}):`, e);
+  } catch (error) {
+    console.warn(`brapi (${ticker}):`, error);
   }
 }
 
@@ -65,8 +66,8 @@ async function fetchUsQuote(ticker) {
     if (data?.c > 0) {
       prices.set(ticker, { price: data.c, currency: 'USD', change: data.dp });
     }
-  } catch (e) {
-    console.warn(`finnhub (${ticker}):`, e);
+  } catch (error) {
+    console.warn(`finnhub (${ticker}):`, error);
   }
   await delay(FINNHUB_DELAY_MS);
 }
@@ -89,16 +90,18 @@ async function fetchSovQuote(ticker) {
 }
 
 async function fetchJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${url}`);
-  return res.json();
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`);
+  return response.json();
 }
 
 async function fetchJsonSoft(url) {
   try {
-    const res = await fetch(url);
-    return res.ok ? res.json() : null;
-  } catch { return null; }
+    const response = await fetch(url);
+    return response.ok ? response.json() : null;
+  } catch {
+    return null;
+  }
 }
 
-const delay = ms => new Promise(r => setTimeout(r, ms));
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
