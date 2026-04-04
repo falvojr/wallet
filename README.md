@@ -95,7 +95,7 @@ Exemplo com dados fictícios:
   "emergencyReserve": {
     "goal": 30000,
     "items": [
-      { "id": "CDB", "amount": 30000, "note": "Reserva de Emergência (6-12 meses do custo de vida)." }
+      { "id": "CDB", "amount": 30000, "note": "Reserva de Emergência (6 meses do custo de vida)." }
     ]
   }
 }
