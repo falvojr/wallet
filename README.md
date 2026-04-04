@@ -36,14 +36,14 @@ Modelo mínimo:
 
 ```json
 {
-  "brStocks":         { "target": 0, "goal": 0, "items": [] },
-  "brFiis":           { "target": 0, "goal": 0, "items": [] },
-  "usStocks":         { "target": 0, "goal": 0, "items": [] },
-  "usReits":          { "target": 0, "goal": 0, "items": [] },
-  "fixedIncome":      { "target": 0, "goal": 0, "items": [] },
-  "storeOfValue":     { "target": 0, "goal": 0, "items": [] },
-  "emergencyReserve": { "target": 0, "goal": 0, "items": [] },
-  "assets":           { "target": 0, "goal": 0, "items": [] }
+  "brStocks":         { "target": 0, "items": [] },
+  "brFiis":           { "target": 0, "items": [] },
+  "usStocks":         { "target": 0, "items": [] },
+  "usReits":          { "target": 0, "items": [] },
+  "fixedIncome":      { "target": 0, "items": [] },
+  "storeOfValue":     { "target": 0, "items": [] },
+  "assets":           { "target": 0, "items": [] },
+  "emergencyReserve": { "goal": 0, "items": [] }
 }
 ````
 
@@ -54,48 +54,48 @@ Exemplo com dados fictícios:
   "brStocks": {
     "target": 10,
     "items": [
-      { "id": "WEGE3", "amount": 1, "note": "Exemplo de ação brasileira para crescimento e dividendos no longo prazo." }
+      { "id": "WEGE3", "amount": 1, "note": "Ação brasileira para crescimento e dividendos no longo prazo." }
     ]
   },
   "brFiis": {
     "target": 10,
     "items": [
-      { "id": "KNRI11", "amount": 1, "note": "Exemplo de FII da B3 com renda recorrente e exposição imobiliária." }
+      { "id": "KNRI11", "amount": 1, "note": "FII com renda mensal e exposição imobiliária." }
     ]
   },
   "usStocks": {
     "target": 10,
     "items": [
-      { "id": "AAPL", "amount": 1, "note": "Exemplo de ação americana com exposição ao dólar e a empresas globais." }
+      { "id": "AAPL", "amount": 1, "note": "Ação americana para exposição ao dólar." }
     ]
   },
   "usReits": {
     "target": 10,
     "items": [
-      { "id": "O", "amount": 1, "note": "Exemplo de REIT para diversificação internacional com foco em imóveis." }
+      { "id": "O", "amount": 1, "note": "REIT para diversificação internacional imobiliária." }
     ]
   },
   "fixedIncome": {
     "target": 50,
     "items": [
-      { "id": "CDB", "amount": 15000, "note": "Exemplo de Renda Fixa como base de segurança da carteira." }
+      { "id": "CDB", "amount": 15000, "note": "Renda Fixa como base de segurança da carteira." }
     ]
   },
   "storeOfValue": {
     "target": 10,
     "items": [
-      { "id": "BTC", "amount": 0.0021, "note": "Exemplo de Reserva de Valor com alocação pequena e fracionada." }
+      { "id": "BTC", "amount": 0.0021, "note": "Reserva de Valor para cenários apocalíticos." }
+    ]
+  },
+  "assets": {
+    "items": [
+      { "id": "Apartamento", "amount": 115000, "note": "Bem patrimonial, geralmente sem meta específica." }
     ]
   },
   "emergencyReserve": {
     "goal": 30000,
     "items": [
       { "id": "Tesouro Selic", "amount": 30000, "note": "Exemplo de Reserva de Emergência para 6 a 12 meses do custo de vida." }
-    ]
-  },
-  "assets": {
-    "items": [
-      { "id": "Apartamento", "amount": 115000, "note": "Exemplo de bem patrimonial, geralmente sem meta específica." }
     ]
   }
 }
