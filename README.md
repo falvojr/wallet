@@ -54,7 +54,7 @@ Exemplo com dados fictícios:
   "brStocks": {
     "target": 10,
     "items": [
-      { "id": "WEGE3", "amount": 1, "note": "Ação brasileira para crescimento e dividendos no longo prazo." }
+      { "id": "WEGE3", "amount": 1, "note": "Ação brasileira com foco no longo prazo." }
     ]
   },
   "brFiis": {
@@ -78,7 +78,7 @@ Exemplo com dados fictícios:
   "fixedIncome": {
     "target": 50,
     "items": [
-      { "id": "CDB", "amount": 15000, "note": "Renda Fixa como base de segurança da carteira." }
+      { "id": "Tesouro Selic", "amount": 15000, "note": "Renda Fixa como base de segurança da carteira." }
     ]
   },
   "storeOfValue": {
@@ -95,7 +95,7 @@ Exemplo com dados fictícios:
   "emergencyReserve": {
     "goal": 30000,
     "items": [
-      { "id": "Tesouro Selic", "amount": 30000, "note": "Exemplo de Reserva de Emergência para 6 a 12 meses do custo de vida." }
+      { "id": "CDB", "amount": 30000, "note": "Reserva de Emergência (6-12 meses do custo de vida)." }
     ]
   }
 }
