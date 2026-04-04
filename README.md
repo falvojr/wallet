@@ -78,7 +78,7 @@ Exemplo com dados fictícios:
   "fixedIncome": {
     "target": 50,
     "items": [
-      { "id": "Tesouro Selic", "amount": 15000, "note": "Renda Fixa como base de segurança da carteira." }
+      { "id": "Tesouro", "amount": 1000, "note": "Renda Fixa como base de segurança da carteira." }
     ]
   },
   "storeOfValue": {
@@ -89,7 +89,7 @@ Exemplo com dados fictícios:
   },
   "assets": {
     "items": [
-      { "id": "Apartamento", "amount": 115000, "note": "Bem patrimonial, geralmente sem meta específica." }
+      { "id": "Casa", "amount": 1000, "note": "Bem patrimonial, geralmente sem meta específica." }
     ]
   },
   "emergencyReserve": {
