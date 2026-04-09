@@ -148,7 +148,7 @@ function renderTabs() {
   const classTabs = order.map(key => ({
     key,
     label: classLabel(key),
-    count: portfolio.items(key).length,
+    count: portfolio.items(key).filter(item => !isSkippedAsset(item)).length,
     icon: CLASS_META[key].icon,
   }));
 
@@ -471,11 +471,18 @@ function sortIndicator(col) {
 
 function sortedItems(key) {
   const items = portfolio.items(key);
-  const col = preferences.sortCol;
-  if (!col || items.length < 2) return items.map((item, idx) => ({ item, idx }));
+  const indexed = items.map((item, idx) => ({ item, idx }));
 
-  const dir = preferences.sortDir === 'asc' ? 1 : -1;
-  return items.map((item, idx) => ({ item, idx })).toSorted((a, b) => {
+  const compare = (a, b) => {
+    // Skipped assets always at the bottom
+    const skippedA = isSkippedAsset(a.item);
+    const skippedB = isSkippedAsset(b.item);
+    if (skippedA !== skippedB) return skippedA ? 1 : -1;
+
+    const col = preferences.sortCol;
+    if (!col) return 0;
+
+    const dir = preferences.sortDir === 'asc' ? 1 : -1;
     const [ia, ib] = [a.item, b.item];
     switch (col) {
       case 'name':   return dir * ia.id.localeCompare(ib.id);
@@ -486,7 +493,9 @@ function sortedItems(key) {
       case 'target': return dir * (itemTargetPct(key, ia) - itemTargetPct(key, ib));
       default: return 0;
     }
-  });
+  };
+
+  return indexed.toSorted(compare);
 }
 
 function renderClassPanel(key) {
@@ -517,9 +526,11 @@ function renderClassPanel(key) {
     </tr></thead>
     <tbody>
       ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedIds)).join('')}
-      <tr class="add-row" data-add-class="${key}"><td colspan="7">${t('addAsset')}</td></tr>
     </tbody>
-  </table></div>`;
+  </table></div>
+  <button class="add-asset-btn" data-add-class="${key}">
+    <i data-lucide="plus"></i> ${t('addAsset')}
+  </button>`;
   return html;
 }
 

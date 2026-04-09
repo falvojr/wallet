@@ -352,7 +352,7 @@ elements.panels.addEventListener('click', event => {
     return;
   }
 
-  const addButton = event.target.closest('.add-row, .add-to-empty');
+  const addButton = event.target.closest('.add-asset-btn, .add-to-empty');
   if (addButton) {
     openAddModal(addButton.dataset.addClass);
     return;

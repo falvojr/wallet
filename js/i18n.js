@@ -74,7 +74,7 @@ const strings = {
     colTotal: 'Total',
     colTarget: 'Meta %',
     colActionsA11y: 'Opções',
-    addAsset: '+ Adicionar ativo',
+    addAsset: 'Adicionar ativo',
     emptyClass: 'Nenhum ativo nesta classe.',
     declaredPrice: '-',
     targetPlaceholder: 'auto',
