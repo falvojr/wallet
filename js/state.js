@@ -31,10 +31,6 @@ const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
 export { DECLARED_CLASSES, NON_REBALANCED_CLASSES };
 
-function clone(value) {
-  return structuredClone(value);
-}
-
 function normalizeNumber(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) && num >= 0 ? num : fallback;
@@ -276,7 +272,6 @@ export class PriceCache {
   #prices = {};
   #rates = {};
   #timestamp = null;
-  #brQuoted = new Set();
 
   get(id) {
     return this.#prices[id] ?? null;
@@ -292,14 +287,6 @@ export class PriceCache {
 
   set usdBrl(value) {
     this.#rates.USDBRL = value;
-  }
-
-  markBrQuoted(ticker) {
-    this.#brQuoted.add(ticker);
-  }
-
-  isBrQuoted(ticker) {
-    return this.#brQuoted.has(ticker);
   }
 
   get hasData() {

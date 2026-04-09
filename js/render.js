@@ -52,12 +52,14 @@ export function toggleSort(col) {
 }
 
 function tickerUrl(key, id) {
-  const price = prices.get(id);
-  if ((key === 'brStocks' || key === 'brFiis') && (prices.isBrQuoted(id) || price))
-    return `https://www.google.com/finance/quote/${encodeURIComponent(id)}:BVMF`;
-  if ((key === 'usStocks' || key === 'usReits') && price)
-    return `https://finance.yahoo.com/quote/${encodeURIComponent(id)}`;
-  return null;
+  const ticker = encodeURIComponent(id.toLowerCase());
+  switch (key) {
+    case 'brStocks': return `https://fundamentei.com/br/${ticker}`;
+    case 'brFiis':   return `https://fundamentei.com/fiis/${ticker}`;
+    case 'usStocks':
+    case 'usReits':  return `https://fundamentei.com/us/${ticker}`;
+    default: return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

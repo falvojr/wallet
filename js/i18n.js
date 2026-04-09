@@ -96,6 +96,7 @@ const strings = {
     noteHintPrefix: 'Comentário sobre',
     notePlaceholder: 'Ex: Vence em 2027, rendendo 120% do CDI',
     noteTextAria: 'Comentário sobre o ativo',
+    noteShortcutHint: 'Ctrl + Enter para salvar',
     btnSave: 'Salvar',
 
     // Settings

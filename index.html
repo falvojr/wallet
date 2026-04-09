@@ -105,15 +105,16 @@
   </div>
 
   <div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle" aria-hidden="true">
-    <div class="modal">
+    <div class="modal modal--wide">
       <h3 id="noteModalTitle" data-i18n="noteModalTitle">Comentário</h3>
       <p class="modal-hint"><span data-i18n="noteHintPrefix">Comentário sobre</span> <strong
           id="noteAssetName"></strong></p>
       <div class="modal-field">
-        <textarea id="noteText" rows="3" data-i18n-placeholder="notePlaceholder" data-i18n-aria-label="noteTextAria"
+        <textarea id="noteText" rows="8" data-i18n-placeholder="notePlaceholder" data-i18n-aria-label="noteTextAria"
           placeholder="Ex.: Vence em 2027, rendendo 120% do CDI" aria-label="Comentário sobre o ativo"></textarea>
       </div>
       <div class="modal-actions">
+        <span class="modal-shortcut-hint" data-i18n="noteShortcutHint">Ctrl + Enter para salvar</span>
         <button type="button" class="btn btn--text" id="noteCancel" data-i18n="btnCancel">Cancelar</button>
         <button type="button" class="btn btn--filled" id="noteSave" data-i18n="btnSave">Salvar</button>
       </div>

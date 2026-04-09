@@ -52,7 +52,6 @@ async function fetchBrQuote(ticker) {
         currency: result.currency || 'BRL',
         change: result.regularMarketChangePercent,
       });
-      prices.markBrQuoted(result.symbol);
     }
   } catch (error) {
     console.warn(`brapi (${ticker}):`, error);
@@ -72,7 +71,14 @@ async function fetchUsQuote(ticker) {
   await delay(FINNHUB_DELAY_MS);
 }
 
+const USD_PEGGED = new Set(['USDC', 'USDT']);
+
 async function fetchSovQuote(ticker) {
+  if (USD_PEGGED.has(ticker)) {
+    prices.set(ticker, { price: 1, currency: 'USD', change: 0 });
+    return;
+  }
+
   if (!TICKER_RE.test(ticker)) return;
 
   const data = await fetchJsonSoft(`https://economia.awesomeapi.com.br/json/last/${ticker}-BRL`);
