@@ -724,7 +724,7 @@ body {
 .asset-table thead th {
   position: sticky;
   top: 0;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-elevated);
   color: var(--text-muted);
@@ -740,7 +740,7 @@ body {
 .asset-table tbody tr { transition: background var(--ease); }
 .asset-table tbody tr:hover { background: var(--bg-hover); }
 .asset-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
-.asset-table td { padding: 8px 12px; font-size: var(--type-body); vertical-align: middle; font-variant-numeric: tabular-nums; }
+.asset-table td { padding: 5px 10px; font-size: var(--type-body); vertical-align: middle; font-variant-numeric: tabular-nums; }
 
 .td-ticker { font-family: var(--font-h); font-weight: 700; font-size: var(--type-subtitle); white-space: nowrap; }
 .td-r { text-align: right; }
@@ -774,7 +774,8 @@ body {
 
 .td-actions { text-align: center; white-space: nowrap; width: 72px; }
 .row-target { background: rgba(208, 188, 255, 0.07); }
-.row-skipped .td-ticker { opacity: 0.4; }
+.row-skipped { opacity: 0.5; }
+.row-skipped:hover { opacity: 0.75; }
 
 .note-btn,
 .remove-btn { color: var(--text-muted); opacity: 0.35; transition: all var(--ease); }
@@ -790,8 +791,8 @@ tr:hover .remove-btn { opacity: 0.6; }
 .sort-icon--idle { opacity: 0.25; }
 
 .inline-input {
-  min-height: 34px;
-  padding: 5px 7px;
+  min-height: 30px;
+  padding: 4px 7px;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--bg-root);
@@ -813,8 +814,8 @@ tr:hover .remove-btn { opacity: 0.6; }
   justify-content: center;
   gap: 6px;
   width: 100%;
-  padding: 10px;
-  margin-top: 8px;
+  padding: 8px;
+  margin-top: 6px;
   border: 1px dashed var(--border);
   border-radius: var(--r-md);
   background: transparent;
@@ -969,8 +970,8 @@ tr:hover .remove-btn { opacity: 0.6; }
 @media (max-width: 479px) {
   .td-price, .td-change,
   th[data-sort="price"], th[data-sort="change"] { display: none; }
-  .asset-table td { padding: 6px 8px; }
-  .asset-table thead th { padding: 8px 8px; }
+  .asset-table td { padding: 4px 8px; }
+  .asset-table thead th { padding: 6px 8px; }
   .summary-cards { grid-template-columns: 1fr; }
   .chart-legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
   .bubble-stage { min-height: clamp(300px, calc(100vh - 320px), 420px); }
@@ -1006,7 +1007,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .summary-card { padding: 18px; }
   .summary-card-value { font-size: 1.2rem; }
   .bubble-stage { min-height: clamp(340px, calc(100vh - 330px), 500px); }
-  .asset-table td, .asset-table thead th { padding: 10px 14px; }
+  .asset-table td, .asset-table thead th { padding: 6px 12px; }
   .asset-table td { font-size: var(--type-subtitle); }
   .td-ticker { font-size: 0.92rem; }
   .inline-input { font-size: var(--type-subtitle); }
