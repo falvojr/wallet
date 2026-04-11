@@ -66,7 +66,6 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Prevents flicker when Lucide replaces <i> with <svg> after innerHTML swap */
 [data-lucide]:not(svg) { visibility: hidden; width: 0; height: 0; }
 
 /* Theme-aware class accents */
@@ -691,16 +690,13 @@ body {
 .legend-strike { text-decoration: line-through; opacity: 0.6; }
 
 .bubble-stage {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
   width: 100%;
-  min-height: clamp(320px, calc(100vh - 340px), 560px);
+  height: clamp(320px, calc(100vh - 340px), 560px);
 }
 
 .bubble-container {
-  width: min(100%, 760px);
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
   min-width: 0;
 }
 
@@ -974,14 +970,13 @@ tr:hover .remove-btn { opacity: 0.6; }
   .asset-table thead th { padding: 6px 8px; }
   .summary-cards { grid-template-columns: 1fr; }
   .chart-legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
-  .bubble-stage { min-height: clamp(300px, calc(100vh - 320px), 420px); }
+  .bubble-stage { height: clamp(280px, calc(100vh - 320px), 420px); }
 }
 
 @media (max-width: 640px) {
   .chart-header { flex-direction: column; gap: 2px; }
   .legend-item-label,
   .legend-item-value { white-space: normal; }
-  .bubble-container { width: min(100%, 420px); }
 }
 
 @media (hover: none) {
@@ -1006,7 +1001,7 @@ tr:hover .remove-btn { opacity: 0.6; }
   .summary-cards { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .summary-card { padding: 18px; }
   .summary-card-value { font-size: 1.2rem; }
-  .bubble-stage { min-height: clamp(340px, calc(100vh - 330px), 500px); }
+  .bubble-stage { height: clamp(340px, calc(100vh - 330px), 520px); }
   .asset-table td, .asset-table thead th { padding: 6px 12px; }
   .asset-table td { font-size: var(--type-subtitle); }
   .td-ticker { font-size: 0.92rem; }
@@ -1030,8 +1025,7 @@ tr:hover .remove-btn { opacity: 0.6; }
 
   .chart-sidebar { gap: 20px; }
   .chart-legend-grid { grid-template-columns: 1fr; gap: 10px; }
-  .bubble-stage { min-height: clamp(360px, calc(100vh - 340px), 560px); }
-  .bubble-container { width: min(100%, 840px); }
+  .bubble-stage { height: clamp(380px, calc(100vh - 300px), 620px); }
 }
 
 /* Light theme */

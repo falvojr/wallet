@@ -20,10 +20,6 @@ function esc(str) {
   return String(str).replace(/[&<>"']/g, ch => ESC_MAP[ch]);
 }
 
-// ---------------------------------------------------------------------------
-// Shared HTML helpers
-// ---------------------------------------------------------------------------
-
 function notice(icon, text, variant = 'warning') {
   return `<div class="notice notice--${variant}" role="status">
     <i data-lucide="${icon}" class="notice-icon"></i><span>${text}</span>
@@ -52,12 +48,12 @@ export function toggleSort(col) {
 }
 
 function tickerUrl(key, id) {
-  const ticker = encodeURIComponent(id.toLowerCase());
+  const slug = encodeURIComponent(id.toLowerCase());
   switch (key) {
-    case 'brStocks': return `https://fundamentei.com/br/${ticker}`;
-    case 'brFiis':   return `https://fundamentei.com/fiis/${ticker}`;
+    case 'brStocks': return `https://fundamentei.com/br/${slug}`;
+    case 'brFiis':   return `https://fundamentei.com/fiis/${slug}`;
     case 'usStocks':
-    case 'usReits':  return `https://fundamentei.com/us/${ticker}`;
+    case 'usReits':  return `https://fundamentei.com/us/${slug}`;
     default: return null;
   }
 }
@@ -75,18 +71,14 @@ function getClassColor(key) {
   return '#888';
 }
 
-function hexToRgb(color) {
-  const match = color.trim().match(/^#([\da-f]{6})$/i);
-  if (!match) return null;
-  const hex = match[1];
-  return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
-}
-
 function relativeLuminance(color) {
-  const rgb = hexToRgb(color);
-  if (!rgb) return 0;
-  const linear = rgb.map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+  const match = color.trim().match(/^#([\da-f]{6})$/i);
+  if (!match) return 0;
+  const rgb = [0, 2, 4].map(i => {
+    const c = parseInt(match[1].slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
 }
 
 const isLightColor = color => relativeLuminance(color) > 0.42;
@@ -226,7 +218,6 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   const description = tn('classDescriptions', key);
   const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
 
-  // Progress bar
   let progress = 0;
   if (isEmergency) {
     progress = emergencyProgress() ?? 0;
@@ -358,7 +349,7 @@ function renderLegendItem(item) {
 }
 
 // ---------------------------------------------------------------------------
-// Bubble chart
+// Bubble chart (rectangular layout)
 // ---------------------------------------------------------------------------
 
 function fitLabel(name, radius) {
@@ -385,9 +376,8 @@ function renderBubbleChart() {
   const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
   const bounds = container.getBoundingClientRect();
   const width = Math.max(280, Math.floor(bounds.width || container.clientWidth || 320));
-  const height = Math.max(280, Math.floor(bounds.height || width));
-  const size = Math.max(280, Math.min(width, height));
-  const packPadding = size < 360 ? 2 : 3;
+  const height = Math.max(280, Math.floor(bounds.height || 400));
+  const packPadding = Math.min(width, height) < 360 ? 2 : 3;
 
   const percentOf = node => totalValue > 0 ? ((node.data.value / totalValue) * 100).toFixed(1) : '0';
   const fillColor = node => colorMap[node.data.classKey];
@@ -395,12 +385,12 @@ function renderBubbleChart() {
   const sublabelColor = node => bubbleSubtextColor(fillColor(node));
 
   const root = d3.hierarchy({ children: assets }).sum(a => a.value);
-  d3.pack().size([size, size]).padding(packPadding)(root);
+  d3.pack().size([width, height]).padding(packPadding)(root);
 
   const svg = d3.select(container)
     .html('')
     .append('svg')
-    .attr('viewBox', `0 0 ${size} ${size}`)
+    .attr('viewBox', `0 0 ${width} ${height}`)
     .attr('role', 'img')
     .attr('aria-label', t('a11yBubbleChart'));
 
@@ -474,7 +464,6 @@ function sortedItems(key) {
   const indexed = items.map((item, idx) => ({ item, idx }));
 
   const compare = (a, b) => {
-    // Skipped assets always at the bottom
     const skippedA = isSkippedAsset(a.item);
     const skippedB = isSkippedAsset(b.item);
     if (skippedA !== skippedB) return skippedA ? 1 : -1;
