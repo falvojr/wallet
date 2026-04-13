@@ -379,9 +379,9 @@ function renderBubbleChart() {
   const height = Math.max(200, Math.floor(bounds.height || 400));
   const padding = Math.min(width, height) < 360 ? 2 : 3;
 
-  // Compute radii from values, scaled to fit the available area
+  // Compute radii proportional to value, scaled to fit available area without overlap
   const area = width * height;
-  const scaleFactor = Math.sqrt(area / totalValue) * 0.52;
+  const scaleFactor = Math.sqrt(area / totalValue) * 0.44;
   const nodes = assets.map(asset => ({
     ...asset,
     r: Math.max(8, Math.sqrt(asset.value) * scaleFactor),
@@ -389,16 +389,15 @@ function renderBubbleChart() {
     y: height / 2 + (Math.random() - 0.5) * height * 0.3,
   }));
 
-  // Force simulation distributes circles into the rectangle
+  // Force simulation distributes circles into the rectangle without overlap
   const simulation = d3.forceSimulation(nodes)
-    .force('collide', d3.forceCollide(d => d.r + padding).strength(1))
-    .force('x', d3.forceX(width / 2).strength(0.06))
-    .force('y', d3.forceY(height / 2).strength(0.06))
+    .force('collide', d3.forceCollide(d => d.r + padding + 1).iterations(4).strength(1))
+    .force('x', d3.forceX(width / 2).strength(0.07))
+    .force('y', d3.forceY(height / 2).strength(0.07))
     .stop();
 
-  for (let i = 0; i < 200; i++) {
+  for (let i = 0; i < 300; i++) {
     simulation.tick();
-    // Clamp to bounds each tick for tighter packing
     for (const node of nodes) {
       node.x = Math.max(node.r, Math.min(width - node.r, node.x));
       node.y = Math.max(node.r, Math.min(height - node.r, node.y));
