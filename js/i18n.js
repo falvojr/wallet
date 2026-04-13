@@ -22,24 +22,24 @@ const strings = {
     tabOverview: 'Metas',
     tabPortfolio: 'Carteira',
 
-    // Classes
+    // Classes (order matches CLASS_KEYS)
     classLabels: {
+      emergencyReserve: 'Reserva Emergência',
+      fixedIncome: 'Renda Fixa',
       brStocks: 'Ações',
       brFiis: 'FIIs',
       usStocks: 'Stocks',
       usReits: 'REITs',
-      fixedIncome: 'Renda Fixa',
-      emergencyReserve: 'Reserva Emergência',
       storeOfValue: 'Reserva Valor',
       assets: 'Bens',
     },
     classDescriptions: {
+      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
+      fixedIncome: 'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
       brStocks: 'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
       brFiis: 'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
       usStocks: 'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
       usReits: 'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
-      fixedIncome: 'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
-      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
       storeOfValue: 'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. Servem como proteção contra desvalorização cambial e instabilidade monetária.',
       assets: 'Bens patrimoniais como imóveis de uso pessoal e veículos. Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
     },
@@ -126,9 +126,10 @@ const strings = {
     toastInvalidFormat: 'Formato inválido',
 
     // Welcome
-    welcomeTitle: 'Importe sua carteira',
-    welcomeText: 'Arraste um arquivo <code>.json</code> ou clique para carregar.',
-    welcomeBtn: 'Importar JSON',
+    welcomeTitle: 'Comece sua carteira',
+    welcomeText: 'Crie uma carteira vazia ou importe um <code>.json</code> existente.',
+    welcomeInitBtn: 'Criar carteira',
+    welcomeImportBtn: 'Importar JSON',
 
     // Loading
     loadingDefault: 'Carregando...',

@@ -312,6 +312,12 @@ function importPortfolio(file) {
   reader.readAsText(file);
 }
 
+function initEmptyPortfolio() {
+  portfolio.init();
+  setActiveTab('overview');
+  render();
+}
+
 // ---------------------------------------------------------------------------
 // Event listeners — panels (delegated)
 // ---------------------------------------------------------------------------
@@ -513,6 +519,9 @@ $('#btnTheme').addEventListener('click', () => {
 });
 $('#btnSettings').addEventListener('click', openSettingsModal);
 $('#btnPrices').addEventListener('click', refreshPrices);
+
+// Welcome buttons
+$('#btnWelcomeInit').addEventListener('click', initEmptyPortfolio);
 $('#btnWelcomeImport').addEventListener('click', () => elements.fileInput.click());
 
 elements.fileInput.addEventListener('change', event => {

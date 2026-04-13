@@ -349,7 +349,7 @@ function renderLegendItem(item) {
 }
 
 // ---------------------------------------------------------------------------
-// Bubble chart (rectangular layout)
+// Bubble chart (force-directed rectangular layout)
 // ---------------------------------------------------------------------------
 
 function fitLabel(name, radius) {
@@ -376,16 +376,39 @@ function renderBubbleChart() {
   const totalValue = assets.reduce((sum, a) => sum + a.value, 0);
   const bounds = container.getBoundingClientRect();
   const width = Math.max(280, Math.floor(bounds.width || container.clientWidth || 320));
-  const height = Math.max(280, Math.floor(bounds.height || 400));
-  const packPadding = Math.min(width, height) < 360 ? 2 : 3;
+  const height = Math.max(200, Math.floor(bounds.height || 400));
+  const padding = Math.min(width, height) < 360 ? 2 : 3;
 
-  const percentOf = node => totalValue > 0 ? ((node.data.value / totalValue) * 100).toFixed(1) : '0';
-  const fillColor = node => colorMap[node.data.classKey];
+  // Compute radii from values, scaled to fit the available area
+  const area = width * height;
+  const scaleFactor = Math.sqrt(area / totalValue) * 0.52;
+  const nodes = assets.map(asset => ({
+    ...asset,
+    r: Math.max(8, Math.sqrt(asset.value) * scaleFactor),
+    x: width / 2 + (Math.random() - 0.5) * width * 0.3,
+    y: height / 2 + (Math.random() - 0.5) * height * 0.3,
+  }));
+
+  // Force simulation distributes circles into the rectangle
+  const simulation = d3.forceSimulation(nodes)
+    .force('collide', d3.forceCollide(d => d.r + padding).strength(1))
+    .force('x', d3.forceX(width / 2).strength(0.06))
+    .force('y', d3.forceY(height / 2).strength(0.06))
+    .stop();
+
+  for (let i = 0; i < 200; i++) {
+    simulation.tick();
+    // Clamp to bounds each tick for tighter packing
+    for (const node of nodes) {
+      node.x = Math.max(node.r, Math.min(width - node.r, node.x));
+      node.y = Math.max(node.r, Math.min(height - node.r, node.y));
+    }
+  }
+
+  const percentOf = node => totalValue > 0 ? ((node.value / totalValue) * 100).toFixed(1) : '0';
+  const fillColor = node => colorMap[node.classKey];
   const labelColor = node => bubbleTextColor(fillColor(node));
   const sublabelColor = node => bubbleSubtextColor(fillColor(node));
-
-  const root = d3.hierarchy({ children: assets }).sum(a => a.value);
-  d3.pack().size([width, height]).padding(packPadding)(root);
 
   const svg = d3.select(container)
     .html('')
@@ -394,12 +417,12 @@ function renderBubbleChart() {
     .attr('role', 'img')
     .attr('aria-label', t('a11yBubbleChart'));
 
-  const nodes = svg.selectAll('g')
-    .data(root.leaves())
+  const groups = svg.selectAll('g')
+    .data(nodes)
     .join('g')
     .attr('transform', node => `translate(${node.x},${node.y})`);
 
-  nodes.append('circle')
+  groups.append('circle')
     .attr('r', node => node.r)
     .attr('fill', fillColor)
     .attr('opacity', 0.82)
@@ -415,18 +438,18 @@ function renderBubbleChart() {
       d3.select(this).attr('opacity', 0.82).attr('stroke-width', 1.5).attr('stroke-opacity', 0.25);
     });
 
-  nodes.append('title')
-    .text(node => `${node.data.id}: ${formatBRL(node.data.value)} (${percentOf(node)}%)`);
+  groups.append('title')
+    .text(node => `${node.id}: ${formatBRL(node.value)} (${percentOf(node)}%)`);
 
-  nodes.on('click', (_event, node) => {
+  groups.on('click', (_event, node) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = `${node.data.id}: ${formatBRL(node.data.value)} (${percentOf(node)}%)`;
+    toast.textContent = `${node.id}: ${formatBRL(node.value)} (${percentOf(node)}%)`;
     document.getElementById('toastContainer')?.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
   });
 
-  nodes.filter(node => node.r > 16)
+  groups.filter(node => node.r > 16)
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')
@@ -434,10 +457,10 @@ function renderBubbleChart() {
     .attr('font-family', 'var(--font-h)')
     .attr('font-weight', '700')
     .attr('font-size', node => Math.min(node.r * 0.45, 14))
-    .text(node => fitLabel(node.data.id, node.r))
+    .text(node => fitLabel(node.id, node.r))
     .style('pointer-events', 'none');
 
-  nodes.filter(node => node.r > 28)
+  groups.filter(node => node.r > 28)
     .append('text')
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')

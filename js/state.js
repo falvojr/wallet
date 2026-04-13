@@ -11,12 +11,12 @@ const STORAGE_KEYS = {
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
 export const CLASS_META = {
-  brStocks: { icon: 'trending-up' },
-  brFiis:   { icon: 'building-2' },
-  usStocks: { icon: 'globe' },
-  usReits:  { icon: 'landmark' },
-  fixedIncome:      { icon: 'shield' },
   emergencyReserve: { icon: 'life-buoy' },
+  fixedIncome:      { icon: 'shield' },
+  brStocks:         { icon: 'trending-up' },
+  brFiis:           { icon: 'building-2' },
+  usStocks:         { icon: 'globe' },
+  usReits:          { icon: 'landmark' },
   storeOfValue:     { icon: 'bitcoin' },
   assets:           { icon: 'home' },
 };
@@ -191,6 +191,11 @@ export class Portfolio {
     this.#data ??= createEmptyData();
     this.#data.syncedAt = new Date().toISOString().slice(0, 10);
     this.#storage.write(this.#data);
+  }
+
+  init() {
+    this.#data = createEmptyData();
+    this.save();
   }
 
   import(data) {

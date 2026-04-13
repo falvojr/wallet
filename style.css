@@ -242,6 +242,7 @@ body {
 .empty-welcome h2 { font-family: var(--font-h); font-size: 1.3rem; font-weight: 700; }
 .empty-welcome p { font-size: var(--type-body); color: var(--text-secondary); max-width: 300px; }
 .empty-welcome code { background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px; font-size: var(--type-body-sm); color: var(--accent); }
+.welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 
 /* Loading */
 

@@ -55,13 +55,18 @@
   <main class="app-container" id="app">
     <div class="empty-welcome" id="emptyWelcome">
       <div class="empty-icon">
-        <i data-lucide="download" style="width: 40px; height: 40px"></i>
+        <i data-lucide="briefcase" style="width: 40px; height: 40px"></i>
       </div>
-      <h2 data-i18n="welcomeTitle">Importe sua carteira</h2>
-      <p data-i18n-html="welcomeText">Arraste um arquivo <code>.json</code> ou clique para carregar.</p>
-      <button type="button" class="btn btn--filled btn--lg" id="btnWelcomeImport" data-i18n="welcomeBtn">
-        Importar JSON
-      </button>
+      <h2 data-i18n="welcomeTitle">Comece sua carteira</h2>
+      <p data-i18n-html="welcomeText">Crie uma carteira vazia ou importe um <code>.json</code> existente.</p>
+      <div class="welcome-actions">
+        <button type="button" class="btn btn--filled btn--lg" id="btnWelcomeInit" data-i18n="welcomeInitBtn">
+          Criar carteira
+        </button>
+        <button type="button" class="btn btn--tonal btn--lg" id="btnWelcomeImport" data-i18n="welcomeImportBtn">
+          Importar JSON
+        </button>
+      </div>
     </div>
 
     <nav class="tab-nav" id="tabNav" data-i18n-aria-label="navAssetClasses" aria-label="Navegação por classe de ativos">
