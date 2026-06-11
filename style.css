@@ -829,21 +829,22 @@ tr:hover .remove-btn { opacity: 0.6; }
 
 /* Modals */
 
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 12px;
+.modal-dialog {
+  width: calc(100vw - 24px);
+  max-width: 360px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  overflow: visible;
+}
+.modal-dialog--wide { max-width: 420px; }
+.modal-dialog::backdrop {
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(6px);
 }
-.modal-overlay.open { display: flex; }
 .modal {
   width: 100%;
-  max-width: 360px;
   padding: 22px;
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
@@ -851,7 +852,6 @@ tr:hover .remove-btn { opacity: 0.6; }
   box-shadow: var(--shadow-modal);
   animation: modalIn 200ms ease;
 }
-.modal--wide { max-width: 420px; }
 @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 .modal h3 { font-family: var(--font-h); font-size: var(--type-title); font-weight: 600; margin-bottom: 14px; }
 .modal-hint { font-size: var(--type-body); color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
