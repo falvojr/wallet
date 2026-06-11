@@ -96,8 +96,8 @@ export function allocationWarning() {
 
 /*
  * Rebalancing. While the emergency reserve goal is unmet, it is the only recommendation.
- * Otherwise each class gets a shortfall (target% minus actual%); the classes above a proportional noise
- * threshold are ranked by shortfall and the most lagging are recommended, up to the configured limit.
+ * Otherwise each class gets a shortfall (target% minus actual%).
+ * Classes above a proportional noise threshold are ranked by shortfall, and the most lagging are recommended up to the configured limit.
  * Within a class, items are ranked the same way, by how far each sits below its own target.
  */
 
