@@ -30,6 +30,11 @@ function badge(cls, icon, label, title) {
 const investBadge = () => badge('invest', 'sparkles', t('badgeInvest'), t('badgeInvestTitle'));
 const skipBadge = () => badge('skip', 'circle-pause', t('badgeSkip'), t('badgeSkipTitle'));
 
+/* With sardine mode off, money values are masked and only percentages are shown (inspired by Bastter System's "Exibir financeiro" flag). */
+const MASKED_VALUE = '••••';
+const moneyOrMask = value => settings.sardineMode ? formatBRL(value) : MASKED_VALUE;
+const percentOfTotal = (value, total) => total > 0 ? `${((value / total) * 100).toFixed(1)}%` : '';
+
 /* ---------------------------------------------------------------------------
  * Sort
  * ------------------------------------------------------------------------- */
@@ -211,7 +216,7 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   const isEmergency = key === 'emergencyReserve';
   const inactive = isClassInactive(key) || (isEmergency && portfolio.goal('emergencyReserve') <= 0);
   const description = tn('classDescriptions', key);
-  const valueStr = total !== null ? formatBRL(total) : t('assetCount', portfolio.items(key).length);
+  const valueStr = total !== null ? moneyOrMask(total) : t('assetCount', portfolio.items(key).length);
 
   let progress = 0;
   if (isEmergency) {
@@ -310,8 +315,9 @@ function renderChartsTab() {
   }));
 
   const { total, partial } = chartVisibleTotalBRL();
+  const portfolioTotal = portfolioTotalBRL().total;
   const headerVal = total > 0
-    ? formatBRL(total) + (partial ? ` ${t('partialSuffix')}` : '')
+    ? moneyOrMask(total) + (partial ? ` ${t('partialSuffix')}` : '')
     : t('assetCount', order.reduce((sum, key) => sum + portfolio.items(key).length, 0));
 
   return `<div class="chart-layout">
@@ -320,7 +326,7 @@ function renderChartsTab() {
         <span class="chart-header-label">${t('portfolioLabel')}</span>
         <span class="chart-header-value">${headerVal}</span>
       </div>
-      <div class="chart-legend-grid">${data.map(renderLegendItem).join('')}</div>
+      <div class="chart-legend-grid">${data.map(item => renderLegendItem(item, portfolioTotal)).join('')}</div>
     </div>
     <div class="bubble-stage">
       <div id="bubbleChart" class="bubble-container"></div>
@@ -328,10 +334,12 @@ function renderChartsTab() {
   </div>`;
 }
 
-function renderLegendItem(item) {
+function renderLegendItem(item, portfolioTotal) {
   const hiddenCls = item.hidden ? ' legend-item--hidden' : '';
   const strikeCls = item.hidden ? ' legend-strike' : '';
-  const valueText = item.hasPrices ? formatBRL(item.total) : t('assetCount', item.count);
+  const valueText = !item.hasPrices
+    ? t('assetCount', item.count)
+    : settings.sardineMode ? formatBRL(item.total) : percentOfTotal(item.total, portfolioTotal) || t('assetCount', item.count);
 
   return `<button type="button" class="legend-item${hiddenCls}" data-toggle-chart="${item.key}" data-goto="${item.key}"
     title="${t('a11yToggleChart', item.label, !item.hidden)}">
@@ -400,6 +408,9 @@ function renderBubbleChart() {
   }
 
   const percentOf = node => totalValue > 0 ? ((node.value / totalValue) * 100).toFixed(1) : '0';
+  const bubbleInfo = node => settings.sardineMode
+    ? `${node.id}: ${formatBRL(node.value)} (${percentOf(node)}%)`
+    : `${node.id}: ${percentOf(node)}%`;
   const fillColor = node => colorMap[node.classKey];
   const labelColor = node => bubbleTextColor(fillColor(node));
   const sublabelColor = node => bubbleSubtextColor(fillColor(node));
@@ -433,12 +444,12 @@ function renderBubbleChart() {
     });
 
   groups.append('title')
-    .text(node => `${node.id}: ${formatBRL(node.value)} (${percentOf(node)}%)`);
+    .text(bubbleInfo);
 
   groups.on('click', (_event, node) => {
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.textContent = `${node.id}: ${formatBRL(node.value)} (${percentOf(node)}%)`;
+    toast.textContent = bubbleInfo(node);
     document.getElementById('toastContainer')?.appendChild(toast);
     setTimeout(() => toast.remove(), 2500);
   });
@@ -528,6 +539,7 @@ function renderClassPanel(key) {
 
   const recommendedIds = recommendedItems(key);
   const sorted = sortedItems(key);
+  const classTotal = classTotalBRL(key) ?? 0;
 
   html += `<div class="table-wrap"><table class="asset-table">
     <thead><tr>
@@ -535,12 +547,12 @@ function renderClassPanel(key) {
       ${sortableHeader('amount', t('colAmount'), ' col-r')}
       ${sortableHeader('price', t('colPrice'), ' col-r')}
       ${sortableHeader('change', t('colChange'), ' col-r')}
-      ${sortableHeader('total', t('colTotal'), ' col-r')}
+      ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r')}
       ${sortableHeader('target', t('colTarget'), ' col-r')}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
-      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedIds)).join('')}
+      ${sorted.map(({ item, idx }) => renderAssetRow(key, item, idx, recommendedIds, classTotal)).join('')}
     </tbody>
   </table></div>
   <button class="add-asset-btn" data-add-class="${key}">
@@ -549,11 +561,12 @@ function renderClassPanel(key) {
   return html;
 }
 
-function renderAssetRow(key, item, index, recommendedIds) {
+function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const isRecommended = recommendedIds.includes(item.id);
   const isSkipped = isSkippedAsset(item);
   const price = prices.get(item.id);
   const value = assetValueBRL(key, item);
+  const valueCell = value === null ? '' : settings.sardineMode ? formatBRL(value) : percentOfTotal(value, classTotal);
   const id = esc(item.id);
 
   const url = tickerUrl(key, item.id);
@@ -573,7 +586,7 @@ function renderAssetRow(key, item, index, recommendedIds) {
       aria-label="${t('a11yAmountOf', id)}"></td>
     <td class="td-price">${priceStr}</td>
     <td class="td-change">${changeHtml}</td>
-    <td class="td-value" data-goto="${key}">${value !== null ? formatBRL(value) : ''}</td>
+    <td class="td-value" data-goto="${key}">${valueCell}</td>
     <td class="td-r"><input class="inline-input inline-input--target" type="text"
       value="${item.target !== undefined ? item.target : ''}"
       data-class="${key}" data-idx="${index}" data-field="target"

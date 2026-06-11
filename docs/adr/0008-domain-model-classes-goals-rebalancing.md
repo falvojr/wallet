@@ -1,8 +1,8 @@
 # 0008. Modelo de domínio: classes de ativos, metas e rebalanceamento passivo
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Negócio
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Negócio
 
 ## Contexto
 
@@ -17,7 +17,7 @@ O domínio é composto por oito classes fixas (`CLASS_KEYS` em `js/state.js`): R
 - A Reserva de Emergência usa `goal` (meta em reais) no lugar de meta percentual. Enquanto a meta não for atingida, ela trava todas as outras recomendações de aporte.
 - Classes declarativas (Renda Fixa, Reserva de Emergência, Bens) guardam o valor em reais direto no `amount`; as demais guardam quantidade e dependem de cotação.
 - Bens e Reserva de Emergência ficam fora do rebalanceamento percentual (`NON_REBALANCED_CLASSES`).
-- `target: 0` em um ativo significa "ignorar no rebalanceamento" (útil para posições em quarentena ou em desinvestimento).
+- Um ativo com `target: 0` é ignorado no rebalanceamento (útil para posições em quarentena ou em desinvestimento).
 - O rebalanceamento é passivo: nada é vendido para reequilibrar; o próximo aporte é direcionado para a classe e o ativo mais defasados em relação às metas.
 
 ## Consequências

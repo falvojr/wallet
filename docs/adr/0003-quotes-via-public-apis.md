@@ -1,8 +1,8 @@
 # 0003. Cotações via APIs públicas gratuitas
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 
@@ -13,9 +13,9 @@ Provedores pagos não se justificam para uso pessoal, e a estratégia buy and ho
 
 Buscar cotações diretamente do navegador em três APIs gratuitas:
 
-- brapi.dev para ações e FIIs brasileiros (token do usuário);
-- Finnhub para stocks e REITs americanos (token do usuário);
-- AwesomeAPI para câmbio USD-BRL e criptomoedas (sem token).
+- Ações e FIIs brasileiros: brapi.dev, com token do usuário.
+- Stocks e REITs americanos: Finnhub, com token do usuário.
+- Câmbio USD-BRL e criptomoedas: AwesomeAPI, sem token.
 
 Os tokens ficam no `localStorage`; os preços ficam em cache e um aviso de desatualização aparece após 24 horas.
 Classes declarativas (Renda Fixa, Reserva de Emergência, Bens) não têm cotação: o valor é informado manualmente.
