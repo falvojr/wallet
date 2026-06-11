@@ -1,4 +1,4 @@
-/* Minha Holding — Design System */
+/* Minha Holding: Design System. */
 
 :root {
   --bg-root: #11131a;
@@ -780,7 +780,7 @@ body {
 
 .td-actions { text-align: center; white-space: nowrap; width: 72px; }
 
-/* Sardine mode off: price and daily change stay out of sight */
+/* Sardine mode off: price and daily change stay out of sight. */
 .quotes-hidden .td-price,
 .quotes-hidden .td-change,
 .quotes-hidden .col-price,

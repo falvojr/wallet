@@ -23,10 +23,10 @@ export const CLASS_ICONS = {
 
 export const CLASS_KEYS = Object.keys(CLASS_ICONS);
 
-/** Classes where the user declares a monetary amount directly (no price lookup). */
+// Classes where the user declares a monetary amount directly (no price lookup).
 export const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
 
-/** Classes excluded from percentage-based rebalancing. */
+// Classes excluded from percentage-based rebalancing.
 export const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
 function normalizeNumber(value, fallback = 0) {
@@ -330,7 +330,7 @@ export class Settings {
   finnhubToken = '';
   recommendedClassCount = 1;
   recommendedAssetCount = 1;
-  /** When enabled, price and daily change columns are shown. */
+  // When enabled, price and daily change columns are shown.
   sardineMode = false;
 
   get hasTokens() {

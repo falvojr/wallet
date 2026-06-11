@@ -31,7 +31,7 @@ export async function fetchAllPrices(onProgress) {
   }
 }
 
-/** Soft failure: a missing rate must not abort the quotes; the cached rate stays in use. */
+// Soft failure: a missing rate must not abort the quotes; the cached rate stays in use.
 async function fetchExchangeRates() {
   const data = await fetchJsonSoft('https://economia.awesomeapi.com.br/json/last/USD-BRL');
   if (data?.USDBRL) prices.usdBrl = parseFloat(data.USDBRL.bid);
