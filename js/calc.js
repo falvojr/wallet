@@ -11,10 +11,11 @@ export function assetValueBRL(key, asset) {
   const priceData = prices.get(asset.id);
   if (!priceData) return key === 'storeOfValue' ? asset.amount : null;
 
-  const price = priceData.currency === 'USD'
-    ? priceData.price * prices.usdBrl
-    : priceData.price;
-  return price * asset.amount;
+  if (priceData.currency === 'USD') {
+    // Without an exchange rate the value is unknown, not zero.
+    return prices.usdBrl > 0 ? priceData.price * prices.usdBrl * asset.amount : null;
+  }
+  return priceData.price * asset.amount;
 }
 
 export function classTotalBRL(key) {

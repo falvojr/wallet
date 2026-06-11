@@ -103,16 +103,24 @@ function scheduleSave() {
   }, 600);
 }
 
+let refreshingPrices = false;
+
 async function refreshPrices() {
+  if (refreshingPrices) return;
   if (!settings.hasTokens) {
     showToast(t('toastConfigTokens'));
     return;
   }
 
-  const ok = await fetchAllPrices(showLoading);
-  hideLoading();
-  render();
-  showToast(ok ? t('toastPricesOk') : t('toastPricesFail'));
+  refreshingPrices = true;
+  try {
+    const ok = await fetchAllPrices(showLoading);
+    render();
+    showToast(ok ? t('toastPricesOk') : t('toastPricesFail'));
+  } finally {
+    refreshingPrices = false;
+    hideLoading();
+  }
 }
 
 // ---------------------------------------------------------------------------

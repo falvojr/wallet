@@ -47,8 +47,11 @@ function normalizeItem(item) {
     amount: normalizeNumber(item.amount),
   };
 
+  // target = 0 means "skip in rebalancing", so an invalid value must be
+  // dropped instead of falling back to 0.
   if (item.target !== undefined && item.target !== null && item.target !== '') {
-    normalized.target = normalizeNumber(item.target);
+    const target = Number(item.target);
+    if (Number.isFinite(target) && target >= 0) normalized.target = target;
   }
 
   if (typeof item.note === 'string' && item.note.trim()) {

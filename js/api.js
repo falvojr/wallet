@@ -4,11 +4,8 @@ import { t } from './i18n.js';
 const FINNHUB_DELAY_MS = 120;
 const TICKER_RE = /^[A-Z0-9.]{1,10}$/;
 
-let fetching = false;
-
 export async function fetchAllPrices(onProgress) {
-  if (fetching || !portfolio.loaded || !settings.hasTokens) return false;
-  fetching = true;
+  if (!portfolio.loaded || !settings.hasTokens) return false;
 
   const brTickers = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
   const usTickers = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
@@ -31,13 +28,12 @@ export async function fetchAllPrices(onProgress) {
   } catch (error) {
     console.error('fetchAllPrices:', error);
     return false;
-  } finally {
-    fetching = false;
   }
 }
 
+/** Soft failure: a missing rate must not abort the quotes; the cached rate stays in use. */
 async function fetchExchangeRates() {
-  const data = await fetchJson('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+  const data = await fetchJsonSoft('https://economia.awesomeapi.com.br/json/last/USD-BRL');
   if (data?.USDBRL) prices.usdBrl = parseFloat(data.USDBRL.bid);
 }
 
