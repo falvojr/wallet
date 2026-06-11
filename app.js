@@ -17,9 +17,7 @@ const elements = {
   fileInput: $('#fileInput'),
 };
 
-/* ---------------------------------------------------------------------------
- * i18n
- * ------------------------------------------------------------------------- */
+// i18n
 
 function applyTranslations(root = document) {
   document.documentElement.lang = getLocale();
@@ -34,9 +32,7 @@ function applyTranslations(root = document) {
   root.querySelectorAll('[data-i18n-aria-label]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel)));
 }
 
-/* ---------------------------------------------------------------------------
- * Toast / Loading
- * ------------------------------------------------------------------------- */
+// Toast / Loading
 
 function showToast(message, action) {
   const toast = document.createElement('div');
@@ -75,9 +71,7 @@ function hideLoading() {
   elements.loadingOverlay.setAttribute('aria-hidden', 'true');
 }
 
-/* ---------------------------------------------------------------------------
- * Helpers
- * ------------------------------------------------------------------------- */
+// Helpers
 
 function parseNonNegativeNumber(value) {
   const number = Number.parseFloat(value.replace(',', '.'));
@@ -114,11 +108,7 @@ async function refreshPrices() {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * Modals
- *
- * Native <dialog> handles focus trap, focus restore, Escape and aria semantics; only backdrop-click needs wiring.
- * ------------------------------------------------------------------------- */
+// Modals. Native <dialog> handles focus trap, focus restore, Escape and aria semantics; only backdrop-click needs wiring.
 
 function bindBackdropClose(dialog) {
   dialog.addEventListener('click', event => {
@@ -126,9 +116,7 @@ function bindBackdropClose(dialog) {
   });
 }
 
-/* ---------------------------------------------------------------------------
- * Add asset modal
- * ------------------------------------------------------------------------- */
+// Add asset modal
 
 let addClassKey = null;
 
@@ -166,9 +154,7 @@ function confirmAddAsset() {
   showToast(t('toastAdded', id));
 }
 
-/* ---------------------------------------------------------------------------
- * Note modal
- * ------------------------------------------------------------------------- */
+// Note modal
 
 let noteClassKey = null;
 let noteItemId = null;
@@ -189,9 +175,7 @@ function saveNote() {
   render();
 }
 
-/* ---------------------------------------------------------------------------
- * Settings modal
- * ------------------------------------------------------------------------- */
+// Settings modal
 
 function openSettingsModal() {
   $('#brapiToken').value = settings.brapiToken;
@@ -214,9 +198,7 @@ function saveSettings() {
   showToast(t('toastSettingsSaved'));
 }
 
-/* ---------------------------------------------------------------------------
- * Import / Export
- * ------------------------------------------------------------------------- */
+// Import / Export
 
 function exportPortfolio() {
   const output = portfolio.export();
@@ -263,9 +245,7 @@ function initEmptyPortfolio() {
   render();
 }
 
-/* ---------------------------------------------------------------------------
- * Event listeners: panels (delegated)
- * ------------------------------------------------------------------------- */
+// Event listeners: panels (delegated)
 
 elements.panels.addEventListener('click', event => {
   const chartToggle = event.target.closest('[data-toggle-chart]');
@@ -393,9 +373,7 @@ elements.panels.addEventListener('change', event => {
   }
 });
 
-/* ---------------------------------------------------------------------------
- * Tab navigation
- * ------------------------------------------------------------------------- */
+// Tab navigation
 
 elements.tabNav.addEventListener('click', event => {
   const tabButton = event.target.closest('[data-tab]');
@@ -404,9 +382,7 @@ elements.tabNav.addEventListener('click', event => {
   render();
 });
 
-/* ---------------------------------------------------------------------------
- * Drag & drop
- * ------------------------------------------------------------------------- */
+// Drag & drop
 
 function isFileDrag(event) {
   return event.dataTransfer?.types?.includes('Files');
@@ -445,9 +421,7 @@ document.addEventListener('drop', event => {
   else if (file) showToast(t('toastJsonOnly'));
 });
 
-/* ---------------------------------------------------------------------------
- * Header buttons
- * ------------------------------------------------------------------------- */
+// Header buttons
 
 $('#btnImport').addEventListener('click', () => elements.fileInput.click());
 $('#btnExport').addEventListener('click', exportPortfolio);
@@ -468,9 +442,7 @@ elements.fileInput.addEventListener('change', event => {
   event.target.value = '';
 });
 
-/* ---------------------------------------------------------------------------
- * Modal buttons
- * ------------------------------------------------------------------------- */
+// Modal buttons
 
 $('#modalCancel').addEventListener('click', () => $('#addModal').close());
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
@@ -490,9 +462,7 @@ $('#noteModal').addEventListener('close', () => {
   noteItemId = null;
 });
 
-/* ---------------------------------------------------------------------------
- * Keyboard shortcuts
- * ------------------------------------------------------------------------- */
+// Keyboard shortcuts
 
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
@@ -501,17 +471,13 @@ $('#noteText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(); }
 });
 
-/* ---------------------------------------------------------------------------
- * Service Worker
- * ------------------------------------------------------------------------- */
+// Service Worker
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-/* ---------------------------------------------------------------------------
- * Initialization
- * ------------------------------------------------------------------------- */
+// Initialization
 
 loadTheme();
 settings.load();

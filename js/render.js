@@ -30,14 +30,12 @@ function badge(cls, icon, label, title) {
 const investBadge = () => badge('invest', 'sparkles', t('badgeInvest'), t('badgeInvestTitle'));
 const skipBadge = () => badge('skip', 'circle-pause', t('badgeSkip'), t('badgeSkipTitle'));
 
-/* With sardine mode off, money values are masked and only percentages are shown (inspired by Bastter System's "Exibir financeiro" flag). */
+// With sardine mode off, money values are masked and only percentages are shown (inspired by Bastter System's "Exibir financeiro" flag).
 const MASKED_VALUE = '••••';
 const moneyOrMask = value => settings.sardineMode ? formatBRL(value) : MASKED_VALUE;
 const percentOfTotal = (value, total) => total > 0 ? `${((value / total) * 100).toFixed(1)}%` : '';
 
-/* ---------------------------------------------------------------------------
- * Sort
- * ------------------------------------------------------------------------- */
+// Sort
 
 export function toggleSort(col) {
   if (preferences.sortCol === col) {
@@ -58,9 +56,7 @@ function tickerUrl(key, id) {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * Theme-aware class color
- * ------------------------------------------------------------------------- */
+// Theme-aware class color
 
 function getClassColor(key) {
   const element = document.querySelector(`[data-goto="${key}"]`);
@@ -85,9 +81,7 @@ const isLightColor = color => relativeLuminance(color) > 0.42;
 const bubbleTextColor = fill => isLightColor(fill) ? '#11131a' : '#ffffff';
 const bubbleSubtextColor = fill => isLightColor(fill) ? 'rgba(17,19,26,0.72)' : 'rgba(255,255,255,0.72)';
 
-/* ---------------------------------------------------------------------------
- * Render entry points
- * ------------------------------------------------------------------------- */
+// Render entry points
 
 export function render() {
   const hasData = portfolio.loaded;
@@ -126,9 +120,7 @@ export function renderChartOnly() {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * Tabs
- * ------------------------------------------------------------------------- */
+// Tabs
 
 function renderTabs() {
   const order = preferences.displayOrder();
@@ -159,9 +151,7 @@ function renderTabs() {
     + classTabs.map(renderTab).join('');
 }
 
-/* ---------------------------------------------------------------------------
- * Panels
- * ------------------------------------------------------------------------- */
+// Panels
 
 function renderPanels() {
   const animated = consumeTabChange();
@@ -179,9 +169,7 @@ function renderPanels() {
   ].join('');
 }
 
-/* ---------------------------------------------------------------------------
- * Overview
- * ------------------------------------------------------------------------- */
+// Overview
 
 function renderOverview() {
   const recommended = recommendedClasses();
@@ -299,9 +287,7 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     </label>`;
 }
 
-/* ---------------------------------------------------------------------------
- * Charts tab
- * ------------------------------------------------------------------------- */
+// Charts tab
 
 function renderChartsTab() {
   const order = preferences.displayOrder();
@@ -351,9 +337,7 @@ function renderLegendItem(item, portfolioTotal) {
   </button>`;
 }
 
-/* ---------------------------------------------------------------------------
- * Bubble chart (force-directed rectangular layout)
- * ------------------------------------------------------------------------- */
+// Bubble chart (force-directed rectangular layout)
 
 function fitLabel(name, radius) {
   const fontSize = Math.min(radius * 0.45, 14);
@@ -477,9 +461,7 @@ function renderBubbleChart() {
     .style('pointer-events', 'none');
 }
 
-/* ---------------------------------------------------------------------------
- * Asset table
- * ------------------------------------------------------------------------- */
+// Asset table
 
 function sortIndicator(col) {
   if (preferences.sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';

@@ -39,7 +39,7 @@ Direção das dependências: `render` e `calc` leem o estado; `api` escreve em `
   - encadeamentos com vários passos, ternários aninhados, objetos longos e blocos com mais de uma instrução mantêm a indentação convencional, mesmo cabendo em uma linha;
   - strings de conteúdo (`js/i18n.js`) podem exceder o limite e não devem ser quebradas com concatenação.
 - Nomes semânticos, sem abreviações. Indentação de 2 espaços.
-- Comentários: `//` em linha única, `/* */` em blocos multilinha. Sentenças terminam com ponto final, respeitando o teto de 160 colunas por linha.
+- Comentários: `//` em linha única, `/* */` em blocos multilinha. Sentenças terminam com ponto final, respeitando o teto de 160 colunas por linha. Títulos de seção são comentários `//` curtos, sem separadores decorativos de traços.
 - Texto visível ao usuário sempre via `t()`/`tn()` em `js/i18n.js`, nunca hardcoded no JavaScript.
 - HTML gerado em template literals deve escapar dados do usuário com `esc()` (em `js/render.js`).
 - Eventos de listas e tabelas usam delegação em `#panels` com data-attributes (`data-goto`, `data-sort`, `data-toggle-chart`).
