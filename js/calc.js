@@ -94,62 +94,61 @@ export function allocationWarning() {
   return Math.abs(sum - 100) < 0.1 ? null : { sum: Math.round(sum) };
 }
 
-/* ---------------------------------------------------------------------------
- * Rebalancing
- *
- * If the emergency reserve goal is unmet, every other recommendation is blocked.
- *
- * Otherwise, class-level shortfall (target% - actual%) is computed, filtered by a proportional threshold, and the most lagging classes are
- * recommended up to the user-configured limit. Within a recommended class, items are ranked by distance from their internal target, also capped.
- * ------------------------------------------------------------------------- */
+/*
+ * Rebalancing. While the emergency reserve goal is unmet, it is the only recommendation.
+ * Otherwise each class gets a shortfall (target% minus actual%); the classes above a proportional noise
+ * threshold are ranked by shortfall and the most lagging are recommended, up to the configured limit.
+ * Within a class, items are ranked the same way, by how far each sits below its own target.
+ */
 
 const THRESHOLD_MIN = 0.5;
 const THRESHOLD_FACTOR = 0.1;
 
+// Minimum shortfall, in percentage points, for a class to deserve a contribution: the larger of 0.5pp and 10% of its target.
 function classThreshold(key) {
   return Math.max(THRESHOLD_MIN, classTargetPct(key) * THRESHOLD_FACTOR);
 }
 
-function classShortfall(key) {
-  const actual = classActualPct(key);
-  return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
-}
-
-// Returns class keys prioritized for investment. ['emergencyReserve'] if goal is unmet.
+// Returns class keys prioritized for investment. ['emergencyReserve'] while its goal is unmet.
 export function recommendedClasses() {
   if (portfolio.isEmergencyUnmet()) return ['emergencyReserve'];
 
-  const ranked = portfolio.activeKeys()
-    .filter(key => portfolio.items(key).length > 0)
-    .map(key => ({ key, gap: classShortfall(key) }))
-    .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
-    .toSorted((a, b) => b.gap - a.gap);
+  const { total } = portfolioTotalBRL();
+  if (total <= 0) return [];
 
-  return ranked.slice(0, settings.recommendedClassCount).map(item => item.key);
+  return portfolio.activeKeys()
+    .filter(key => portfolio.items(key).length > 0)
+    .map(key => {
+      const value = classTotalBRL(key);
+      const shortfall = value !== null ? classTargetPct(key) - (value / total) * 100 : null;
+      return { key, shortfall };
+    })
+    .filter(({ key, shortfall }) => shortfall !== null && shortfall >= classThreshold(key))
+    .toSorted((a, b) => b.shortfall - a.shortfall)
+    .slice(0, settings.recommendedClassCount)
+    .map(entry => entry.key);
 }
 
-// Returns asset IDs prioritized within a recommended class.
+// Returns asset IDs prioritized within a recommended class, by how far each sits below its own target.
 export function recommendedItems(key) {
   if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') return [];
   if (!recommendedClasses().includes(key)) return [];
 
-  const items = portfolio.items(key).filter(a => !isSkippedAsset(a));
   const total = classTotalBRL(key);
-  const gap = classShortfall(key);
+  if (!total) return [];
 
-  if (!total || total <= 0 || !gap || gap < classThreshold(key)) return [];
-
-  const ranked = items
+  return portfolio.items(key)
+    .filter(item => !isSkippedAsset(item))
     .map(item => {
       const value = assetValueBRL(key, item);
       if (value === null) return null;
-      const itemGap = Math.max(0, itemTargetPct(key, item) - (value / total) * 100);
-      return itemGap > 0 ? { id: item.id, score: itemGap * gap, gap: itemGap } : null;
+      const shortfall = itemTargetPct(key, item) - (value / total) * 100;
+      return shortfall > 0 ? { id: item.id, shortfall } : null;
     })
     .filter(Boolean)
-    .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
-
-  return ranked.slice(0, settings.recommendedAssetCount).map(item => item.id);
+    .toSorted((a, b) => b.shortfall - a.shortfall)
+    .slice(0, settings.recommendedAssetCount)
+    .map(entry => entry.id);
 }
 
 // All visible assets for the bubble chart.
