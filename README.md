@@ -32,7 +32,7 @@ Funciona 100% no navegador, sem backend. Seus dados ficam no `localStorage` e nu
 4. Use a aba **Carteira** para visualizar a distribuição do patrimônio.
 5. Revise periodicamente para apoiar a decisão de onde aportar.
 
-Em **Configurações** também é possível definir quantas classes e ativos recebem o marcador **Aportar** e ativar o **Modo Sardinha**, que exibe cotações e variação diária — desativado por padrão, já que no buy and hold o preço do dia não deve influenciar a decisão de aporte.
+Em **Configurações** também é possível definir quantas classes e ativos recebem o marcador **Aportar** e ativar o **Modo Sardinha**, que exibe cotações e variação diária. Ele fica desativado por padrão, já que no buy and hold o preço do dia não deve influenciar a decisão de aporte.
 
 ### Cotações
 
@@ -101,3 +101,15 @@ A carteira pode ser importada e exportada como JSON. Cada classe é um objeto co
 * [D3.js](https://d3js.org) para o gráfico de bolhas
 * [Lucide](https://lucide.dev) para ícones
 * PWA com Service Worker para uso offline
+
+## Desenvolvimento
+
+Para rodar localmente, basta um servidor estático na raiz do projeto:
+
+```bash
+python -m http.server 8123
+```
+
+O Service Worker usa cache-first com atualização em segundo plano: depois de alterar um arquivo, recarregue a página duas vezes para ver a mudança.
+
+As convenções do projeto estão em [CLAUDE.md](CLAUDE.md) e as decisões de arquitetura em [docs/adr](docs/adr/README.md).
