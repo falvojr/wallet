@@ -1,6 +1,6 @@
 /**
  * Centralised UI strings for internationalisation.
- * To add a locale, duplicate `pt-BR`, translate, and call setLocale().
+ * To add a locale, duplicate `pt-BR`, translate, and switch `locale`.
  */
 
 const strings = {
@@ -46,7 +46,6 @@ const strings = {
 
     // Overview
     metaLabel: 'Meta',
-    targetLabel: 'Meta %',
     goalLabel: 'Meta',
     warningTargetSum: (sum) => `As metas somam <strong>${sum}%</strong>, mas o total ideal é 100%.`,
     infoStale: (date) => `Cotações desatualizadas (${date}). Atualize em <strong>Cotar</strong>.`,
@@ -153,10 +152,6 @@ const strings = {
 };
 
 let locale = 'pt-BR';
-
-export function setLocale(nextLocale) {
-  if (strings[nextLocale]) locale = nextLocale;
-}
 
 export function getLocale() {
   return locale;

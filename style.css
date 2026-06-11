@@ -16,7 +16,6 @@
   --accent-fill: #6750a4;
   --link: #d8c9ff;
   --link-hover: #f2e8ff;
-  --link-visited: #c9b3ff;
   --link-subtle-bg: rgba(216, 201, 255, 0.10);
   --quote-up-fg: #9adfb0;
   --quote-up-border: rgba(154, 223, 176, 0.28);
@@ -707,7 +706,7 @@ body {
   display: block;
 }
 
-.donut-empty {
+.chart-empty {
   color: var(--text-muted);
   padding: 20px;
   font-size: var(--type-subtitle);
@@ -1048,7 +1047,6 @@ tr:hover .remove-btn { opacity: 0.6; }
   --accent-fill: #6750a4;
   --link: #5f43a3;
   --link-hover: #4b3386;
-  --link-visited: #7658b8;
   --link-subtle-bg: rgba(95, 67, 163, 0.08);
   --quote-up-fg: #1b5e20;
   --quote-up-border: rgba(27, 94, 32, 0.20);

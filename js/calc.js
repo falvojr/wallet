@@ -1,4 +1,4 @@
-import { DECLARED_CLASSES, portfolio, preferences, prices } from './state.js';
+import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices } from './state.js';
 
 export function formatBRL(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -38,7 +38,7 @@ export function portfolioTotalBRL() {
   let total = 0;
   let partial = false;
 
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     const value = classTotalBRL(key);
     if (value !== null) total += value;
     else if (portfolio.items(key).length) partial = true;
@@ -52,7 +52,7 @@ export function chartVisibleTotalBRL() {
   let total = 0;
   let partial = false;
 
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     if (preferences.isChartHidden(key)) continue;
     const value = classTotalBRL(key);
     if (value !== null) total += value;
@@ -171,7 +171,7 @@ export function recommendedItems(key) {
 /** All visible assets for the bubble chart. */
 export function allAssetsWeighted() {
   const output = [];
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     if (preferences.isChartHidden(key)) continue;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);

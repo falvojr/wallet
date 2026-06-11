@@ -1,5 +1,5 @@
 import {
-  CLASS_META, CLASS_KEYS, DECLARED_CLASSES,
+  CLASS_ICONS, CLASS_KEYS, DECLARED_CLASSES,
   portfolio, preferences, prices,
   activeTab, classLabel, consumeTabChange,
 } from './state.js';
@@ -13,7 +13,7 @@ import {
 } from './calc.js';
 
 const $ = selector => document.querySelector(selector);
-const refreshIcons = () => typeof lucide !== 'undefined' && lucide.createIcons();
+export const refreshIcons = () => typeof lucide !== 'undefined' && lucide.createIcons();
 
 const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 function esc(str) {
@@ -141,7 +141,7 @@ function renderTabs() {
     key,
     label: classLabel(key),
     count: portfolio.items(key).filter(item => !isSkippedAsset(item)).length,
-    icon: CLASS_META[key].icon,
+    icon: CLASS_ICONS[key],
   }));
 
   const renderTab = tab => {
@@ -209,7 +209,6 @@ function renderOverview() {
 }
 
 function renderSummaryCard(key, recommended, index, orderedKeys) {
-  const meta = CLASS_META[key];
   const label = classLabel(key);
   const total = classTotalBRL(key);
   const isRecommended = recommended.includes(key);
@@ -238,7 +237,7 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   return `<div class="${cardCls}" data-goto="${key}">
     <div class="summary-card-head">
       <span class="summary-card-label">
-        <i data-lucide="${meta.icon}" class="summary-icon"></i>
+        <i data-lucide="${CLASS_ICONS[key]}" class="summary-icon"></i>
         ${esc(label)}${isRecommended ? investBadge() : ''}
       </span>
       <span class="order-arrows">
@@ -366,7 +365,7 @@ function renderBubbleChart() {
 
   const assets = allAssetsWeighted();
   if (!assets.length) {
-    container.innerHTML = `<p class="donut-empty">${t('noData')}</p>`;
+    container.innerHTML = `<p class="chart-empty">${t('noData')}</p>`;
     return;
   }
 

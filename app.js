@@ -11,7 +11,7 @@ import {
 } from './js/state.js';
 import { getLocale, t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
-import { render, renderOverviewOnly, renderChartOnly, toggleSort } from './js/render.js';
+import { render, renderOverviewOnly, renderChartOnly, toggleSort, refreshIcons } from './js/render.js';
 
 const $ = selector => document.querySelector(selector);
 
@@ -20,7 +20,6 @@ const elements = {
   loadingOverlay: $('#loadingOverlay'),
   loadingText: $('#loadingText'),
   loadingBarFill: $('#loadingBarFill'),
-  headerActions: $('#headerActions'),
   tabNav: $('#tabNav'),
   panels: $('#panels'),
   fileInput: $('#fileInput'),
@@ -406,12 +405,6 @@ elements.panels.addEventListener('click', event => {
   }
 });
 
-elements.panels.addEventListener('click', event => {
-  if (event.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
-    event.stopPropagation();
-  }
-});
-
 elements.panels.addEventListener('change', event => {
   const inlineInput = event.target.closest('.inline-input');
   if (inlineInput) {
@@ -581,10 +574,6 @@ if ('serviceWorker' in navigator) {
 // ---------------------------------------------------------------------------
 // Initialization
 // ---------------------------------------------------------------------------
-
-function refreshIcons() {
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
 
 loadTheme();
 settings.load();

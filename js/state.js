@@ -10,18 +10,18 @@ const STORAGE_KEYS = {
 
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
-export const CLASS_META = {
-  emergencyReserve: { icon: 'life-buoy' },
-  fixedIncome:      { icon: 'shield' },
-  brStocks:         { icon: 'trending-up' },
-  brFiis:           { icon: 'building-2' },
-  usStocks:         { icon: 'globe' },
-  usReits:          { icon: 'landmark' },
-  storeOfValue:     { icon: 'bitcoin' },
-  assets:           { icon: 'home' },
+export const CLASS_ICONS = {
+  emergencyReserve: 'life-buoy',
+  fixedIncome: 'shield',
+  brStocks: 'trending-up',
+  brFiis: 'building-2',
+  usStocks: 'globe',
+  usReits: 'landmark',
+  storeOfValue: 'bitcoin',
+  assets: 'home',
 };
 
-export const CLASS_KEYS = Object.keys(CLASS_META);
+export const CLASS_KEYS = Object.keys(CLASS_ICONS);
 
 /** Classes where the user declares a monetary amount directly (no price lookup). */
 const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
@@ -155,10 +155,6 @@ export class Portfolio {
     return CLASS_KEYS.filter(key =>
       !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0
     );
-  }
-
-  allKeys() {
-    return CLASS_KEYS;
   }
 
   isEmergencyUnmet() {
