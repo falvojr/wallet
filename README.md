@@ -50,7 +50,7 @@ Câmbio USD-BRL e criptomoedas usam a [AwesomeAPI](https://economia.awesomeapi.c
 | --- | --- |
 | Classes recomendadas por aporte | Quantas classes podem receber o badge `aportar` ao mesmo tempo (padrão: 1) |
 | Ativos recomendados por classe | Quantos ativos recebem o badge dentro de cada classe recomendada (padrão: 1) |
-| Modo Sardinha | Exibe preço e variação diária na tabela. Desligado por padrão: no buy and hold, o preço do dia não deve influenciar a decisão de aporte |
+| Modo Sardinha | Exibe os valores financeiros (cotações, variação diária e totais em reais). Desligado por padrão, mostra apenas quantidades e percentuais: no buy and hold, o preço do dia não deve influenciar a decisão de aporte |
 
 ## Backup dos seus dados
 

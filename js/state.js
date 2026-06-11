@@ -330,7 +330,7 @@ export class Settings {
   finnhubToken = '';
   recommendedClassCount = 1;
   recommendedAssetCount = 1;
-  // When enabled, price and daily change columns are shown.
+  // When enabled, financial values are shown (prices, daily change and BRL totals); otherwise only quantities and percentages.
   sardineMode = false;
 
   get hasTokens() {
