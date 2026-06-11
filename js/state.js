@@ -10,26 +10,24 @@ const STORAGE_KEYS = {
 
 const PRICES_TTL = 24 * 60 * 60 * 1000;
 
-export const CLASS_META = {
-  emergencyReserve: { icon: 'life-buoy' },
-  fixedIncome:      { icon: 'shield' },
-  brStocks:         { icon: 'trending-up' },
-  brFiis:           { icon: 'building-2' },
-  usStocks:         { icon: 'globe' },
-  usReits:          { icon: 'landmark' },
-  storeOfValue:     { icon: 'bitcoin' },
-  assets:           { icon: 'home' },
+export const CLASS_ICONS = {
+  emergencyReserve: 'life-buoy',
+  fixedIncome: 'shield',
+  brStocks: 'trending-up',
+  brFiis: 'building-2',
+  usStocks: 'globe',
+  usReits: 'landmark',
+  storeOfValue: 'bitcoin',
+  assets: 'home',
 };
 
-export const CLASS_KEYS = Object.keys(CLASS_META);
+export const CLASS_KEYS = Object.keys(CLASS_ICONS);
 
-/** Classes where the user declares a monetary amount directly (no price lookup). */
-const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
+// Classes where the user declares a monetary amount directly (no price lookup).
+export const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
 
-/** Classes excluded from percentage-based rebalancing. */
-const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
-
-export { DECLARED_CLASSES, NON_REBALANCED_CLASSES };
+// Classes excluded from percentage-based rebalancing.
+export const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
 function normalizeNumber(value, fallback = 0) {
   const num = Number(value);
@@ -47,8 +45,10 @@ function normalizeItem(item) {
     amount: normalizeNumber(item.amount),
   };
 
+  // target = 0 means "skip in rebalancing", so an invalid value must be dropped instead of falling back to 0.
   if (item.target !== undefined && item.target !== null && item.target !== '') {
-    normalized.target = normalizeNumber(item.target);
+    const target = Number(item.target);
+    if (Number.isFinite(target) && target >= 0) normalized.target = target;
   }
 
   if (typeof item.note === 'string' && item.note.trim()) {
@@ -59,9 +59,7 @@ function normalizeItem(item) {
 }
 
 function normalizeClassEntry(classKey, entry = {}) {
-  const items = Array.isArray(entry?.items)
-    ? entry.items.map(normalizeItem).filter(Boolean)
-    : [];
+  const items = Array.isArray(entry?.items) ? entry.items.map(normalizeItem).filter(Boolean) : [];
 
   return {
     items,
@@ -149,13 +147,7 @@ export class Portfolio {
   }
 
   activeKeys() {
-    return CLASS_KEYS.filter(key =>
-      !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0
-    );
-  }
-
-  allKeys() {
-    return CLASS_KEYS;
+    return CLASS_KEYS.filter(key => !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0);
   }
 
   isEmergencyUnmet() {
@@ -233,9 +225,7 @@ export class Preferences {
   }
 
   displayOrder() {
-    return [...CLASS_KEYS].sort((a, b) =>
-      this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b)
-    );
+    return [...CLASS_KEYS].sort((a, b) => this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b));
   }
 
   isChartHidden(key) {
@@ -305,8 +295,7 @@ export class PriceCache {
   get dateStr() {
     if (!this.#timestamp) return null;
     return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   }
 
@@ -328,23 +317,44 @@ export class PriceCache {
   }
 }
 
+const MAX_RECOMMENDATIONS = 10;
+
+function normalizeCount(value, fallback) {
+  const count = Math.round(Number(value));
+  return count >= 1 && count <= MAX_RECOMMENDATIONS ? count : fallback;
+}
+
 export class Settings {
   #storage = new LocalStorage(STORAGE_KEYS.settings);
   brapiToken = '';
   finnhubToken = '';
+  recommendedClassCount = 1;
+  recommendedAssetCount = 1;
+  // When enabled, price and daily change columns are shown.
+  sardineMode = false;
 
   get hasTokens() {
     return Boolean(this.brapiToken || this.finnhubToken);
   }
 
   load() {
-    Object.assign(this, this.#storage.read({}) ?? {});
+    const data = this.#storage.read({}) ?? {};
+    this.brapiToken = typeof data.brapiToken === 'string' ? data.brapiToken : '';
+    this.finnhubToken = typeof data.finnhubToken === 'string' ? data.finnhubToken : '';
+    this.recommendedClassCount = normalizeCount(data.recommendedClassCount, 1);
+    this.recommendedAssetCount = normalizeCount(data.recommendedAssetCount, 1);
+    this.sardineMode = Boolean(data.sardineMode);
   }
 
   save() {
+    this.recommendedClassCount = normalizeCount(this.recommendedClassCount, 1);
+    this.recommendedAssetCount = normalizeCount(this.recommendedAssetCount, 1);
     this.#storage.write({
       brapiToken: this.brapiToken,
       finnhubToken: this.finnhubToken,
+      recommendedClassCount: this.recommendedClassCount,
+      recommendedAssetCount: this.recommendedAssetCount,
+      sardineMode: this.sardineMode,
     });
   }
 }

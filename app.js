@@ -1,17 +1,9 @@
 import {
-  CLASS_KEYS,
-  portfolio,
-  preferences,
-  prices,
-  settings,
-  activeTab,
-  setActiveTab,
-  loadTheme,
-  toggleTheme,
+  CLASS_KEYS, portfolio, preferences, prices, settings, activeTab, setActiveTab, loadTheme, toggleTheme,
 } from './js/state.js';
 import { getLocale, t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
-import { render, renderOverviewOnly, renderChartOnly, toggleSort } from './js/render.js';
+import { render, renderOverviewOnly, renderChartOnly, toggleSort, refreshIcons } from './js/render.js';
 
 const $ = selector => document.querySelector(selector);
 
@@ -20,15 +12,14 @@ const elements = {
   loadingOverlay: $('#loadingOverlay'),
   loadingText: $('#loadingText'),
   loadingBarFill: $('#loadingBarFill'),
-  headerActions: $('#headerActions'),
   tabNav: $('#tabNav'),
   panels: $('#panels'),
   fileInput: $('#fileInput'),
 };
 
-// ---------------------------------------------------------------------------
-// i18n
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * i18n
+ * ------------------------------------------------------------------------- */
 
 function applyTranslations(root = document) {
   document.documentElement.lang = getLocale();
@@ -43,9 +34,9 @@ function applyTranslations(root = document) {
   root.querySelectorAll('[data-i18n-aria-label]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAriaLabel)));
 }
 
-// ---------------------------------------------------------------------------
-// Toast / Loading
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Toast / Loading
+ * ------------------------------------------------------------------------- */
 
 function showToast(message, action) {
   const toast = document.createElement('div');
@@ -84,9 +75,9 @@ function hideLoading() {
   elements.loadingOverlay.setAttribute('aria-hidden', 'true');
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Helpers
+ * ------------------------------------------------------------------------- */
 
 function parseNonNegativeNumber(value) {
   const number = Number.parseFloat(value.replace(',', '.'));
@@ -103,79 +94,41 @@ function scheduleSave() {
   }, 600);
 }
 
+let refreshingPrices = false;
+
 async function refreshPrices() {
+  if (refreshingPrices) return;
   if (!settings.hasTokens) {
     showToast(t('toastConfigTokens'));
     return;
   }
 
-  const ok = await fetchAllPrices(showLoading);
-  hideLoading();
-  render();
-  showToast(ok ? t('toastPricesOk') : t('toastPricesFail'));
+  refreshingPrices = true;
+  try {
+    const ok = await fetchAllPrices(showLoading);
+    render();
+    showToast(ok ? t('toastPricesOk') : t('toastPricesFail'));
+  } finally {
+    refreshingPrices = false;
+    hideLoading();
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Modal utilities
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Modals
+ *
+ * Native <dialog> handles focus trap, focus restore, Escape and aria semantics; only backdrop-click needs wiring.
+ * ------------------------------------------------------------------------- */
 
-let previousFocus = null;
-
-function trapFocus(modal) {
-  const focusable = modal.querySelectorAll('input, textarea, button, [tabindex]:not([tabindex="-1"])');
-  if (!focusable.length) return;
-
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-
-  const handler = event => {
-    if (event.key !== 'Tab') return;
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-
-  modal.addEventListener('keydown', handler);
-  modal._focusTrapHandler = handler;
-}
-
-function releaseFocus(modal) {
-  if (!modal._focusTrapHandler) return;
-  modal.removeEventListener('keydown', modal._focusTrapHandler);
-  delete modal._focusTrapHandler;
-}
-
-function openModal(modalSelector, focusSelector) {
-  previousFocus = document.activeElement;
-  const modal = $(modalSelector);
-  modal.classList.add('open');
-  modal.setAttribute('aria-hidden', 'false');
-  trapFocus(modal);
-  if (focusSelector) setTimeout(() => $(focusSelector)?.focus(), 100);
-}
-
-function closeModal(modalSelector) {
-  const modal = $(modalSelector);
-  modal.classList.remove('open');
-  modal.setAttribute('aria-hidden', 'true');
-  releaseFocus(modal);
-  previousFocus?.focus();
-  previousFocus = null;
-}
-
-function bindBackdropClose(modalSelector, closeHandler) {
-  $(modalSelector).addEventListener('click', event => {
-    if (event.target.id === modalSelector.slice(1)) closeHandler();
+function bindBackdropClose(dialog) {
+  dialog.addEventListener('click', event => {
+    if (event.target === dialog) dialog.close();
   });
 }
 
-// ---------------------------------------------------------------------------
-// Add asset modal
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Add asset modal
+ * ------------------------------------------------------------------------- */
 
 let addClassKey = null;
 
@@ -184,12 +137,7 @@ function openAddModal(classKey) {
   $('#newTicker').value = '';
   $('#newAmount').value = '';
   $('#newTarget').value = '';
-  openModal('#addModal', '#newTicker');
-}
-
-function closeAddModal() {
-  closeModal('#addModal');
-  addClassKey = null;
+  $('#addModal').showModal();
 }
 
 function confirmAddAsset() {
@@ -213,14 +161,14 @@ function confirmAddAsset() {
 
   portfolio.addItem(addClassKey, item);
   portfolio.save();
-  closeAddModal();
+  $('#addModal').close();
   render();
   showToast(t('toastAdded', id));
 }
 
-// ---------------------------------------------------------------------------
-// Note modal
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Note modal
+ * ------------------------------------------------------------------------- */
 
 let noteClassKey = null;
 let noteItemId = null;
@@ -231,47 +179,44 @@ function openNoteModal(classKey, itemId) {
   const item = portfolio.items(classKey).find(a => a.id === itemId);
   $('#noteAssetName').textContent = itemId;
   $('#noteText').value = item?.note || '';
-  openModal('#noteModal', '#noteText');
-}
-
-function closeNoteModal() {
-  closeModal('#noteModal');
-  noteClassKey = null;
-  noteItemId = null;
+  $('#noteModal').showModal();
 }
 
 function saveNote() {
   if (!noteClassKey || !noteItemId) return;
   portfolio.setItemNote(noteClassKey, noteItemId, $('#noteText').value);
-  closeNoteModal();
+  $('#noteModal').close();
   render();
 }
 
-// ---------------------------------------------------------------------------
-// Settings modal
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Settings modal
+ * ------------------------------------------------------------------------- */
 
 function openSettingsModal() {
   $('#brapiToken').value = settings.brapiToken;
   $('#finnhubToken').value = settings.finnhubToken;
-  openModal('#settingsModal', '#brapiToken');
+  $('#recommendedClassCount').value = settings.recommendedClassCount;
+  $('#recommendedAssetCount').value = settings.recommendedAssetCount;
+  $('#sardineMode').checked = settings.sardineMode;
+  $('#settingsModal').showModal();
 }
 
-function closeSettingsModal() {
-  closeModal('#settingsModal');
-}
-
-function saveSettingsModal() {
+function saveSettings() {
   settings.brapiToken = $('#brapiToken').value.trim();
   settings.finnhubToken = $('#finnhubToken').value.trim();
+  settings.recommendedClassCount = $('#recommendedClassCount').value;
+  settings.recommendedAssetCount = $('#recommendedAssetCount').value;
+  settings.sardineMode = $('#sardineMode').checked;
   settings.save();
-  closeSettingsModal();
+  $('#settingsModal').close();
+  render();
   showToast(t('toastSettingsSaved'));
 }
 
-// ---------------------------------------------------------------------------
-// Import / Export
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Import / Export
+ * ------------------------------------------------------------------------- */
 
 function exportPortfolio() {
   const output = portfolio.export();
@@ -318,9 +263,9 @@ function initEmptyPortfolio() {
   render();
 }
 
-// ---------------------------------------------------------------------------
-// Event listeners — panels (delegated)
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Event listeners: panels (delegated)
+ * ------------------------------------------------------------------------- */
 
 elements.panels.addEventListener('click', event => {
   const chartToggle = event.target.closest('[data-toggle-chart]');
@@ -391,16 +336,10 @@ elements.panels.addEventListener('click', event => {
     return;
   }
 
-  const sortHeader = event.target.closest('th[data-sort]');
-  if (sortHeader) {
-    toggleSort(sortHeader.dataset.sort);
+  const sortButton = event.target.closest('[data-sort]');
+  if (sortButton) {
+    toggleSort(sortButton.dataset.sort);
     render();
-  }
-});
-
-elements.panels.addEventListener('click', event => {
-  if (event.target.closest('[data-class-target], [data-class-goal], [data-order-swap], .summary-card-target-chip, .order-arrows')) {
-    event.stopPropagation();
   }
 });
 
@@ -454,9 +393,9 @@ elements.panels.addEventListener('change', event => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Tab navigation
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Tab navigation
+ * ------------------------------------------------------------------------- */
 
 elements.tabNav.addEventListener('click', event => {
   const tabButton = event.target.closest('[data-tab]');
@@ -465,9 +404,9 @@ elements.tabNav.addEventListener('click', event => {
   render();
 });
 
-// ---------------------------------------------------------------------------
-// Drag & drop
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Drag & drop
+ * ------------------------------------------------------------------------- */
 
 function isFileDrag(event) {
   return event.dataTransfer?.types?.includes('Files');
@@ -506,9 +445,9 @@ document.addEventListener('drop', event => {
   else if (file) showToast(t('toastJsonOnly'));
 });
 
-// ---------------------------------------------------------------------------
-// Header buttons
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Header buttons
+ * ------------------------------------------------------------------------- */
 
 $('#btnImport').addEventListener('click', () => elements.fileInput.click());
 $('#btnExport').addEventListener('click', exportPortfolio);
@@ -529,24 +468,31 @@ elements.fileInput.addEventListener('change', event => {
   event.target.value = '';
 });
 
-// ---------------------------------------------------------------------------
-// Modal buttons
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Modal buttons
+ * ------------------------------------------------------------------------- */
 
-$('#modalCancel').addEventListener('click', closeAddModal);
+$('#modalCancel').addEventListener('click', () => $('#addModal').close());
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
-$('#settingsCancel').addEventListener('click', closeSettingsModal);
-$('#settingsSave').addEventListener('click', saveSettingsModal);
-$('#noteCancel').addEventListener('click', closeNoteModal);
+$('#settingsCancel').addEventListener('click', () => $('#settingsModal').close());
+$('#settingsSave').addEventListener('click', saveSettings);
+$('#noteCancel').addEventListener('click', () => $('#noteModal').close());
 $('#noteSave').addEventListener('click', saveNote);
 
-bindBackdropClose('#addModal', closeAddModal);
-bindBackdropClose('#settingsModal', closeSettingsModal);
-bindBackdropClose('#noteModal', closeNoteModal);
+['#addModal', '#noteModal', '#settingsModal'].forEach(selector => bindBackdropClose($(selector)));
 
-// ---------------------------------------------------------------------------
-// Keyboard shortcuts
-// ---------------------------------------------------------------------------
+$('#addModal').addEventListener('close', () => {
+  addClassKey = null;
+});
+
+$('#noteModal').addEventListener('close', () => {
+  noteClassKey = null;
+  noteItemId = null;
+});
+
+/* ---------------------------------------------------------------------------
+ * Keyboard shortcuts
+ * ------------------------------------------------------------------------- */
 
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
@@ -555,28 +501,17 @@ $('#noteText').addEventListener('keydown', e => {
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(); }
 });
 
-document.addEventListener('keydown', event => {
-  if (event.key !== 'Escape') return;
-  if ($('#addModal').classList.contains('open')) closeAddModal();
-  else if ($('#settingsModal').classList.contains('open')) closeSettingsModal();
-  else if ($('#noteModal').classList.contains('open')) closeNoteModal();
-});
-
-// ---------------------------------------------------------------------------
-// Service Worker
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Service Worker
+ * ------------------------------------------------------------------------- */
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-// ---------------------------------------------------------------------------
-// Initialization
-// ---------------------------------------------------------------------------
-
-function refreshIcons() {
-  if (typeof lucide !== 'undefined') lucide.createIcons();
-}
+/* ---------------------------------------------------------------------------
+ * Initialization
+ * ------------------------------------------------------------------------- */
 
 loadTheme();
 settings.load();

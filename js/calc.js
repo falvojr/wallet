@@ -1,20 +1,21 @@
-import { DECLARED_CLASSES, portfolio, preferences, prices } from './state.js';
+import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings } from './state.js';
 
 export function formatBRL(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-/** Returns asset value in BRL. Declared classes use amount directly; others need price data. */
+// Returns asset value in BRL. Declared classes use amount directly; others need price data.
 export function assetValueBRL(key, asset) {
   if (DECLARED_CLASSES.has(key)) return asset.amount;
 
   const priceData = prices.get(asset.id);
   if (!priceData) return key === 'storeOfValue' ? asset.amount : null;
 
-  const price = priceData.currency === 'USD'
-    ? priceData.price * prices.usdBrl
-    : priceData.price;
-  return price * asset.amount;
+  if (priceData.currency === 'USD') {
+    // Without an exchange rate the value is unknown, not zero.
+    return prices.usdBrl > 0 ? priceData.price * prices.usdBrl * asset.amount : null;
+  }
+  return priceData.price * asset.amount;
 }
 
 export function classTotalBRL(key) {
@@ -32,12 +33,12 @@ export function classTotalBRL(key) {
   return hasValue ? total : null;
 }
 
-/** Full portfolio value across all classes. */
+// Full portfolio value across all classes.
 export function portfolioTotalBRL() {
   let total = 0;
   let partial = false;
 
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     const value = classTotalBRL(key);
     if (value !== null) total += value;
     else if (portfolio.items(key).length) partial = true;
@@ -46,12 +47,12 @@ export function portfolioTotalBRL() {
   return { total, partial };
 }
 
-/** Portfolio value considering only classes visible in the chart. */
+// Portfolio value considering only classes visible in the chart.
 export function chartVisibleTotalBRL() {
   let total = 0;
   let partial = false;
 
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     if (preferences.isChartHidden(key)) continue;
     const value = classTotalBRL(key);
     if (value !== null) total += value;
@@ -64,12 +65,8 @@ export function chartVisibleTotalBRL() {
 export const isSkippedAsset = item => item.target === 0;
 export const classTargetPct = key => portfolio.target(key);
 
-/**
- * A class with target = 0 does not participate in percentage rebalancing.
- * Emergency reserve remains active because it uses a BRL goal instead.
- */
-export const isClassInactive = key =>
-  key !== 'emergencyReserve' && portfolio.target(key) === 0;
+// A class with target = 0 does not participate in rebalancing; the emergency reserve stays active because it uses a BRL goal instead.
+export const isClassInactive = key => key !== 'emergencyReserve' && portfolio.target(key) === 0;
 
 export function classActualPct(key) {
   const value = classTotalBRL(key);
@@ -77,7 +74,7 @@ export function classActualPct(key) {
   return value !== null && total > 0 ? (value / total) * 100 : null;
 }
 
-/** Progress of emergency reserve toward its BRL goal (0-100). */
+// Progress of emergency reserve toward its BRL goal (0-100).
 export function emergencyProgress() {
   const goal = portfolio.goal('emergencyReserve');
   if (goal <= 0) return null;
@@ -91,22 +88,20 @@ export function itemTargetPct(key, item) {
   return activeCount > 0 ? 100 / activeCount : 0;
 }
 
-/** Checks whether active-class targets sum to 100%. */
+// Checks whether active-class targets sum to 100%.
 export function allocationWarning() {
   const sum = portfolio.activeKeys().reduce((total, key) => total + classTargetPct(key), 0);
   return Math.abs(sum - 100) < 0.1 ? null : { sum: Math.round(sum) };
 }
 
-// ---------------------------------------------------------------------------
-// Rebalancing
-//
-// If the emergency reserve goal is unmet, every other recommendation is blocked.
-//
-// Otherwise, class-level shortfall (target% - actual%) is computed, filtered by
-// a proportional threshold, and the top 1-3 classes are recommended. Within a
-// recommended class, items are ranked by how far they are from their internal
-// target.
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Rebalancing
+ *
+ * If the emergency reserve goal is unmet, every other recommendation is blocked.
+ *
+ * Otherwise, class-level shortfall (target% - actual%) is computed, filtered by a proportional threshold, and the most lagging classes are
+ * recommended up to the user-configured limit. Within a recommended class, items are ranked by distance from their internal target, also capped.
+ * ------------------------------------------------------------------------- */
 
 const THRESHOLD_MIN = 0.5;
 const THRESHOLD_FACTOR = 0.1;
@@ -120,13 +115,7 @@ function classShortfall(key) {
   return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
 }
 
-function recommendationLimit(count) {
-  if (count >= 11) return 3;
-  if (count >= 6) return 2;
-  return count >= 1 ? 1 : 0;
-}
-
-/** Returns class keys prioritized for investment. ['emergencyReserve'] if goal is unmet. */
+// Returns class keys prioritized for investment. ['emergencyReserve'] if goal is unmet.
 export function recommendedClasses() {
   if (portfolio.isEmergencyUnmet()) return ['emergencyReserve'];
 
@@ -136,16 +125,12 @@ export function recommendedClasses() {
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
     .toSorted((a, b) => b.gap - a.gap);
 
-  const limit = ranked.length >= 8 ? 3 : ranked.length >= 3 ? 2 : 1;
-  return ranked.slice(0, limit).map(item => item.key);
+  return ranked.slice(0, settings.recommendedClassCount).map(item => item.key);
 }
 
-/** Returns asset IDs prioritized within a recommended class. */
+// Returns asset IDs prioritized within a recommended class.
 export function recommendedItems(key) {
-  if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') {
-    return [];
-  }
-
+  if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') return [];
   if (!recommendedClasses().includes(key)) return [];
 
   const items = portfolio.items(key).filter(a => !isSkippedAsset(a));
@@ -164,19 +149,17 @@ export function recommendedItems(key) {
     .filter(Boolean)
     .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
 
-  return ranked.slice(0, recommendationLimit(items.length)).map(item => item.id);
+  return ranked.slice(0, settings.recommendedAssetCount).map(item => item.id);
 }
 
-/** All visible assets for the bubble chart. */
+// All visible assets for the bubble chart.
 export function allAssetsWeighted() {
   const output = [];
-  for (const key of portfolio.allKeys()) {
+  for (const key of CLASS_KEYS) {
     if (preferences.isChartHidden(key)) continue;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);
-      if (value !== null && value > 0) {
-        output.push({ id: item.id, value, classKey: key });
-      }
+      if (value !== null && value > 0) output.push({ id: item.id, value, classKey: key });
     }
   }
   return output;

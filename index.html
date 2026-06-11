@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#11131a">
-  <meta name="mobile-web-app-capable" content="yes">
   <title data-i18n="pageTitle">Minha Holding</title>
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,7 +39,7 @@
           <i data-lucide="sun-moon"></i>
         </button>
         <button type="button" class="icon-btn" id="btnSettings" data-i18n-title="settingsTitleShort"
-          data-i18n-aria-label="settingsTitleShort" title="Configurações de API" aria-label="Configurações de API">
+          data-i18n-aria-label="settingsTitleShort" title="Configurações" aria-label="Configurações">
           <i data-lucide="settings"></i>
         </button>
         <button type="button" class="btn btn--tonal" id="btnPrices" data-i18n-title="refreshPricesTitle"
@@ -83,7 +82,7 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" aria-hidden="true">
+  <dialog class="modal-dialog" id="addModal" aria-labelledby="addModalTitle">
     <div class="modal">
       <h3 id="addModalTitle" data-i18n="addModalTitle">Adicionar ativo</h3>
       <div class="modal-field">
@@ -107,10 +106,10 @@
         <button type="button" class="btn btn--filled" id="modalConfirm" data-i18n="btnAdd">Adicionar</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
-  <div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle" aria-hidden="true">
-    <div class="modal modal--wide">
+  <dialog class="modal-dialog modal-dialog--wide" id="noteModal" aria-labelledby="noteModalTitle">
+    <div class="modal">
       <h3 id="noteModalTitle" data-i18n="noteModalTitle">Comentário</h3>
       <p class="modal-hint"><span data-i18n="noteHintPrefix">Comentário sobre</span> <strong
           id="noteAssetName"></strong></p>
@@ -124,16 +123,18 @@
         <button type="button" class="btn btn--filled" id="noteSave" data-i18n="btnSave">Salvar</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
-  <div class="modal-overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle" aria-hidden="true">
-    <div class="modal modal--wide">
-      <h3 id="settingsModalTitle" data-i18n="settingsTitle">Tokens de API</h3>
+  <dialog class="modal-dialog modal-dialog--wide" id="settingsModal" aria-labelledby="settingsModalTitle">
+    <div class="modal">
+      <h3 id="settingsModalTitle" data-i18n="settingsTitle">Configurações</h3>
+
+      <h4 class="modal-section-title" data-i18n="settingsSectionApis">Cotações (APIs)</h4>
       <p class="modal-hint" data-i18n="settingsHint">Tokens gratuitos para buscar cotações em tempo real.</p>
       <div class="modal-field">
         <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (Ações / FIIs)</label>
         <input type="text" id="brapiToken" data-i18n-placeholder="brapiHint"
-          placeholder="Crie grátis em brapi.dev/dashboard" autocomplete="off">
+          placeholder="Crie grátis em brapi.dev" autocomplete="off">
         <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
           data-i18n-aria-label="externalLinkLabel" aria-label="Abrir link externo">
           <span data-i18n="brapiCreateAccount">Criar conta</span>
@@ -150,12 +151,35 @@
           <i data-lucide="external-link"></i>
         </a>
       </div>
+
+      <h4 class="modal-section-title" data-i18n="settingsSectionInvest">Aportes</h4>
+      <div class="modal-field">
+        <label for="recommendedClassCount" data-i18n="recommendedClassesLabel">Classes recomendadas por aporte</label>
+        <input type="number" id="recommendedClassCount" min="1" max="10" step="1" inputmode="numeric"
+          autocomplete="off">
+      </div>
+      <div class="modal-field">
+        <label for="recommendedAssetCount" data-i18n="recommendedAssetsLabel">Ativos recomendados por classe</label>
+        <input type="number" id="recommendedAssetCount" min="1" max="10" step="1" inputmode="numeric"
+          autocomplete="off">
+      </div>
+
+      <h4 class="modal-section-title" data-i18n="settingsSectionDisplay">Exibição</h4>
+      <label class="check-field">
+        <input type="checkbox" id="sardineMode">
+        <span>
+          <strong data-i18n="sardineModeLabel">Modo Sardinha</strong>
+          <small data-i18n="sardineModeHint">Exibe cotações e variação diária. No buy and hold, o preço do dia não
+            deve influenciar a decisão de aporte.</small>
+        </span>
+      </label>
+
       <div class="modal-actions">
         <button type="button" class="btn btn--text" id="settingsCancel" data-i18n="btnCancel">Cancelar</button>
         <button type="button" class="btn btn--filled" id="settingsSave" data-i18n="btnSave">Salvar</button>
       </div>
     </div>
-  </div>
+  </dialog>
 
   <div class="drop-zone" id="dropZone" aria-hidden="true">
     <div class="drop-zone-inner" data-i18n="dropHint">Solte o arquivo JSON aqui</div>

@@ -1,5 +1,6 @@
-const CACHE_NAME = 'holding-v11';
+const CACHE_NAME = 'holding-v12';
 const APP_FILES = [
+  './',
   './index.html',
   './style.css',
   './app.js',
@@ -10,6 +11,14 @@ const APP_FILES = [
   './js/i18n.js',
   './manifest.json',
 ];
+
+// Same-origin app files plus the CDNs the app depends on to work offline.
+const CACHED_ORIGINS = new Set([
+  self.location.origin,
+  'https://cdn.jsdelivr.net',
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com',
+]);
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -22,23 +31,23 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-      ))
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
-  if (new URL(event.request.url).origin !== self.location.origin) return;
+  if (!CACHED_ORIGINS.has(new URL(event.request.url).origin)) return;
 
   event.respondWith(
     caches.match(event.request).then(cached => {
       const fresh = fetch(event.request)
         .then(response => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+            // Clone before the page consumes the body, otherwise clone() races against the reader and fails intermittently.
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
           }
           return response;
         })

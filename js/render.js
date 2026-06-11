@@ -1,19 +1,14 @@
 import {
-  CLASS_META, CLASS_KEYS, DECLARED_CLASSES,
-  portfolio, preferences, prices,
-  activeTab, classLabel, consumeTabChange,
+  CLASS_ICONS, CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings, activeTab, classLabel, consumeTabChange,
 } from './state.js';
 import { t, tn } from './i18n.js';
 import {
-  formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL,
-  chartVisibleTotalBRL, classTargetPct, classActualPct,
-  isSkippedAsset, isClassInactive, allocationWarning,
-  recommendedClasses, recommendedItems, itemTargetPct,
-  allAssetsWeighted, emergencyProgress,
+  formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, chartVisibleTotalBRL, classTargetPct, classActualPct, isSkippedAsset,
+  isClassInactive, allocationWarning, recommendedClasses, recommendedItems, itemTargetPct, allAssetsWeighted, emergencyProgress,
 } from './calc.js';
 
 const $ = selector => document.querySelector(selector);
-const refreshIcons = () => typeof lucide !== 'undefined' && lucide.createIcons();
+export const refreshIcons = () => typeof lucide !== 'undefined' && lucide.createIcons();
 
 const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 function esc(str) {
@@ -35,9 +30,9 @@ function badge(cls, icon, label, title) {
 const investBadge = () => badge('invest', 'sparkles', t('badgeInvest'), t('badgeInvestTitle'));
 const skipBadge = () => badge('skip', 'circle-pause', t('badgeSkip'), t('badgeSkipTitle'));
 
-// ---------------------------------------------------------------------------
-// Sort
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Sort
+ * ------------------------------------------------------------------------- */
 
 export function toggleSort(col) {
   if (preferences.sortCol === col) {
@@ -58,9 +53,9 @@ function tickerUrl(key, id) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Theme-aware class color
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Theme-aware class color
+ * ------------------------------------------------------------------------- */
 
 function getClassColor(key) {
   const element = document.querySelector(`[data-goto="${key}"]`);
@@ -85,14 +80,15 @@ const isLightColor = color => relativeLuminance(color) > 0.42;
 const bubbleTextColor = fill => isLightColor(fill) ? '#11131a' : '#ffffff';
 const bubbleSubtextColor = fill => isLightColor(fill) ? 'rgba(17,19,26,0.72)' : 'rgba(255,255,255,0.72)';
 
-// ---------------------------------------------------------------------------
-// Render entry points
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Render entry points
+ * ------------------------------------------------------------------------- */
 
 export function render() {
   const hasData = portfolio.loaded;
   $('#emptyWelcome').hidden = hasData;
   $('#headerActions').hidden = !hasData;
+  document.body.classList.toggle('quotes-hidden', !settings.sardineMode);
 
   if (!hasData) {
     $('#tabNav').innerHTML = '';
@@ -125,9 +121,9 @@ export function renderChartOnly() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Tabs
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Tabs
+ * ------------------------------------------------------------------------- */
 
 function renderTabs() {
   const order = preferences.displayOrder();
@@ -141,14 +137,14 @@ function renderTabs() {
     key,
     label: classLabel(key),
     count: portfolio.items(key).filter(item => !isSkippedAsset(item)).length,
-    icon: CLASS_META[key].icon,
+    icon: CLASS_ICONS[key],
   }));
 
   const renderTab = tab => {
     const isActive = tab.key === activeTab;
     const countHtml = tab.count != null ? `<span class="tab-count">${tab.count}</span>` : '';
     const iconHtml = isActive ? `<i data-lucide="${tab.icon}" class="tab-icon"></i>` : '';
-    return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}">
+    return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}"${isActive ? ' aria-current="true"' : ''}>
       ${iconHtml}${esc(tab.label)}${countHtml}
     </button>`;
   };
@@ -158,9 +154,9 @@ function renderTabs() {
     + classTabs.map(renderTab).join('');
 }
 
-// ---------------------------------------------------------------------------
-// Panels
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Panels
+ * ------------------------------------------------------------------------- */
 
 function renderPanels() {
   const animated = consumeTabChange();
@@ -178,9 +174,9 @@ function renderPanels() {
   ].join('');
 }
 
-// ---------------------------------------------------------------------------
-// Overview
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Overview
+ * ------------------------------------------------------------------------- */
 
 function renderOverview() {
   const recommended = recommendedClasses();
@@ -209,7 +205,6 @@ function renderOverview() {
 }
 
 function renderSummaryCard(key, recommended, index, orderedKeys) {
-  const meta = CLASS_META[key];
   const label = classLabel(key);
   const total = classTotalBRL(key);
   const isRecommended = recommended.includes(key);
@@ -238,7 +233,7 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   return `<div class="${cardCls}" data-goto="${key}">
     <div class="summary-card-head">
       <span class="summary-card-label">
-        <i data-lucide="${meta.icon}" class="summary-icon"></i>
+        <i data-lucide="${CLASS_ICONS[key]}" class="summary-icon"></i>
         ${esc(label)}${isRecommended ? investBadge() : ''}
       </span>
       <span class="order-arrows">
@@ -299,9 +294,9 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     </label>`;
 }
 
-// ---------------------------------------------------------------------------
-// Charts tab
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Charts tab
+ * ------------------------------------------------------------------------- */
 
 function renderChartsTab() {
   const order = preferences.displayOrder();
@@ -338,26 +333,26 @@ function renderLegendItem(item) {
   const strikeCls = item.hidden ? ' legend-strike' : '';
   const valueText = item.hasPrices ? formatBRL(item.total) : t('assetCount', item.count);
 
-  return `<div class="legend-item${hiddenCls}" data-toggle-chart="${item.key}" data-goto="${item.key}"
+  return `<button type="button" class="legend-item${hiddenCls}" data-toggle-chart="${item.key}" data-goto="${item.key}"
     title="${t('a11yToggleChart', item.label, !item.hidden)}">
     <span class="legend-dot"></span>
-    <div class="legend-item-text">
+    <span class="legend-item-text">
       <span class="legend-item-label${strikeCls}">${esc(item.label)}</span>
       <span class="legend-item-value${strikeCls}">${valueText}</span>
-    </div>
-  </div>`;
+    </span>
+  </button>`;
 }
 
-// ---------------------------------------------------------------------------
-// Bubble chart (force-directed rectangular layout)
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Bubble chart (force-directed rectangular layout)
+ * ------------------------------------------------------------------------- */
 
 function fitLabel(name, radius) {
   const fontSize = Math.min(radius * 0.45, 14);
   const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
   return name.length <= maxChars
     ? name
-    : (maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars));
+    : maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
 }
 
 function renderBubbleChart() {
@@ -366,7 +361,7 @@ function renderBubbleChart() {
 
   const assets = allAssetsWeighted();
   if (!assets.length) {
-    container.innerHTML = `<p class="donut-empty">${t('noData')}</p>`;
+    container.innerHTML = `<p class="chart-empty">${t('noData')}</p>`;
     return;
   }
 
@@ -379,7 +374,7 @@ function renderBubbleChart() {
   const height = Math.max(200, Math.floor(bounds.height || 400));
   const padding = Math.min(width, height) < 360 ? 2 : 3;
 
-  // Compute radii proportional to value, scaled to fit available area without overlap
+  // Compute radii proportional to value, scaled to fit the available area without overlap.
   const area = width * height;
   const scaleFactor = Math.sqrt(area / totalValue) * 0.44;
   const nodes = assets.map(asset => ({
@@ -389,7 +384,7 @@ function renderBubbleChart() {
     y: height / 2 + (Math.random() - 0.5) * height * 0.3,
   }));
 
-  // Force simulation distributes circles into the rectangle without overlap
+  // Force simulation distributes circles into the rectangle without overlap.
   const simulation = d3.forceSimulation(nodes)
     .force('collide', d3.forceCollide(d => d.r + padding + 1).iterations(4).strength(1))
     .force('x', d3.forceX(width / 2).strength(0.07))
@@ -471,14 +466,23 @@ function renderBubbleChart() {
     .style('pointer-events', 'none');
 }
 
-// ---------------------------------------------------------------------------
-// Asset table
-// ---------------------------------------------------------------------------
+/* ---------------------------------------------------------------------------
+ * Asset table
+ * ------------------------------------------------------------------------- */
 
 function sortIndicator(col) {
   if (preferences.sortCol !== col) return '<i data-lucide="arrow-up-down" class="sort-icon sort-icon--idle"></i>';
   const icon = preferences.sortDir === 'asc' ? 'arrow-up' : 'arrow-down';
   return `<i data-lucide="${icon}" class="sort-icon"></i>`;
+}
+
+function sortableHeader(col, label, extraClass = '') {
+  const ariaSort = preferences.sortCol !== col
+    ? 'none'
+    : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
+  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}">
+    <button type="button" class="sort-btn" data-sort="${col}">${label} ${sortIndicator(col)}</button>
+  </th>`;
 }
 
 function sortedItems(key) {
@@ -527,12 +531,12 @@ function renderClassPanel(key) {
 
   html += `<div class="table-wrap"><table class="asset-table">
     <thead><tr>
-      <th data-sort="name" class="sortable">${t('colName')} ${sortIndicator('name')}</th>
-      <th data-sort="amount" class="col-r sortable">${t('colAmount')} ${sortIndicator('amount')}</th>
-      <th data-sort="price" class="col-r sortable">${t('colPrice')} ${sortIndicator('price')}</th>
-      <th data-sort="change" class="col-r sortable">${t('colChange')} ${sortIndicator('change')}</th>
-      <th data-sort="total" class="col-r sortable">${t('colTotal')} ${sortIndicator('total')}</th>
-      <th data-sort="target" class="col-r sortable">${t('colTarget')} ${sortIndicator('target')}</th>
+      ${sortableHeader('name', t('colName'))}
+      ${sortableHeader('amount', t('colAmount'), ' col-r')}
+      ${sortableHeader('price', t('colPrice'), ' col-r')}
+      ${sortableHeader('change', t('colChange'), ' col-r')}
+      ${sortableHeader('total', t('colTotal'), ' col-r')}
+      ${sortableHeader('target', t('colTarget'), ' col-r')}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
@@ -594,10 +598,7 @@ function formatPrice(key, item, priceData) {
   if (!priceData) return { priceStr: '', changeHtml: '' };
 
   const prefix = priceData.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
-  const priceStr = prefix + priceData.price.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const priceStr = prefix + priceData.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   if (priceData.change === undefined) return { priceStr, changeHtml: '' };
 

@@ -20,21 +20,66 @@ A ideia central é construir patrimônio de forma gradual, com aportes periódic
 
 Cada classe recebe uma **meta percentual** na carteira. A aplicação compara o percentual atual com a meta e sugere onde aportar. O rebalanceamento é passivo: não se vende para reequilibrar, apenas se direciona o próximo aporte para a classe mais defasada.
 
-## Como usar
+## Comece em 5 minutos
 
-A aplicação está disponível em **[falvojr.github.io/wallet](https://falvojr.github.io/wallet)**.
+Você só precisa de um navegador. Não há cadastro, não há instalação e nenhum dado sai do seu dispositivo.
 
-Funciona 100% no navegador, sem backend. Seus dados ficam no `localStorage` e nunca são enviados a servidores.
+1. Acesse **[falvojr.github.io/wallet](https://falvojr.github.io/wallet)**.
+2. Clique em **Criar carteira** (ou em **Importar JSON**, se já tiver um backup).
+3. Abra a aba de uma classe (por exemplo, **Ações**) e clique em **Adicionar ativo**. Preencha:
+   - **Nome / ticker**: o código do ativo (ex.: `WEGE3`, `AAPL`) ou um nome livre (ex.: `CDB Nubank`);
+   - **Quantidade ou valor**: a quantidade de cotas para ativos com cotação, ou o valor em reais para Renda Fixa, Reserva de Emergência e Bens;
+   - **Meta % na classe**: opcional. Em branco, a meta é dividida igualmente entre os ativos da classe; `0` tira o ativo do rebalanceamento (badge `ignorar`).
+4. Na aba **Metas**, defina o percentual alvo de cada classe (a soma deve fechar em 100%) e a meta em reais da Reserva de Emergência.
+5. Pronto. O badge **`aportar`** indica a classe e o ativo mais defasados, ou seja, o melhor destino para o próximo aporte.
 
-1. Acesse a aplicação e clique em **Criar carteira** (ou **Importar JSON** se já tiver uma).
-2. Adicione ativos em cada classe e defina suas metas na aba **Metas**.
-3. Configure tokens gratuitos em ⚙️ para buscar cotações automaticamente.
-4. Use a aba **Carteira** para visualizar a distribuição do patrimônio.
-5. Revise periodicamente para apoiar a decisão de onde aportar.
+## Cotações automáticas (opcional)
 
-### Cotações
+Sem cotações o app continua funcionando, mas só calcula o valor das classes declaradas em reais. Para os demais ativos:
 
-As cotações são buscadas via APIs gratuitas: [brapi.dev](https://brapi.dev) para ações e FIIs brasileiros, [Finnhub](https://finnhub.io) para Stocks e REITs americanos, e [AwesomeAPI](https://economia.awesomeapi.com.br) para ativos de Reserva de Valor. Classes como Renda Fixa, Reserva de Emergência e Bens não possuem cotação automática: o valor é informado manualmente.
+1. Crie uma conta gratuita em [brapi.dev](https://brapi.dev) e copie seu token (cobre ações e FIIs brasileiros).
+2. Crie uma conta gratuita em [finnhub.io](https://finnhub.io/register) e copie sua API key (cobre stocks e REITs americanos).
+3. No app, abra ⚙️ **Configurações**, cole os tokens nos campos correspondentes e salve.
+4. Clique em **Cotar**. Os preços ficam salvos no dispositivo e um aviso aparece quando estiverem desatualizados (mais de 24 horas).
+
+Câmbio USD-BRL e criptomoedas usam a [AwesomeAPI](https://economia.awesomeapi.com.br), que não precisa de token.
+
+## Configurações
+
+| Opção | O que faz |
+| --- | --- |
+| Classes recomendadas por aporte | Quantas classes podem receber o badge `aportar` ao mesmo tempo (padrão: 1) |
+| Ativos recomendados por classe | Quantos ativos recebem o badge dentro de cada classe recomendada (padrão: 1) |
+| Modo Sardinha | Exibe preço e variação diária na tabela. Desligado por padrão: no buy and hold, o preço do dia não deve influenciar a decisão de aporte |
+
+## Backup dos seus dados
+
+Os dados ficam apenas no seu navegador. Se você limpar os dados do site, a carteira é apagada. Por isso:
+
+- **Exportar** (seta para cima, no topo): baixa um arquivo `portfolio_AAAA-MM-DD.json`. Faça isso periodicamente.
+- **Importar** (seta para baixo, ou arraste o arquivo para a janela): restaura o backup em qualquer dispositivo ou navegador.
+
+## Instalar como aplicativo
+
+O site é um PWA e funciona offline depois da primeira visita:
+
+- **Android / Chrome**: menu do navegador, opção "Adicionar à tela inicial";
+- **iPhone / Safari**: botão de compartilhar, opção "Adicionar à Tela de Início";
+- **Desktop**: ícone de instalação na barra de endereço.
+
+## Perguntas frequentes
+
+**Meus dados vão para algum servidor?**
+Não. Tudo fica no `localStorage` do navegador. Os tokens são usados apenas para consultar as APIs de cotação, direto do seu dispositivo.
+
+**A cotação de um ativo não aparece. E agora?**
+Confira se os tokens estão salvos em Configurações e clique em **Cotar**. Ativos com nome livre (ex.: `CDB Nubank`) não têm cotação: o valor informado é usado diretamente.
+
+**O que significa o badge `aportar`?**
+É a recomendação de destino do próximo aporte: a classe (e o ativo) mais distante da meta. Enquanto a meta da Reserva de Emergência não for atingida, ela é a única recomendação.
+
+**Posso usar em mais de um dispositivo?**
+Sim: exporte o JSON em um e importe no outro. Não há sincronização automática.
 
 ## Formato do `portfolio.json`
 
@@ -99,3 +144,15 @@ A carteira pode ser importada e exportada como JSON. Cada classe é um objeto co
 * [D3.js](https://d3js.org) para o gráfico de bolhas
 * [Lucide](https://lucide.dev) para ícones
 * PWA com Service Worker para uso offline
+
+## Desenvolvimento
+
+Para rodar localmente, basta um servidor estático na raiz do projeto:
+
+```bash
+python -m http.server 8123
+```
+
+O Service Worker usa cache-first com atualização em segundo plano: depois de alterar um arquivo, recarregue a página duas vezes para ver a mudança.
+
+As convenções do projeto estão em [CLAUDE.md](CLAUDE.md) e as decisões de arquitetura em [docs/adr](docs/adr/README.md).
