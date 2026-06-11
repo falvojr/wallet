@@ -24,12 +24,10 @@ export const CLASS_ICONS = {
 export const CLASS_KEYS = Object.keys(CLASS_ICONS);
 
 /** Classes where the user declares a monetary amount directly (no price lookup). */
-const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
+export const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
 
 /** Classes excluded from percentage-based rebalancing. */
-const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
-
-export { DECLARED_CLASSES, NON_REBALANCED_CLASSES };
+export const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
 function normalizeNumber(value, fallback = 0) {
   const num = Number(value);
@@ -47,8 +45,7 @@ function normalizeItem(item) {
     amount: normalizeNumber(item.amount),
   };
 
-  // target = 0 means "skip in rebalancing", so an invalid value must be
-  // dropped instead of falling back to 0.
+  // target = 0 means "skip in rebalancing", so an invalid value must be dropped instead of falling back to 0.
   if (item.target !== undefined && item.target !== null && item.target !== '') {
     const target = Number(item.target);
     if (Number.isFinite(target) && target >= 0) normalized.target = target;
@@ -62,9 +59,7 @@ function normalizeItem(item) {
 }
 
 function normalizeClassEntry(classKey, entry = {}) {
-  const items = Array.isArray(entry?.items)
-    ? entry.items.map(normalizeItem).filter(Boolean)
-    : [];
+  const items = Array.isArray(entry?.items) ? entry.items.map(normalizeItem).filter(Boolean) : [];
 
   return {
     items,
@@ -152,9 +147,7 @@ export class Portfolio {
   }
 
   activeKeys() {
-    return CLASS_KEYS.filter(key =>
-      !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0
-    );
+    return CLASS_KEYS.filter(key => !NON_REBALANCED_CLASSES.has(key) && this.target(key) > 0);
   }
 
   isEmergencyUnmet() {
@@ -232,9 +225,7 @@ export class Preferences {
   }
 
   displayOrder() {
-    return [...CLASS_KEYS].sort((a, b) =>
-      this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b)
-    );
+    return [...CLASS_KEYS].sort((a, b) => this.order(a) - this.order(b) || CLASS_KEYS.indexOf(a) - CLASS_KEYS.indexOf(b));
   }
 
   isChartHidden(key) {
@@ -303,10 +294,7 @@ export class PriceCache {
 
   get dateStr() {
     if (!this.#timestamp) return null;
-    return new Date(this.#timestamp).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
+    return new Date(this.#timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   load() {

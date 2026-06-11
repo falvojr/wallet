@@ -65,12 +65,8 @@ export function chartVisibleTotalBRL() {
 export const isSkippedAsset = item => item.target === 0;
 export const classTargetPct = key => portfolio.target(key);
 
-/**
- * A class with target = 0 does not participate in percentage rebalancing.
- * Emergency reserve remains active because it uses a BRL goal instead.
- */
-export const isClassInactive = key =>
-  key !== 'emergencyReserve' && portfolio.target(key) === 0;
+/** A class with target = 0 does not participate in rebalancing; the emergency reserve stays active because it uses a BRL goal instead. */
+export const isClassInactive = key => key !== 'emergencyReserve' && portfolio.target(key) === 0;
 
 export function classActualPct(key) {
   const value = classTotalBRL(key);
@@ -103,10 +99,8 @@ export function allocationWarning() {
 //
 // If the emergency reserve goal is unmet, every other recommendation is blocked.
 //
-// Otherwise, class-level shortfall (target% - actual%) is computed, filtered by
-// a proportional threshold, and the most lagging classes are recommended up to
-// the user-configured limit. Within a recommended class, items are ranked by
-// how far they are from their internal target, also up to a configured limit.
+// Otherwise, class-level shortfall (target% - actual%) is computed, filtered by a proportional threshold, and the most lagging classes are
+// recommended up to the user-configured limit. Within a recommended class, items are ranked by distance from their internal target, also capped.
 // ---------------------------------------------------------------------------
 
 const THRESHOLD_MIN = 0.5;
@@ -136,10 +130,7 @@ export function recommendedClasses() {
 
 /** Returns asset IDs prioritized within a recommended class. */
 export function recommendedItems(key) {
-  if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') {
-    return [];
-  }
-
+  if (portfolio.isEmergencyUnmet() || isClassInactive(key) || key === 'emergencyReserve') return [];
   if (!recommendedClasses().includes(key)) return [];
 
   const items = portfolio.items(key).filter(a => !isSkippedAsset(a));
@@ -168,9 +159,7 @@ export function allAssetsWeighted() {
     if (preferences.isChartHidden(key)) continue;
     for (const item of portfolio.items(key)) {
       const value = assetValueBRL(key, item);
-      if (value !== null && value > 0) {
-        output.push({ id: item.id, value, classKey: key });
-      }
+      if (value !== null && value > 0) output.push({ id: item.id, value, classKey: key });
     }
   }
   return output;

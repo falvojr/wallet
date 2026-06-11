@@ -593,7 +593,12 @@ body {
 
 /* Ticker links */
 
-.ticker-link { color: var(--link); text-decoration: none; border-bottom: 1px dotted color-mix(in srgb, var(--link) 50%, transparent); transition: color var(--ease), border-color var(--ease); }
+.ticker-link {
+  color: var(--link);
+  text-decoration: none;
+  border-bottom: 1px dotted color-mix(in srgb, var(--link) 50%, transparent);
+  transition: color var(--ease), border-color var(--ease);
+}
 .ticker-link:hover,
 .ticker-link:focus-visible { color: var(--link-hover); border-bottom-color: var(--link-hover); }
 
@@ -929,12 +934,29 @@ tr:hover .remove-btn { opacity: 0.6; }
 .check-field input { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
 .check-field strong { display: block; font-size: var(--type-body); font-weight: 600; color: var(--text-primary); }
 .check-field small { display: block; font-size: var(--type-label); color: var(--text-muted); line-height: 1.45; }
-.field-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: var(--type-label); font-weight: 600; color: var(--link); text-decoration: none; }
+.field-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: var(--type-label);
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: none;
+}
 .field-link svg,
 .field-link [data-lucide] { width: 14px; height: 14px; }
 .field-link:hover,
 .field-link:focus-visible { color: var(--link-hover); }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
 .modal-shortcut-hint { font-size: var(--type-label-sm); color: var(--text-muted); margin-right: auto; }
 
 /* Drop zone */

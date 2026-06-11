@@ -1,14 +1,4 @@
-import {
-  CLASS_KEYS,
-  portfolio,
-  preferences,
-  prices,
-  settings,
-  activeTab,
-  setActiveTab,
-  loadTheme,
-  toggleTheme,
-} from './js/state.js';
+import { CLASS_KEYS, portfolio, preferences, prices, settings, activeTab, setActiveTab, loadTheme, toggleTheme } from './js/state.js';
 import { getLocale, t } from './js/i18n.js';
 import { fetchAllPrices } from './js/api.js';
 import { render, renderOverviewOnly, renderChartOnly, toggleSort, refreshIcons } from './js/render.js';
@@ -125,8 +115,7 @@ async function refreshPrices() {
 // ---------------------------------------------------------------------------
 // Modals
 //
-// Native <dialog> handles focus trap, focus restore, Escape and aria
-// semantics; only backdrop-click needs wiring.
+// Native <dialog> handles focus trap, focus restore, Escape and aria semantics; only backdrop-click needs wiring.
 // ---------------------------------------------------------------------------
 
 function bindBackdropClose(dialog) {
@@ -490,14 +479,8 @@ $('#noteSave').addEventListener('click', saveNote);
 
 ['#addModal', '#noteModal', '#settingsModal'].forEach(selector => bindBackdropClose($(selector)));
 
-$('#addModal').addEventListener('close', () => {
-  addClassKey = null;
-});
-
-$('#noteModal').addEventListener('close', () => {
-  noteClassKey = null;
-  noteItemId = null;
-});
+$('#addModal').addEventListener('close', () => { addClassKey = null; });
+$('#noteModal').addEventListener('close', () => { noteClassKey = null; noteItemId = null; });
 
 // ---------------------------------------------------------------------------
 // Keyboard shortcuts
