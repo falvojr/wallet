@@ -15,6 +15,12 @@ Uma ADR descreve uma decisão tomada e o porquê. Decisões superadas não são 
 | [0005](0005-modais-com-dialog-nativo.md) | Modais com dialog nativo | Aceita |
 | [0006](0006-recomendacao-de-aporte-configuravel.md) | Recomendação de aporte com limites configuráveis | Aceita |
 | [0007](0007-i18n-centralizada.md) | Strings de interface centralizadas (i18n) | Aceita |
+| [0008](0008-modelo-de-dominio-classes-metas-rebalanceamento.md) | Modelo de domínio: classes de ativos, metas e rebalanceamento passivo | Aceita |
+| [0009](0009-renderizacao-declarativa-com-template-literals.md) | Renderização declarativa com template literals e innerHTML | Aceita |
+| [0010](0010-delegacao-de-eventos-com-data-attributes.md) | Delegação de eventos com data-attributes | Aceita |
+| [0011](0011-material-design-3-com-design-tokens.md) | Material Design 3 como referência visual, com design tokens em CSS | Aceita |
+| [0012](0012-acessibilidade-com-semantica-nativa.md) | Acessibilidade com semântica nativa primeiro | Aceita |
+| [0013](0013-convencoes-de-codigo.md) | Convenções de código e estilo | Aceita |
 
 ## Como criar uma nova ADR
 
