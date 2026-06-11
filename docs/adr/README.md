@@ -11,23 +11,23 @@ Decisões superadas não são apagadas: o status muda para "Substituída" com li
 
 | ADR | Título | Tipo | Status |
 | --- | --- | --- | --- |
-| [0001](0001-html-css-js-puros-sem-build.md) | HTML, CSS e JavaScript puros, sem build step | Técnica | Aceita |
-| [0002](0002-persistencia-local-com-localstorage.md) | Persistência local com localStorage | Técnica | Aceita |
-| [0003](0003-cotacoes-via-apis-publicas.md) | Cotações via APIs públicas gratuitas | Técnica | Aceita |
-| [0004](0004-pwa-com-service-worker-cache-first.md) | PWA com Service Worker cache-first | Técnica | Aceita |
-| [0005](0005-modais-com-dialog-nativo.md) | Modais com dialog nativo | Técnica | Aceita |
-| [0006](0006-recomendacao-de-aporte-configuravel.md) | Recomendação de aporte com limites configuráveis | Negócio | Aceita |
-| [0007](0007-i18n-centralizada.md) | Strings de interface centralizadas (i18n) | Técnica | Aceita |
-| [0008](0008-modelo-de-dominio-classes-metas-rebalanceamento.md) | Modelo de domínio: classes de ativos, metas e rebalanceamento passivo | Negócio | Aceita |
-| [0009](0009-renderizacao-declarativa-com-template-literals.md) | Renderização declarativa com template literals e innerHTML | Técnica | Aceita |
-| [0010](0010-delegacao-de-eventos-com-data-attributes.md) | Delegação de eventos com data-attributes | Técnica | Aceita |
-| [0011](0011-material-design-3-com-design-tokens.md) | Material Design 3 como referência visual, com design tokens em CSS | Técnica | Aceita |
-| [0012](0012-acessibilidade-com-semantica-nativa.md) | Acessibilidade com semântica nativa primeiro | Técnica | Aceita |
-| [0013](0013-convencoes-de-codigo.md) | Convenções de código e estilo | Técnica | Aceita |
+| [0001](0001-plain-html-css-js-no-build.md) | HTML, CSS e JavaScript puros, sem build step | Técnica | Aceita |
+| [0002](0002-local-persistence-with-localstorage.md) | Persistência local com localStorage | Técnica | Aceita |
+| [0003](0003-quotes-via-public-apis.md) | Cotações via APIs públicas gratuitas | Técnica | Aceita |
+| [0004](0004-pwa-with-cache-first-service-worker.md) | PWA com Service Worker cache-first | Técnica | Aceita |
+| [0005](0005-native-dialog-modals.md) | Modais com dialog nativo | Técnica | Aceita |
+| [0006](0006-configurable-investment-recommendation.md) | Recomendação de aporte com limites configuráveis | Negócio | Aceita |
+| [0007](0007-centralized-i18n.md) | Strings de interface centralizadas (i18n) | Técnica | Aceita |
+| [0008](0008-domain-model-classes-goals-rebalancing.md) | Modelo de domínio: classes de ativos, metas e rebalanceamento passivo | Negócio | Aceita |
+| [0009](0009-declarative-rendering-with-template-literals.md) | Renderização declarativa com template literals e innerHTML | Técnica | Aceita |
+| [0010](0010-event-delegation-with-data-attributes.md) | Delegação de eventos com data-attributes | Técnica | Aceita |
+| [0011](0011-material-design-3-with-design-tokens.md) | Material Design 3 como referência visual, com design tokens em CSS | Técnica | Aceita |
+| [0012](0012-native-semantics-first-accessibility.md) | Acessibilidade com semântica nativa primeiro | Técnica | Aceita |
+| [0013](0013-code-conventions.md) | Convenções de código e estilo | Técnica | Aceita |
 
 ## Como criar uma nova ADR
 
-1. Copie o modelo abaixo para `NNNN-titulo-curto.md`, usando o próximo número sequencial.
+1. Copie o modelo abaixo para `NNNN-short-title.md`, usando o próximo número sequencial. O nome do arquivo é em inglês (como o código); o conteúdo, em português.
 2. Preencha as seções e adicione a linha correspondente no índice acima.
 
 ```markdown

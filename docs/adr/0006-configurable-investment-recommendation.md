@@ -7,7 +7,7 @@ Tipo: Negócio
 ## Contexto
 
 O badge `aportar` indicava classes e ativos defasados usando heurísticas embutidas no código (a quantidade recomendada variava com o tamanho da lista).
-Regras implícitas geram comportamento difícil de explicar e não refletem a preferência de quem usa. A estratégia por trás do badge está na ADR [0008](0008-modelo-de-dominio-classes-metas-rebalanceamento.md).
+Regras implícitas geram comportamento difícil de explicar e não refletem a preferência de quem usa. A estratégia por trás do badge está na ADR [0008](0008-domain-model-classes-goals-rebalancing.md).
 
 ## Decisão
 

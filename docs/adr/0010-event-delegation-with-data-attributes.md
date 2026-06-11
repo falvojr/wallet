@@ -6,7 +6,7 @@ Tipo: Técnica
 
 ## Contexto
 
-Com a interface re-renderizada via `innerHTML` (ADR [0009](0009-renderizacao-declarativa-com-template-literals.md)), listeners anexados a elementos gerados seriam destruídos a cada render.
+Com a interface re-renderizada via `innerHTML` (ADR [0009](0009-declarative-rendering-with-template-literals.md)), listeners anexados a elementos gerados seriam destruídos a cada render.
 Reanexar listeners após cada render seria repetitivo e propenso a vazamentos.
 
 ## Decisão

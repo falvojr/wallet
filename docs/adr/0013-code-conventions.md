@@ -6,7 +6,7 @@ Tipo: Técnica
 
 ## Contexto
 
-Projeto de uma pessoa só, sem linter ou formatador automático (coerente com a ADR [0001](0001-html-css-js-puros-sem-build.md)).
+Projeto de uma pessoa só, sem linter ou formatador automático (coerente com a ADR [0001](0001-plain-html-css-js-no-build.md)).
 Sem registro escrito, cada contribuição (humana ou assistida) tenderia a um estilo diferente.
 
 ## Decisão
