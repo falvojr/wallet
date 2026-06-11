@@ -15,7 +15,7 @@ Manter as convenções operacionais em um único lugar, o [CLAUDE.md](../../CLAU
 Dois princípios merecem registro aqui:
 
 - Limite de 160 colunas como teto, não meta: comentários de linha única e expressões simples não são quebrados; estruturas com lógica encadeada mantêm indentação convencional.
-- Comentários com `//` em linha única e `/* */` em blocos multilinha, sempre com sentenças terminadas em ponto final dentro do limite de 160 colunas.
+- Comentários com `//` em linha única e `/* */` em blocos multilinha, sempre com sentenças terminadas em ponto final dentro do limite de 160 colunas. Em blocos multilinha, a quebra de linha cai sempre no fim de uma sentença, nunca no meio. Títulos de seção são comentários `//` curtos, sem separadores decorativos de traços.
 
 ## Consequências
 
