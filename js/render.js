@@ -1,6 +1,6 @@
 import {
   CLASS_ICONS, CLASS_KEYS, DECLARED_CLASSES,
-  portfolio, preferences, prices,
+  portfolio, preferences, prices, settings,
   activeTab, classLabel, consumeTabChange,
 } from './state.js';
 import { t, tn } from './i18n.js';
@@ -93,6 +93,7 @@ export function render() {
   const hasData = portfolio.loaded;
   $('#emptyWelcome').hidden = hasData;
   $('#headerActions').hidden = !hasData;
+  document.body.classList.toggle('quotes-hidden', !settings.sardineMode);
 
   if (!hasData) {
     $('#tabNav').innerHTML = '';

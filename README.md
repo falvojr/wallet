@@ -28,9 +28,11 @@ Funciona 100% no navegador, sem backend. Seus dados ficam no `localStorage` e nu
 
 1. Acesse a aplicação e clique em **Criar carteira** (ou **Importar JSON** se já tiver uma).
 2. Adicione ativos em cada classe e defina suas metas na aba **Metas**.
-3. Configure tokens gratuitos em ⚙️ para buscar cotações automaticamente.
+3. Configure tokens gratuitos em ⚙️ **Configurações** para buscar cotações automaticamente.
 4. Use a aba **Carteira** para visualizar a distribuição do patrimônio.
 5. Revise periodicamente para apoiar a decisão de onde aportar.
+
+Em **Configurações** também é possível definir quantas classes e ativos recebem o marcador **Aportar** e ativar o **Modo Sardinha**, que exibe cotações e variação diária — desativado por padrão, já que no buy and hold o preço do dia não deve influenciar a decisão de aporte.
 
 ### Cotações
 

@@ -205,14 +205,21 @@ function saveNote() {
 function openSettingsModal() {
   $('#brapiToken').value = settings.brapiToken;
   $('#finnhubToken').value = settings.finnhubToken;
+  $('#recommendedClassCount').value = settings.recommendedClassCount;
+  $('#recommendedAssetCount').value = settings.recommendedAssetCount;
+  $('#sardineMode').checked = settings.sardineMode;
   $('#settingsModal').showModal();
 }
 
 function saveSettings() {
   settings.brapiToken = $('#brapiToken').value.trim();
   settings.finnhubToken = $('#finnhubToken').value.trim();
+  settings.recommendedClassCount = $('#recommendedClassCount').value;
+  settings.recommendedAssetCount = $('#recommendedAssetCount').value;
+  settings.sardineMode = $('#sardineMode').checked;
   settings.save();
   $('#settingsModal').close();
+  render();
   showToast(t('toastSettingsSaved'));
 }
 

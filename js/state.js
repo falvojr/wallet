@@ -327,23 +327,44 @@ export class PriceCache {
   }
 }
 
+const MAX_RECOMMENDATIONS = 10;
+
+function normalizeCount(value, fallback) {
+  const count = Math.round(Number(value));
+  return count >= 1 && count <= MAX_RECOMMENDATIONS ? count : fallback;
+}
+
 export class Settings {
   #storage = new LocalStorage(STORAGE_KEYS.settings);
   brapiToken = '';
   finnhubToken = '';
+  recommendedClassCount = 1;
+  recommendedAssetCount = 1;
+  /** When enabled, price and daily change columns are shown. */
+  sardineMode = false;
 
   get hasTokens() {
     return Boolean(this.brapiToken || this.finnhubToken);
   }
 
   load() {
-    Object.assign(this, this.#storage.read({}) ?? {});
+    const data = this.#storage.read({}) ?? {};
+    this.brapiToken = typeof data.brapiToken === 'string' ? data.brapiToken : '';
+    this.finnhubToken = typeof data.finnhubToken === 'string' ? data.finnhubToken : '';
+    this.recommendedClassCount = normalizeCount(data.recommendedClassCount, 1);
+    this.recommendedAssetCount = normalizeCount(data.recommendedAssetCount, 1);
+    this.sardineMode = Boolean(data.sardineMode);
   }
 
   save() {
+    this.recommendedClassCount = normalizeCount(this.recommendedClassCount, 1);
+    this.recommendedAssetCount = normalizeCount(this.recommendedAssetCount, 1);
     this.#storage.write({
       brapiToken: this.brapiToken,
       finnhubToken: this.finnhubToken,
+      recommendedClassCount: this.recommendedClassCount,
+      recommendedAssetCount: this.recommendedAssetCount,
+      sardineMode: this.sardineMode,
     });
   }
 }

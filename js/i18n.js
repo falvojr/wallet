@@ -15,7 +15,7 @@ const strings = {
     importJsonTitle: 'Importar carteira JSON',
     exportJsonTitle: 'Exportar carteira JSON',
     themeToggleTitle: 'Alternar tema claro e escuro',
-    settingsTitleShort: 'Configurações de API',
+    settingsTitleShort: 'Configurações',
     refreshPricesTitle: 'Atualizar cotações',
 
     // Tabs
@@ -99,7 +99,10 @@ const strings = {
     btnSave: 'Salvar',
 
     // Settings
-    settingsTitle: 'Tokens de API',
+    settingsTitle: 'Configurações',
+    settingsSectionApis: 'Cotações (APIs)',
+    settingsSectionInvest: 'Aportes',
+    settingsSectionDisplay: 'Exibição',
     settingsHint: 'Tokens gratuitos para buscar cotações em tempo real.',
     brapiLabel: 'brapi.dev (Ações / FIIs)',
     brapiHint: 'Crie grátis em brapi.dev',
@@ -108,6 +111,10 @@ const strings = {
     finnhubHint: 'Crie grátis em finnhub.io',
     finnhubCreateAccount: 'Criar conta',
     externalLinkLabel: 'Abrir link externo',
+    recommendedClassesLabel: 'Classes recomendadas por aporte',
+    recommendedAssetsLabel: 'Ativos recomendados por classe',
+    sardineModeLabel: 'Modo Sardinha',
+    sardineModeHint: 'Exibe cotações e variação diária. No buy and hold, o preço do dia não deve influenciar a decisão de aporte.',
 
     // Toasts
     toastConfigTokens: 'Configure os tokens de API em ⚙️',

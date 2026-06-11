@@ -1,4 +1,4 @@
-import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices } from './state.js';
+import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings } from './state.js';
 
 export function formatBRL(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -104,9 +104,9 @@ export function allocationWarning() {
 // If the emergency reserve goal is unmet, every other recommendation is blocked.
 //
 // Otherwise, class-level shortfall (target% - actual%) is computed, filtered by
-// a proportional threshold, and the top 1-3 classes are recommended. Within a
-// recommended class, items are ranked by how far they are from their internal
-// target.
+// a proportional threshold, and the most lagging classes are recommended up to
+// the user-configured limit. Within a recommended class, items are ranked by
+// how far they are from their internal target, also up to a configured limit.
 // ---------------------------------------------------------------------------
 
 const THRESHOLD_MIN = 0.5;
@@ -121,12 +121,6 @@ function classShortfall(key) {
   return actual !== null ? Math.max(0, classTargetPct(key) - actual) : null;
 }
 
-function recommendationLimit(count) {
-  if (count >= 11) return 3;
-  if (count >= 6) return 2;
-  return count >= 1 ? 1 : 0;
-}
-
 /** Returns class keys prioritized for investment. ['emergencyReserve'] if goal is unmet. */
 export function recommendedClasses() {
   if (portfolio.isEmergencyUnmet()) return ['emergencyReserve'];
@@ -137,8 +131,7 @@ export function recommendedClasses() {
     .filter(({ key, gap }) => gap !== null && gap >= classThreshold(key))
     .toSorted((a, b) => b.gap - a.gap);
 
-  const limit = ranked.length >= 8 ? 3 : ranked.length >= 3 ? 2 : 1;
-  return ranked.slice(0, limit).map(item => item.key);
+  return ranked.slice(0, settings.recommendedClassCount).map(item => item.key);
 }
 
 /** Returns asset IDs prioritized within a recommended class. */
@@ -165,7 +158,7 @@ export function recommendedItems(key) {
     .filter(Boolean)
     .toSorted((a, b) => b.score - a.score || b.gap - a.gap);
 
-  return ranked.slice(0, recommendationLimit(items.length)).map(item => item.id);
+  return ranked.slice(0, settings.recommendedAssetCount).map(item => item.id);
 }
 
 /** All visible assets for the bubble chart. */
