@@ -148,7 +148,7 @@ function renderTabs() {
     const isActive = tab.key === activeTab;
     const countHtml = tab.count != null ? `<span class="tab-count">${tab.count}</span>` : '';
     const iconHtml = isActive ? `<i data-lucide="${tab.icon}" class="tab-icon"></i>` : '';
-    return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}">
+    return `<button class="tab-btn${isActive ? ' active' : ''}" data-tab="${tab.key}"${isActive ? ' aria-current="true"' : ''}>
       ${iconHtml}${esc(tab.label)}${countHtml}
     </button>`;
   };
@@ -337,14 +337,14 @@ function renderLegendItem(item) {
   const strikeCls = item.hidden ? ' legend-strike' : '';
   const valueText = item.hasPrices ? formatBRL(item.total) : t('assetCount', item.count);
 
-  return `<div class="legend-item${hiddenCls}" data-toggle-chart="${item.key}" data-goto="${item.key}"
+  return `<button type="button" class="legend-item${hiddenCls}" data-toggle-chart="${item.key}" data-goto="${item.key}"
     title="${t('a11yToggleChart', item.label, !item.hidden)}">
     <span class="legend-dot"></span>
-    <div class="legend-item-text">
+    <span class="legend-item-text">
       <span class="legend-item-label${strikeCls}">${esc(item.label)}</span>
       <span class="legend-item-value${strikeCls}">${valueText}</span>
-    </div>
-  </div>`;
+    </span>
+  </button>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -480,6 +480,14 @@ function sortIndicator(col) {
   return `<i data-lucide="${icon}" class="sort-icon"></i>`;
 }
 
+function sortableHeader(col, label, extraClass = '') {
+  const ariaSort = preferences.sortCol !== col ? 'none'
+    : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
+  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}">
+    <button type="button" class="sort-btn" data-sort="${col}">${label} ${sortIndicator(col)}</button>
+  </th>`;
+}
+
 function sortedItems(key) {
   const items = portfolio.items(key);
   const indexed = items.map((item, idx) => ({ item, idx }));
@@ -526,12 +534,12 @@ function renderClassPanel(key) {
 
   html += `<div class="table-wrap"><table class="asset-table">
     <thead><tr>
-      <th data-sort="name" class="sortable">${t('colName')} ${sortIndicator('name')}</th>
-      <th data-sort="amount" class="col-r sortable">${t('colAmount')} ${sortIndicator('amount')}</th>
-      <th data-sort="price" class="col-r sortable">${t('colPrice')} ${sortIndicator('price')}</th>
-      <th data-sort="change" class="col-r sortable">${t('colChange')} ${sortIndicator('change')}</th>
-      <th data-sort="total" class="col-r sortable">${t('colTotal')} ${sortIndicator('total')}</th>
-      <th data-sort="target" class="col-r sortable">${t('colTarget')} ${sortIndicator('target')}</th>
+      ${sortableHeader('name', t('colName'))}
+      ${sortableHeader('amount', t('colAmount'), ' col-r')}
+      ${sortableHeader('price', t('colPrice'), ' col-r')}
+      ${sortableHeader('change', t('colChange'), ' col-r')}
+      ${sortableHeader('total', t('colTotal'), ' col-r')}
+      ${sortableHeader('target', t('colTarget'), ' col-r')}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>

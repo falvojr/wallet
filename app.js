@@ -338,9 +338,9 @@ elements.panels.addEventListener('click', event => {
     return;
   }
 
-  const sortHeader = event.target.closest('th[data-sort]');
-  if (sortHeader) {
-    toggleSort(sortHeader.dataset.sort);
+  const sortButton = event.target.closest('[data-sort]');
+  if (sortButton) {
+    toggleSort(sortButton.dataset.sort);
     render();
   }
 });

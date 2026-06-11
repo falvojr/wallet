@@ -645,8 +645,13 @@ body {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  width: 100%;
   padding: 6px 8px;
+  border: none;
   border-radius: var(--r-sm);
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background var(--ease), opacity var(--ease);
 }
@@ -781,9 +786,22 @@ tr:hover .remove-btn { opacity: 0.6; }
 .note-btn:hover { opacity: 1; color: var(--accent-light); }
 .remove-btn:hover { opacity: 1; color: var(--down); }
 
-.sortable { cursor: pointer; user-select: none; }
-.sortable:hover { color: var(--text-secondary); }
-.sort-icon { width: 11px; height: 11px; vertical-align: -1px; margin-left: 2px; }
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+.sort-btn:hover { color: var(--text-secondary); }
+.sort-icon { width: 11px; height: 11px; flex-shrink: 0; }
 .sort-icon--idle { opacity: 0.25; }
 
 .inline-input {
@@ -965,7 +983,7 @@ tr:hover .remove-btn { opacity: 0.6; }
 
 @media (max-width: 479px) {
   .td-price, .td-change,
-  th[data-sort="price"], th[data-sort="change"] { display: none; }
+  .col-price, .col-change { display: none; }
   .asset-table td { padding: 4px 8px; }
   .asset-table thead th { padding: 6px 8px; }
   .summary-cards { grid-template-columns: 1fr; }
