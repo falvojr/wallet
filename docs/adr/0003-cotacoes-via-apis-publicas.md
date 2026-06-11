@@ -2,6 +2,7 @@
 
 Data: 2026-06-11
 Status: Aceita
+Tipo: Técnica
 
 ## Contexto
 
@@ -16,7 +17,7 @@ Buscar cotações diretamente do navegador em três APIs gratuitas:
 - Finnhub para stocks e REITs americanos (token do usuário);
 - AwesomeAPI para câmbio USD-BRL e criptomoedas (sem token).
 
-Os tokens ficam no `localStorage` e os preços são cacheados com validade de 24 horas.
+Os tokens ficam no `localStorage`; os preços ficam em cache e um aviso de desatualização aparece após 24 horas.
 Classes declarativas (Renda Fixa, Reserva de Emergência, Bens) não têm cotação: o valor é informado manualmente.
 
 ## Consequências

@@ -2,6 +2,7 @@
 
 Data: 2026-06-11
 Status: Aceita
+Tipo: Técnica
 
 ## Contexto
 
@@ -17,5 +18,4 @@ Estado interno de cada modal é limpo no evento `close`.
 ## Consequências
 
 - Cerca de 60 linhas de infraestrutura removidas, junto com a classe de bugs de foco em modais.
-- O reset global de CSS zera a margem do user agent; `.modal-dialog` precisa declarar `margin: auto` para manter a centralização.
-- O conteúdo fica num wrapper interno (`.modal`) para distinguir clique no backdrop de clique no conteúdo.
+- Dois cuidados de CSS: restaurar o `margin: auto` zerado pelo reset global e manter o conteúdo num wrapper interno (`.modal`) para distinguir clique no backdrop.

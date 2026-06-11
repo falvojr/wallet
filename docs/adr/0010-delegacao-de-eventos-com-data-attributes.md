@@ -2,6 +2,7 @@
 
 Data: 2026-06-11
 Status: Aceita
+Tipo: Técnica
 
 ## Contexto
 
@@ -10,13 +11,8 @@ Reanexar listeners após cada render seria repetitivo e propenso a vazamentos.
 
 ## Decisão
 
-Eventos de elementos dinâmicos usam delegação: listeners únicos em contêineres estáveis (`#panels`, `#tabNav`) identificam o alvo com `closest()` e data-attributes que declaram a intenção:
-
-- `data-goto`: navegar para a aba de uma classe;
-- `data-sort`: ordenar a tabela pela coluna;
-- `data-toggle-chart`: ocultar ou exibir uma classe no gráfico;
-- `data-order-swap`: trocar a ordem de exibição de duas classes;
-- `data-add-class`, `data-class`/`data-idx`, `data-note-class`/`data-note-id`: ações sobre ativos.
+Eventos de elementos dinâmicos usam delegação: listeners únicos em contêineres estáveis (`#panels`, `#tabNav`) identificam o alvo com `closest()` e
+data-attributes que declaram a intenção (`data-goto`, `data-sort`, `data-toggle-chart`, `data-order-swap`, `data-add-class`, `data-class`/`data-idx`, `data-note-*`).
 
 Elementos estáticos do HTML (botões do header, modais) usam listeners diretos, anexados uma única vez no bootstrap.
 

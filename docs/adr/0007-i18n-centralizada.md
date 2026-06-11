@@ -2,6 +2,7 @@
 
 Data: 2026-06-11
 Status: Aceita
+Tipo: Técnica
 
 ## Contexto
 
@@ -16,6 +17,5 @@ Para adicionar um idioma: duplicar o bloco `pt-BR`, traduzir e alternar a variá
 ## Consequências
 
 - Todo o texto da interface fica num único arquivo, fácil de revisar.
-- Strings de conteúdo podem exceder o limite de 160 caracteres por linha; não devem ser quebradas com concatenação.
-- O custo é um pequeno indireção: novos textos exigem criar a chave em `i18n.js` em vez de escrever inline.
+- O custo é uma pequena indireção: novos textos exigem criar a chave em `i18n.js` em vez de escrever inline.
 - Não há seletor de idioma na interface; ele só deve existir quando houver um segundo idioma de fato.

@@ -2,6 +2,7 @@
 
 Data: 2026-06-11
 Status: Aceita
+Tipo: Técnica
 
 ## Contexto
 
@@ -17,5 +18,4 @@ aplicada tanto à origem do app quanto aos CDNs conhecidos (jsDelivr e Google Fo
 
 - Abertura instantânea e funcionamento offline completo, incluindo ícones, gráfico e fontes.
 - Atualizações chegam "uma recarga depois": a primeira recarga serve o cache e atualiza em segundo plano, a segunda mostra a nova versão.
-- O clone da resposta deve ser feito de forma síncrona antes de devolvê-la à página, para não disputar o body com o leitor (erro intermitente de clone).
 - Esquecer de incrementar `CACHE_NAME` atrasa a entrega de updates para quem já tem o app instalado.
