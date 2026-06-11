@@ -1,4 +1,6 @@
-import { CLASS_ICONS, CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings, activeTab, classLabel, consumeTabChange } from './state.js';
+import {
+  CLASS_ICONS, CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings, activeTab, classLabel, consumeTabChange,
+} from './state.js';
 import { t, tn } from './i18n.js';
 import {
   formatBRL, assetValueBRL, classTotalBRL, portfolioTotalBRL, chartVisibleTotalBRL, classTargetPct, classActualPct, isSkippedAsset,
@@ -348,7 +350,9 @@ function renderLegendItem(item) {
 function fitLabel(name, radius) {
   const fontSize = Math.min(radius * 0.45, 14);
   const maxChars = Math.floor((radius * 1.6) / (fontSize * 0.6));
-  return name.length <= maxChars ? name : maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
+  return name.length <= maxChars
+    ? name
+    : maxChars >= 3 ? name.slice(0, maxChars - 1) + '…' : name.slice(0, maxChars);
 }
 
 function renderBubbleChart() {
@@ -473,7 +477,9 @@ function sortIndicator(col) {
 }
 
 function sortableHeader(col, label, extraClass = '') {
-  const ariaSort = preferences.sortCol !== col ? 'none' : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
+  const ariaSort = preferences.sortCol !== col
+    ? 'none'
+    : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
   return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}">
     <button type="button" class="sort-btn" data-sort="${col}">${label} ${sortIndicator(col)}</button>
   </th>`;

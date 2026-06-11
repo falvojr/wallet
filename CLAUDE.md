@@ -35,7 +35,9 @@ Direção das dependências: `render` e `calc` leem o estado; `api` escreve em `
 
 ## Convenções
 
-- Limite de 160 caracteres por linha (ver `.editorconfig`). Não quebrar comentários de linha única nem expressões que caibam no limite.
+- Limite de 160 caracteres por linha (ver `.editorconfig`). O limite é um teto, não uma meta:
+  - comentários de linha única e expressões simples que caibam no limite não devem ser quebrados;
+  - encadeamentos com vários passos, ternários aninhados, objetos longos e blocos com mais de uma instrução mantêm a indentação convencional, mesmo cabendo em uma linha.
 - Nomes semânticos, sem abreviações. Indentação de 2 espaços.
 - Texto visível ao usuário sempre via `t()`/`tn()` em `js/i18n.js`, nunca hardcoded no JavaScript.
 - HTML gerado em template literals deve escapar dados do usuário com `esc()` (em `js/render.js`).
