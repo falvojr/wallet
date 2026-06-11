@@ -1,8 +1,8 @@
 # 0006. Recomendação de aporte com limites configuráveis
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Negócio
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Negócio
 
 ## Contexto
 

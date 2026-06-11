@@ -1,8 +1,8 @@
 # 0001. HTML, CSS e JavaScript puros, sem build step
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 

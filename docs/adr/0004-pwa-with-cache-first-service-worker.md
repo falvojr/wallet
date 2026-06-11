@@ -1,8 +1,8 @@
 # 0004. PWA com Service Worker cache-first
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 

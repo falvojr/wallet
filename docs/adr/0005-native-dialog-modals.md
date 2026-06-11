@@ -1,8 +1,8 @@
 # 0005. Modais com dialog nativo
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 

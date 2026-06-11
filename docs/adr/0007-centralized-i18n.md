@@ -1,8 +1,8 @@
 # 0007. Strings de interface centralizadas (i18n)
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 

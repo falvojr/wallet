@@ -33,9 +33,9 @@ Decisões superadas não são apagadas: o status muda para "Substituída" com li
 ```markdown
 # NNNN. Título
 
-Data: AAAA-MM-DD
-Status: Proposta | Aceita | Substituída por [NNNN](NNNN-x.md)
-Tipo: Negócio | Técnica
+- **Data**: AAAA-MM-DD
+- **Status**: Proposta | Aceita | Substituída por [NNNN](NNNN-x.md)
+- **Tipo**: Negócio | Técnica
 
 ## Contexto
 

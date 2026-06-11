@@ -1,8 +1,8 @@
 # 0013. Convenções de código e estilo
 
-Data: 2026-06-11
-Status: Aceita
-Tipo: Técnica
+- **Data**: 2026-06-11
+- **Status**: Aceita
+- **Tipo**: Técnica
 
 ## Contexto
 
@@ -12,7 +12,10 @@ Sem registro escrito, cada contribuição (humana ou assistida) tenderia a um es
 ## Decisão
 
 Manter as convenções operacionais em um único lugar, o [CLAUDE.md](../../CLAUDE.md), com o `.editorconfig` cobrindo o que os editores aplicam sozinhos.
-O princípio central é o limite de 160 colunas como teto, não meta: comentários de linha única e expressões simples não são quebrados; estruturas com lógica encadeada mantêm indentação convencional.
+Dois princípios merecem registro aqui:
+
+- Limite de 160 colunas como teto, não meta: comentários de linha única e expressões simples não são quebrados; estruturas com lógica encadeada mantêm indentação convencional.
+- Comentários com `//` em linha única e `/* */` em blocos multilinha, sempre com sentenças terminadas em ponto final dentro do limite de 160 colunas.
 
 ## Consequências
 
