@@ -34,14 +34,14 @@ const strings = {
       assets: 'Bens',
     },
     classDescriptions: {
-      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB de liquidez diária.',
-      fixedIncome: 'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
-      brStocks: 'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
-      brFiis: 'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
-      usStocks: 'Ações de empresas nas bolsas americanas (NYSE, Nasdaq). Dão exposição ao dólar e acesso a setores como tecnologia, saúde e consumo global.',
-      usReits: 'Real Estate Investment Trusts, os equivalentes americanos dos FIIs. Investem em imóveis como data centers, hospitais e galpões, com dividendos regulares.',
-      storeOfValue: 'Ativos que preservam valor no longo prazo, como Bitcoin e ouro. Servem como proteção contra desvalorização cambial e instabilidade monetária.',
-      assets: 'Bens patrimoniais como imóveis de uso pessoal e veículos. Compõem o patrimônio total, mas não fazem parte da estratégia de aporte.',
+      emergencyReserve: 'Dinheiro para imprevistos, geralmente de 6 a 12 meses de custo de vida, em ativos seguros e de resgate rápido como Tesouro Selic ou CDB de liquidez diária. É a primeira prioridade da carteira: evita vender investimentos numa emergência.',
+      fixedIncome: 'Títulos que rendem juros, como CDBs, LCIs, LCAs e Tesouro Direto. Trazem previsibilidade e protegem o patrimônio das oscilações da bolsa, formando a base de segurança da carteira.',
+      brStocks: 'Participações em empresas da bolsa brasileira (B3), de setores como bancos, energia e consumo. No longo prazo, tendem a superar a inflação por valorização e dividendos.',
+      brFiis: 'Fundos Imobiliários negociados na B3, que investem em imóveis como galpões, shoppings e lajes corporativas, ou em títulos do setor. Distribuem rendimentos mensais, hoje isentos de IR para pessoa física.',
+      usStocks: 'Ações de empresas nas bolsas dos Estados Unidos (NYSE e Nasdaq). Dão exposição ao dólar e acesso a líderes globais de tecnologia, saúde e consumo.',
+      usReits: 'Os equivalentes americanos dos FIIs (Real Estate Investment Trusts). Investem em imóveis como data centers, hospitais e galpões, pagando dividendos regulares em dólar.',
+      storeOfValue: 'Ativos que preservam valor no longo prazo, como ouro e Bitcoin. Servem de proteção contra a desvalorização da moeda e a instabilidade econômica.',
+      assets: 'Bens de uso pessoal, como imóveis e veículos. Entram na visão de patrimônio total, mas ficam fora da estratégia de aportes e do rebalanceamento.',
     },
 
     // Overview
