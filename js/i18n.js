@@ -101,7 +101,7 @@ const strings = {
 
     // Settings
     settingsTitle: 'Configurações',
-    settingsSectionApis: 'Cotações (APIs)',
+    settingsSectionApis: 'Cotações',
     settingsSectionInvest: 'Aportes',
     settingsSectionDisplay: 'Exibição',
     settingsHint: 'Tokens gratuitos para buscar cotações em tempo real.',
@@ -115,7 +115,7 @@ const strings = {
     recommendedClassesLabel: 'Classes recomendadas por aporte',
     recommendedAssetsLabel: 'Ativos recomendados por classe',
     sardineModeLabel: 'Modo Sardinha',
-    sardineModeHint: 'Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais: no buy and hold, o preço do dia não deve influenciar a decisão de aporte.',
+    sardineModeHint: 'Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais.',
 
     // Toasts
     toastConfigTokens: 'Configure os tokens de API em ⚙️',
