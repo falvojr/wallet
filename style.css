@@ -1000,18 +1000,27 @@ tr:hover .remove-btn { opacity: 0.6; }
   background: #fff;
 }
 .switch:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.field-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.field-top label { margin-bottom: 0; }
 .field-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 4px;
   font-size: var(--type-label);
   font-weight: 600;
   color: var(--link);
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .field-link svg,
-.field-link [data-lucide] { width: 14px; height: 14px; }
+.field-link [data-lucide] { width: 13px; height: 13px; }
 .field-link:hover,
 .field-link:focus-visible { color: var(--link-hover); }
 .modal-actions {

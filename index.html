@@ -132,24 +132,28 @@
       <h4 class="modal-section-title" data-i18n="settingsSectionApis">Cotações</h4>
       <p class="modal-hint" data-i18n="settingsHint">Tokens gratuitos para buscar cotações em tempo real.</p>
       <div class="modal-field">
-        <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (Ações / FIIs)</label>
-        <input type="text" id="brapiToken" data-i18n-placeholder="brapiHint"
-          placeholder="Crie grátis em brapi.dev" autocomplete="off">
-        <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
-          data-i18n-aria-label="externalLinkLabel" aria-label="Abrir link externo">
-          <span data-i18n="brapiCreateAccount">Criar conta</span>
-          <i data-lucide="external-link"></i>
-        </a>
+        <div class="field-top">
+          <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (Ações e FIIs)</label>
+          <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
+            data-i18n-aria-label="createAccountAria" aria-label="Criar conta gratuita (abre em nova aba)">
+            <span data-i18n="createAccount">criar conta</span>
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+        <input type="text" id="brapiToken" data-i18n-placeholder="tokenPlaceholder"
+          placeholder="Cole seu token gratuito" autocomplete="off">
       </div>
       <div class="modal-field">
-        <label for="finnhubToken" data-i18n="finnhubLabel">Finnhub (Stocks / REITs)</label>
-        <input type="text" id="finnhubToken" data-i18n-placeholder="finnhubHint" placeholder="Crie grátis em finnhub.io"
-          autocomplete="off">
-        <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener"
-          data-i18n-aria-label="externalLinkLabel" aria-label="Abrir link externo">
-          <span data-i18n="finnhubCreateAccount">Criar conta</span>
-          <i data-lucide="external-link"></i>
-        </a>
+        <div class="field-top">
+          <label for="finnhubToken" data-i18n="finnhubLabel">Finnhub (Stocks e REITs)</label>
+          <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener"
+            data-i18n-aria-label="createAccountAria" aria-label="Criar conta gratuita (abre em nova aba)">
+            <span data-i18n="createAccount">criar conta</span>
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+        <input type="text" id="finnhubToken" data-i18n-placeholder="tokenPlaceholder"
+          placeholder="Cole seu token gratuito" autocomplete="off">
       </div>
 
       <h4 class="modal-section-title" data-i18n="settingsSectionInvest">Aportes</h4>
