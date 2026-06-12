@@ -25,12 +25,13 @@ Atenção: o Service Worker usa cache-first com atualização em segundo plano. 
 | `app.js` | Bootstrap, eventos de UI (delegação em `#panels`), modais e import/export |
 | `js/state.js` | Domínio (`Portfolio`, `Preferences`, `PriceCache`, `Settings`), persistência e tema |
 | `js/calc.js` | Cálculos puros: totais, percentuais e recomendação de aporte |
-| `js/render.js` | Renderização (template literals + `innerHTML`) e gráfico de bolhas |
+| `js/render.js` | Renderização da interface (template literals + `innerHTML`) |
+| `js/chart.js` | Gráfico de bolhas (D3) e cores derivadas do tema |
 | `js/api.js` | Busca de cotações (brapi.dev, Finnhub, AwesomeAPI) |
 | `js/i18n.js` | Strings centralizadas da interface (pt-BR) |
 | `sw.js` | Service Worker (precache + cache em tempo de execução) |
 
-Direção das dependências: `render` e `calc` leem o estado; `api` escreve em `prices`; `app` orquestra tudo; `i18n` não depende de ninguém.
+Direção das dependências: `render`, `chart` e `calc` leem o estado; `api` escreve em `prices`; `app` orquestra tudo; `i18n` não depende de ninguém.
 
 ## Convenções
 
