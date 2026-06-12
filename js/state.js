@@ -107,7 +107,11 @@ class LocalStorage {
   }
 
   write(value) {
-    localStorage.setItem(this.#key, JSON.stringify(value));
+    try {
+      localStorage.setItem(this.#key, JSON.stringify(value));
+    } catch {
+      // Storage full or unavailable (e.g. private mode); keep the app usable instead of throwing.
+    }
   }
 }
 
