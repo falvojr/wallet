@@ -566,10 +566,6 @@ body {
   margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* Badges */
