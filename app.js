@@ -202,6 +202,7 @@ function saveSettings() {
 
 function exportPortfolio() {
   const output = portfolio.export();
+  output.preferences = { ...preferences.export(), ...settings.exportable };
   const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -224,6 +225,10 @@ function importPortfolio(file) {
       if (!hasData) throw new Error(t('toastInvalidFormat'));
 
       portfolio.import(data);
+      if (data.preferences) {
+        preferences.import(data.preferences);
+        settings.applyExportable(data.preferences);
+      }
       setActiveTab('overview');
       render();
       hideLoading();

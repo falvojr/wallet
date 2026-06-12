@@ -58,7 +58,7 @@ A classe (e o ativo) mais distante da meta, ou seja, o melhor destino do próxim
 
 ## Formato do `portfolio.json`
 
-Cada classe tem `items` (ativos), `target` (meta %) e `goal` (meta em R$, usada pela Reserva de Emergência). Cada ativo tem `id`, `amount` e, opcionalmente, `target` e `note`. As oito classes (`emergencyReserve`, `fixedIncome`, `brStocks`, `brFiis`, `usStocks`, `usReits`, `storeOfValue`, `assets`) seguem o mesmo formato:
+Cada classe tem `items` (ativos), `target` (meta %) e `goal` (meta em R$, usada pela Reserva de Emergência). Cada ativo tem `id`, `amount` e, opcionalmente, `target` e `note`. As oito classes (`emergencyReserve`, `fixedIncome`, `brStocks`, `brFiis`, `usStocks`, `usReits`, `storeOfValue`, `assets`) seguem o mesmo formato. O arquivo também traz um bloco `preferences` (ordem das classes, ocultas no gráfico, ordenação, limites de aporte e Modo Sardinha) para portar a configuração entre dispositivos; os tokens de API nunca são exportados.
 
 ```json
 {
