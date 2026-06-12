@@ -107,7 +107,11 @@ class LocalStorage {
   }
 
   write(value) {
-    localStorage.setItem(this.#key, JSON.stringify(value));
+    try {
+      localStorage.setItem(this.#key, JSON.stringify(value));
+    } catch {
+      // Storage full or unavailable (e.g. private mode); keep the app usable instead of throwing.
+    }
   }
 }
 
@@ -260,6 +264,21 @@ export class Preferences {
   save() {
     this.#storage.write(this.#data);
   }
+
+  export() {
+    return { ...this.#data };
+  }
+
+  import(data) {
+    if (!data || typeof data !== 'object') return;
+    const clean = {};
+    if (data.order && typeof data.order === 'object') clean.order = data.order;
+    if (data.chartHidden && typeof data.chartHidden === 'object') clean.chartHidden = data.chartHidden;
+    if (typeof data.sortCol === 'string') clean.sortCol = data.sortCol;
+    if (data.sortDir === 'asc' || data.sortDir === 'desc') clean.sortDir = data.sortDir;
+    this.#data = clean;
+    this.save();
+  }
 }
 
 export class PriceCache {
@@ -335,6 +354,23 @@ export class Settings {
 
   get hasTokens() {
     return Boolean(this.brapiToken || this.finnhubToken);
+  }
+
+  // Non-sensitive fields, safe to export; tokens are deliberately excluded.
+  get exportable() {
+    return {
+      recommendedClassCount: this.recommendedClassCount,
+      recommendedAssetCount: this.recommendedAssetCount,
+      sardineMode: this.sardineMode,
+    };
+  }
+
+  applyExportable(data) {
+    if (!data || typeof data !== 'object') return;
+    this.recommendedClassCount = normalizeCount(data.recommendedClassCount, this.recommendedClassCount);
+    this.recommendedAssetCount = normalizeCount(data.recommendedAssetCount, this.recommendedAssetCount);
+    if (typeof data.sardineMode === 'boolean') this.sardineMode = data.sardineMode;
+    this.save();
   }
 
   load() {

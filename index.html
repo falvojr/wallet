@@ -129,50 +129,51 @@
     <div class="modal">
       <h3 id="settingsModalTitle" data-i18n="settingsTitle">Configurações</h3>
 
-      <h4 class="modal-section-title" data-i18n="settingsSectionApis">Cotações (APIs)</h4>
+      <h4 class="modal-section-title" data-i18n="settingsSectionApis">Cotações</h4>
       <p class="modal-hint" data-i18n="settingsHint">Tokens gratuitos para buscar cotações em tempo real.</p>
       <div class="modal-field">
-        <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (Ações / FIIs)</label>
-        <input type="text" id="brapiToken" data-i18n-placeholder="brapiHint"
-          placeholder="Crie grátis em brapi.dev" autocomplete="off">
-        <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
-          data-i18n-aria-label="externalLinkLabel" aria-label="Abrir link externo">
-          <span data-i18n="brapiCreateAccount">Criar conta</span>
-          <i data-lucide="external-link"></i>
-        </a>
+        <div class="field-top">
+          <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (Ações e FIIs)</label>
+          <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
+            data-i18n-aria-label="createAccountAria" aria-label="Criar conta gratuita (abre em nova aba)">
+            <span data-i18n="createAccount">criar conta</span>
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+        <input type="text" id="brapiToken" data-i18n-placeholder="tokenPlaceholder"
+          placeholder="Cole seu token gratuito" autocomplete="off">
       </div>
       <div class="modal-field">
-        <label for="finnhubToken" data-i18n="finnhubLabel">Finnhub (Stocks / REITs)</label>
-        <input type="text" id="finnhubToken" data-i18n-placeholder="finnhubHint" placeholder="Crie grátis em finnhub.io"
-          autocomplete="off">
-        <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener"
-          data-i18n-aria-label="externalLinkLabel" aria-label="Abrir link externo">
-          <span data-i18n="finnhubCreateAccount">Criar conta</span>
-          <i data-lucide="external-link"></i>
-        </a>
+        <div class="field-top">
+          <label for="finnhubToken" data-i18n="finnhubLabel">Finnhub (Stocks e REITs)</label>
+          <a class="field-link" href="https://finnhub.io/register" target="_blank" rel="noopener"
+            data-i18n-aria-label="createAccountAria" aria-label="Criar conta gratuita (abre em nova aba)">
+            <span data-i18n="createAccount">criar conta</span>
+            <i data-lucide="external-link"></i>
+          </a>
+        </div>
+        <input type="text" id="finnhubToken" data-i18n-placeholder="tokenPlaceholder"
+          placeholder="Cole seu token gratuito" autocomplete="off">
       </div>
 
       <h4 class="modal-section-title" data-i18n="settingsSectionInvest">Aportes</h4>
-      <div class="modal-field">
-        <label for="recommendedClassCount" data-i18n="recommendedClassesLabel">Classes recomendadas por aporte</label>
-        <input type="number" id="recommendedClassCount" min="1" max="10" step="1" inputmode="numeric"
-          autocomplete="off">
+      <div class="setting-row">
+        <label class="setting-label" for="recommendedClassCount" data-i18n="recommendedClassesLabel">Classes recomendadas por aporte</label>
+        <input type="number" id="recommendedClassCount" class="setting-stepper" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
       </div>
-      <div class="modal-field">
-        <label for="recommendedAssetCount" data-i18n="recommendedAssetsLabel">Ativos recomendados por classe</label>
-        <input type="number" id="recommendedAssetCount" min="1" max="10" step="1" inputmode="numeric"
-          autocomplete="off">
+      <div class="setting-row">
+        <label class="setting-label" for="recommendedAssetCount" data-i18n="recommendedAssetsLabel">Ativos recomendados por classe</label>
+        <input type="number" id="recommendedAssetCount" class="setting-stepper" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
       </div>
 
       <h4 class="modal-section-title" data-i18n="settingsSectionDisplay">Exibição</h4>
-      <label class="check-field">
-        <input type="checkbox" id="sardineMode">
-        <span>
-          <strong data-i18n="sardineModeLabel">Modo Sardinha</strong>
-          <small data-i18n="sardineModeHint">Exibe cotações e variação diária. No buy and hold, o preço do dia não
-            deve influenciar a decisão de aporte.</small>
-        </span>
-      </label>
+      <div class="setting-row">
+        <label class="setting-label" for="sardineMode">
+          <span data-i18n="sardineModeLabel">Modo Sardinha</span>
+          <small data-i18n="sardineModeHint">Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais.</small>
+        </label>
+        <input type="checkbox" id="sardineMode" class="switch" role="switch">
+      </div>
 
       <div class="modal-actions">
         <button type="button" class="btn btn--text" id="settingsCancel" data-i18n="btnCancel">Cancelar</button>

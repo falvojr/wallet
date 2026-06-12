@@ -34,7 +34,7 @@ const strings = {
       assets: 'Bens',
     },
     classDescriptions: {
-      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB diário.',
+      emergencyReserve: 'Reserva com liquidez imediata, geralmente de 6 a 12 meses de custo de vida. Deve ficar em ativos seguros e de resgate rápido, como Tesouro Selic ou CDB de liquidez diária.',
       fixedIncome: 'Títulos como CDBs, LCIs, LCAs e Tesouro Direto. Oferecem previsibilidade e proteção, sendo a base de segurança da carteira.',
       brStocks: 'Participações em empresas na bolsa brasileira (B3). No longo prazo, tendem a superar a inflação por meio de valorização e dividendos.',
       brFiis: 'Fundos Imobiliários negociados na B3, que investem em imóveis ou títulos imobiliários. Distribuem rendimentos mensais isentos de IR para pessoa física.',
@@ -101,21 +101,19 @@ const strings = {
 
     // Settings
     settingsTitle: 'Configurações',
-    settingsSectionApis: 'Cotações (APIs)',
+    settingsSectionApis: 'Cotações',
     settingsSectionInvest: 'Aportes',
     settingsSectionDisplay: 'Exibição',
-    settingsHint: 'Tokens gratuitos para buscar cotações em tempo real.',
-    brapiLabel: 'brapi.dev (Ações / FIIs)',
-    brapiHint: 'Crie grátis em brapi.dev',
-    brapiCreateAccount: 'Criar conta',
-    finnhubLabel: 'Finnhub (Stocks / REITs)',
-    finnhubHint: 'Crie grátis em finnhub.io',
-    finnhubCreateAccount: 'Criar conta',
-    externalLinkLabel: 'Abrir link externo',
+    settingsHint: 'Tokens gratuitos para buscar as cotações automaticamente.',
+    brapiLabel: 'brapi.dev (Ações e FIIs)',
+    finnhubLabel: 'Finnhub (Stocks e REITs)',
+    createAccount: 'criar conta',
+    createAccountAria: 'Criar conta gratuita (abre em nova aba)',
+    tokenPlaceholder: 'Cole seu token gratuito',
     recommendedClassesLabel: 'Classes recomendadas por aporte',
     recommendedAssetsLabel: 'Ativos recomendados por classe',
     sardineModeLabel: 'Modo Sardinha',
-    sardineModeHint: 'Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais: no buy and hold, o preço do dia não deve influenciar a decisão de aporte.',
+    sardineModeHint: 'Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais.',
 
     // Toasts
     toastConfigTokens: 'Configure os tokens de API em ⚙️',

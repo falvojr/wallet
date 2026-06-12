@@ -887,17 +887,15 @@ tr:hover .remove-btn { opacity: 0.6; }
 .modal h3 { font-family: var(--font-h); font-size: var(--type-title); font-weight: 600; margin-bottom: 14px; }
 .modal-hint { font-size: var(--type-body); color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
 .modal-section-title {
-  margin: 18px 0 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border);
+  margin: 22px 0 8px;
   font-family: var(--font-h);
   font-size: var(--type-label);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--accent);
 }
-.modal-section-title:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+.modal-section-title:first-of-type { margin-top: 0; }
 .modal-field { margin-bottom: 12px; }
 .modal-field label {
   display: block;
@@ -925,27 +923,104 @@ tr:hover .remove-btn { opacity: 0.6; }
 }
 .modal-field input:focus,
 .modal-field textarea:focus { border-color: var(--accent); }
-.check-field {
+.setting-row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 16px;
+  min-height: var(--touch-min);
+  padding: 6px 0;
+}
+.setting-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--type-body);
+  font-weight: 500;
+  color: var(--text-primary);
   cursor: pointer;
 }
-.check-field input { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; cursor: pointer; }
-.check-field strong { display: block; font-size: var(--type-body); font-weight: 600; color: var(--text-primary); }
-.check-field small { display: block; font-size: var(--type-label); color: var(--text-muted); line-height: 1.45; }
+.setting-label small {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--type-label);
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.setting-stepper {
+  width: 64px;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-root);
+  color: var(--text-primary);
+  font-family: var(--font-b);
+  font-size: var(--type-subtitle);
+  font-weight: 600;
+  text-align: center;
+  flex-shrink: 0;
+  transition: border-color var(--ease);
+  outline: none;
+}
+.setting-stepper:focus { border-color: var(--accent); }
+
+/* M3 switch built on a native checkbox, so the existing checked state keeps working. */
+.switch {
+  appearance: none;
+  position: relative;
+  width: 52px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 2px solid var(--border-focus);
+  border-radius: 999px;
+  background: var(--bg-hover);
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease);
+}
+.switch::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transform: translateY(-50%);
+  transition: left var(--ease), width var(--ease), height var(--ease), background var(--ease);
+}
+.switch:checked {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+}
+.switch:checked::before {
+  left: 24px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+}
+.switch:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.field-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.field-top label { margin-bottom: 0; }
 .field-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 4px;
   font-size: var(--type-label);
   font-weight: 600;
   color: var(--link);
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .field-link svg,
-.field-link [data-lucide] { width: 14px; height: 14px; }
+.field-link [data-lucide] { width: 13px; height: 13px; }
 .field-link:hover,
 .field-link:focus-visible { color: var(--link-hover); }
 .modal-actions {
