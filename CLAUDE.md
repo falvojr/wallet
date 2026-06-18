@@ -27,7 +27,7 @@ Atenção: o Service Worker usa cache-first com atualização em segundo plano. 
 | `js/calc.js` | Cálculos puros: totais, percentuais e recomendação de aporte |
 | `js/render.js` | Renderização da interface (template literals + `innerHTML`) |
 | `js/chart.js` | Gráfico de bolhas (D3) e cores derivadas do tema |
-| `js/api.js` | Busca de cotações (brapi.dev, Finnhub, AwesomeAPI) |
+| `js/api.js` | Busca de cotações (brapi.dev para renda variável, CoinGecko para cripto e câmbio) |
 | `js/i18n.js` | Strings centralizadas da interface (pt-BR) |
 | `sw.js` | Service Worker (precache + cache em tempo de execução) |
 

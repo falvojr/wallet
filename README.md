@@ -16,7 +16,7 @@ Você só precisa de um navegador. Não há cadastro e nenhum dado sai do seu di
 3. Na aba **Metas**, defina o percentual alvo de cada classe (a soma deve fechar em 100%) e a meta em reais da Reserva de Emergência.
 4. Pronto. O badge **`aportar`** indica o melhor destino para o próximo aporte.
 
-Para **cotações automáticas** (opcional): crie API Keys gratuitas em [brapi.dev](https://brapi.dev) (ações e FIIs) e [finnhub.io](https://finnhub.io/register) (stocks e REITs), cole-as em ⚙️ **Configurações** e clique em **Cotar**. Câmbio e cripto usam a [AwesomeAPI](https://economia.awesomeapi.com.br), sem chave. Os preços ficam salvos no dispositivo, com aviso quando desatualizados (mais de 24 horas).
+Para **cotações automáticas** (opcional): crie uma API Key gratuita em [brapi.dev](https://brapi.dev), cole em ⚙️ **Configurações** e clique em **Cotar**. Ela cobre toda a renda variável (ações, FIIs, stocks e REITs); cripto e câmbio vêm do [CoinGecko](https://www.coingecko.com), sem chave. Os preços ficam salvos no dispositivo, com aviso quando desatualizados (mais de 24 horas).
 
 ## 🎯 Estratégia
 

@@ -359,14 +359,13 @@ function normalizeCount(value, fallback) {
 export class Settings {
   #storage = new LocalStorage(STORAGE_KEYS.settings);
   brapiToken = '';
-  finnhubToken = '';
   recommendedClassCount = 1;
   recommendedAssetCount = 1;
   // When enabled, financial values are shown (prices, daily change and BRL totals); otherwise only quantities and percentages.
   sardineMode = false;
 
   get hasTokens() {
-    return Boolean(this.brapiToken || this.finnhubToken);
+    return Boolean(this.brapiToken);
   }
 
   // Non-sensitive fields, safe to export; tokens are deliberately excluded.
@@ -389,7 +388,6 @@ export class Settings {
   load() {
     const data = this.#storage.read({}) ?? {};
     this.brapiToken = typeof data.brapiToken === 'string' ? data.brapiToken : '';
-    this.finnhubToken = typeof data.finnhubToken === 'string' ? data.finnhubToken : '';
     this.recommendedClassCount = normalizeCount(data.recommendedClassCount, 1);
     this.recommendedAssetCount = normalizeCount(data.recommendedAssetCount, 1);
     this.sardineMode = Boolean(data.sardineMode);
@@ -400,7 +398,6 @@ export class Settings {
     this.recommendedAssetCount = normalizeCount(this.recommendedAssetCount, 1);
     this.#storage.write({
       brapiToken: this.brapiToken,
-      finnhubToken: this.finnhubToken,
       recommendedClassCount: this.recommendedClassCount,
       recommendedAssetCount: this.recommendedAssetCount,
       sardineMode: this.sardineMode,

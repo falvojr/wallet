@@ -106,9 +106,8 @@ const strings = {
     settingsSectionApis: 'Cotações',
     settingsSectionInvest: 'Aportes',
     settingsSectionDisplay: 'Exibição',
-    settingsHint: 'Inclua suas API Keys para cotar seus ativos.',
-    brapiLabel: 'brapi.dev (Ações e FIIs)',
-    finnhubLabel: 'Finnhub (Stocks e REITs)',
+    settingsHint: 'Inclua sua API Key da brapi para cotar seus ativos.',
+    brapiLabel: 'brapi.dev (ações, FIIs, stocks e REITs)',
     createAccount: 'Criar Conta Grátis',
     createAccountAria: 'Criar conta grátis (abre em nova aba)',
     tokenPlaceholder: 'Cole sua API Key',
@@ -118,7 +117,7 @@ const strings = {
     sardineModeHint: 'Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais.',
 
     // Toasts
-    toastConfigTokens: 'Configure suas API Keys em ⚙️',
+    toastConfigTokens: 'Configure sua API Key em ⚙️',
     toastPricesOk: 'Cotações atualizadas',
     toastPricesFail: 'Não foi possível buscar as cotações',
     toastImported: 'Carteira importada',
@@ -142,6 +141,7 @@ const strings = {
     loadingDefault: 'Carregando...',
     loadingImporting: 'Importando...',
     loadingExchange: 'Atualizando câmbio',
+    loadingCrypto: 'Buscando cripto',
     dropHint: 'Solte o arquivo JSON aqui',
 
     // Accessibility
