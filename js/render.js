@@ -124,9 +124,15 @@ function renderTabs() {
     </button>`;
   };
 
-  $('#tabNav').innerHTML = fixedTabs.map(renderTab).join('')
+  const nav = $('#tabNav');
+  nav.innerHTML = fixedTabs.map(renderTab).join('')
     + '<span class="tab-gap" aria-hidden="true"></span>'
     + classTabs.map(renderTab).join('');
+
+  // Fade the edges only when the tabs overflow, hinting they can be scrolled sideways.
+  nav.classList.toggle('tab-nav--scrollable', nav.scrollWidth > nav.clientWidth);
+  // Keep the active tab in view when navigating (e.g. tapping a summary card on mobile).
+  nav.querySelector('.tab-btn.active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
 // Panels
