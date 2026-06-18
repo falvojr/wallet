@@ -221,8 +221,10 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
       <div class="summary-card-bar-fill" style="width:${progress}%"></div>
     </div>
     <div class="summary-card-meta">${metaContent}</div>
-    <p class="summary-card-desc">${esc(description)}</p>
-    <button type="button" class="desc-toggle" data-desc-toggle hidden>${t('descMore')}</button>
+    <div class="summary-card-desc-wrap">
+      <p class="summary-card-desc">${esc(description)}</p>
+      <button type="button" class="desc-toggle" data-desc-toggle hidden>${t('descMore')}</button>
+    </div>
   </div>`;
 }
 

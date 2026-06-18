@@ -562,33 +562,46 @@ body {
 .target-chip-input--wide { width: 60px; text-align: right; }
 .target-chip-unit { font-size: var(--type-label-sm); font-weight: 600; color: var(--text-muted); }
 
+.summary-card-desc-wrap {
+  position: relative;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
 .summary-card-desc {
   font-size: var(--type-label);
   color: var(--text-muted);
   line-height: 1.5;
-  margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .summary-card-desc.expanded { -webkit-line-clamp: unset; }
+
+/* Sits at the end of the clipped text, faded in so it does not collide with the words behind it. */
 .desc-toggle {
-  align-self: flex-start;
-  margin-top: 6px;
-  padding: 0;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  padding-left: 32px;
   border: none;
-  background: none;
-  color: var(--link);
+  background: linear-gradient(90deg, transparent, var(--bg-surface) 40%);
+  color: var(--text-secondary);
   font-family: var(--font-b);
   font-size: var(--type-label);
-  font-weight: 600;
   cursor: pointer;
 }
 .desc-toggle:hover,
-.desc-toggle:focus-visible { color: var(--link-hover); }
+.desc-toggle:focus-visible { color: var(--text-primary); }
+
+/* Once expanded there is no line to sit on, so it drops to its own line. */
+.summary-card-desc.expanded ~ .desc-toggle {
+  position: static;
+  margin-top: 4px;
+  padding-left: 0;
+  background: none;
+}
 
 /* Badges */
 
