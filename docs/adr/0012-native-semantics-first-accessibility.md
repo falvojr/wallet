@@ -13,6 +13,7 @@ Interfaces montadas com `div` clicável funcionam no mouse, mas excluem teclado 
 Priorizar elementos nativos e complementar com ARIA apenas onde necessário:
 
 - Todo controle clicável é `<button>` (ordenação de tabela, legenda do gráfico, setas de ordem).
+- O card de Metas não pode ser um `<button>` porque aninha botões e inputs; recebe `role="button"`, `tabindex="0"`, `aria-label` e um handler de Enter/Espaço que só age quando o foco está no próprio card, não nos controles internos.
 - Modais usam `<dialog>` nativo (ADR [0005](0005-native-dialog-modals.md)).
 - Estados expostos via atributos: `aria-sort` nas colunas ordenáveis, `aria-current` na aba ativa, `aria-live` em toasts e loading.
 - Rótulos acessíveis (`aria-label`) em controles cujo significado visual é icônico, sempre via i18n.

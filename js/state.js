@@ -285,6 +285,11 @@ export class Preferences {
   }
 }
 
+// A price entry is trustworthy only with a finite, non-negative price; change is optional and may be negative.
+function isValidPrice(data) {
+  return Boolean(data) && Number.isFinite(data.price) && data.price >= 0;
+}
+
 export class PriceCache {
   #storage = new LocalStorage(STORAGE_KEYS.prices);
   #prices = {};
@@ -296,11 +301,11 @@ export class PriceCache {
   }
 
   set(id, data) {
-    this.#prices[id] = data;
+    if (isValidPrice(data)) this.#prices[id] = data;
   }
 
   get usdBrl() {
-    return this.#rates.USDBRL ?? 0;
+    return Number.isFinite(this.#rates.USDBRL) ? this.#rates.USDBRL : 0;
   }
 
   set usdBrl(value) {
@@ -325,7 +330,11 @@ export class PriceCache {
   load() {
     const data = this.#storage.read(null);
     if (!data) return;
-    this.#prices = data.prices ?? {};
+    const validPrices = {};
+    for (const [id, entry] of Object.entries(data.prices ?? {})) {
+      if (isValidPrice(entry)) validPrices[id] = entry;
+    }
+    this.#prices = validPrices;
     this.#rates = data.rates ?? {};
     this.#timestamp = data.ts ?? null;
   }

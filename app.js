@@ -336,6 +336,17 @@ elements.panels.addEventListener('click', event => {
   }
 });
 
+// Summary cards navigate on click; mirror that for the keyboard when the card itself (not a child control) is focused.
+elements.panels.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('.summary-card[data-goto]');
+  if (card && event.target === card) {
+    event.preventDefault();
+    setActiveTab(card.dataset.goto);
+    render();
+  }
+});
+
 elements.panels.addEventListener('change', event => {
   const inlineInput = event.target.closest('.inline-input');
   if (inlineInput) {

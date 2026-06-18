@@ -8,19 +8,19 @@ export async function fetchAllPrices(onProgress) {
 
   const brTickers = [...portfolio.items('brStocks'), ...portfolio.items('brFiis')].map(a => a.id);
   const usTickers = [...portfolio.items('usStocks'), ...portfolio.items('usReits')].map(a => a.id);
-  const sovTickers = portfolio.items('storeOfValue').map(a => a.id);
+  const storeOfValueTickers = portfolio.items('storeOfValue').map(a => a.id);
 
   let step = 0;
-  const total = brTickers.length + usTickers.length + sovTickers.length + 1;
+  const total = brTickers.length + usTickers.length + storeOfValueTickers.length + 1;
   const progress = label => onProgress?.(`${label} (${++step}/${total})`, step / total);
 
   try {
     progress(t('loadingExchange'));
     await fetchExchangeRates();
 
-    for (const ticker of brTickers)  { progress(ticker); await fetchBrQuote(ticker); }
-    for (const ticker of usTickers)  { progress(ticker); await fetchUsQuote(ticker); }
-    for (const ticker of sovTickers) { progress(ticker); await fetchSovQuote(ticker); }
+    for (const ticker of brTickers) { progress(ticker); await fetchBrQuote(ticker); }
+    for (const ticker of usTickers) { progress(ticker); await fetchUsQuote(ticker); }
+    for (const ticker of storeOfValueTickers) { progress(ticker); await fetchStoreOfValueQuote(ticker); }
 
     if (prices.hasData) prices.save();
     return prices.hasData;
@@ -80,7 +80,7 @@ const COINGECKO_IDS = {
   DOT: 'polkadot',
 };
 
-async function fetchSovQuote(ticker) {
+async function fetchStoreOfValueQuote(ticker) {
   if (USD_PEGGED.has(ticker)) {
     prices.set(ticker, { price: 1, currency: 'USD', change: 0 });
     return;

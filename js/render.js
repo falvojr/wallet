@@ -207,7 +207,7 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   const prevKey = isFirst ? null : orderedKeys[index - 1];
   const nextKey = isLast ? null : orderedKeys[index + 1];
 
-  return `<div class="${cardCls}" data-goto="${key}">
+  return `<div class="${cardCls}" data-goto="${key}" role="button" tabindex="0" aria-label="${t('a11yGotoClass', esc(label))}">
     <div class="summary-card-head">
       <span class="summary-card-label">
         <i data-lucide="${CLASS_ICONS[key]}" class="summary-icon"></i>

@@ -154,6 +154,7 @@ const strings = {
     a11yAmountOf: (id) => `Quantidade de ${id}`,
     a11yTargetOf: (id) => `Meta % de ${id} na classe`,
     a11yToggleChart: (label, hidden) => `${hidden ? 'Ocultar' : 'Mostrar'} ${label} no gráfico`,
+    a11yGotoClass: (label) => `Abrir ${label}`,
     a11yMoveUp: 'Mover para cima',
     a11yMoveDown: 'Mover para baixo',
   },
