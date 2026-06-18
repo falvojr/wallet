@@ -75,6 +75,7 @@ export function render() {
   renderTabs();
   renderPanels();
   refreshIcons();
+  revealDescToggles();
   if (activeTab === 'charts') renderBubbleChart();
 }
 
@@ -83,6 +84,7 @@ export function renderOverviewOnly() {
   if (panel) {
     panel.innerHTML = renderOverview();
     refreshIcons();
+    revealDescToggles();
   }
   renderTabs();
 }
@@ -122,9 +124,15 @@ function renderTabs() {
     </button>`;
   };
 
-  $('#tabNav').innerHTML = fixedTabs.map(renderTab).join('')
+  const nav = $('#tabNav');
+  nav.innerHTML = fixedTabs.map(renderTab).join('')
     + '<span class="tab-gap" aria-hidden="true"></span>'
     + classTabs.map(renderTab).join('');
+
+  // Fade the edges only when the tabs overflow, hinting they can be scrolled sideways.
+  nav.classList.toggle('tab-nav--scrollable', nav.scrollWidth > nav.clientWidth);
+  // Keep the active tab in view when navigating (e.g. tapping a summary card on mobile).
+  nav.querySelector('.tab-btn.active')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 }
 
 // Panels
@@ -199,7 +207,7 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
   const prevKey = isFirst ? null : orderedKeys[index - 1];
   const nextKey = isLast ? null : orderedKeys[index + 1];
 
-  return `<div class="${cardCls}" data-goto="${key}">
+  return `<div class="${cardCls}" data-goto="${key}" role="button" tabindex="0" aria-label="${t('a11yGotoClass', esc(label))}">
     <div class="summary-card-head">
       <span class="summary-card-label">
         <i data-lucide="${CLASS_ICONS[key]}" class="summary-icon"></i>
@@ -219,8 +227,21 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
       <div class="summary-card-bar-fill" style="width:${progress}%"></div>
     </div>
     <div class="summary-card-meta">${metaContent}</div>
-    <p class="summary-card-desc">${esc(description)}</p>
+    <div class="summary-card-desc-wrap">
+      <p class="summary-card-desc">${esc(description)}</p>
+      <button type="button" class="desc-toggle" data-desc-toggle hidden>${t('descMore')}</button>
+    </div>
   </div>`;
+}
+
+// Shows the "ver mais" toggle only on cards whose description is actually clipped.
+function revealDescToggles() {
+  for (const desc of document.querySelectorAll('.summary-card-desc')) {
+    const toggle = desc.nextElementSibling;
+    if (toggle?.matches('[data-desc-toggle]')) {
+      toggle.hidden = desc.scrollHeight <= desc.clientHeight + 1;
+    }
+  }
 }
 
 function buildMetaContent(key, label, inactive, isEmergency) {
@@ -240,23 +261,14 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     </label>`;
   }
 
-  if (!inactive) {
-    const actual = classActualPct(key);
-    const target = classTargetPct(key);
-    return `<span class="summary-card-actual">${(actual ?? 0).toFixed(1)}%</span>
+  // Inactive classes have target 0, so target.toFixed(0) is "0"; only the leading span differs.
+  const left = inactive
+    ? `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`
+    : `<span class="summary-card-actual">${(classActualPct(key) ?? 0).toFixed(1)}%</span>`;
+  return left + `
     <label class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
-      <input class="target-chip-input" type="text" value="${target.toFixed(0)}"
-        data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
-        aria-label="${t('a11yTargetClass', esc(label))}">
-      <span class="target-chip-unit">%</span>
-    </label>`;
-  }
-
-  return `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-    <label class="summary-card-target-chip">
-      <span class="target-chip-label">${t('metaLabel')}</span>
-      <input class="target-chip-input" type="text" value="0"
+      <input class="target-chip-input" type="text" value="${classTargetPct(key).toFixed(0)}"
         data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yTargetClass', esc(label))}">
       <span class="target-chip-unit">%</span>
@@ -267,14 +279,17 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 
 function renderChartsTab() {
   const order = preferences.displayOrder();
-  const data = order.map(key => ({
-    key,
-    label: classLabel(key),
-    count: portfolio.items(key).length,
-    hasPrices: classTotalBRL(key) !== null,
-    total: classTotalBRL(key),
-    hidden: preferences.isChartHidden(key),
-  }));
+  const data = order.map(key => {
+    const total = classTotalBRL(key);
+    return {
+      key,
+      label: classLabel(key),
+      count: portfolio.items(key).length,
+      hasPrices: total !== null,
+      total,
+      hidden: preferences.isChartHidden(key),
+    };
+  });
 
   const { total, partial } = chartVisibleTotalBRL();
   const portfolioTotal = portfolioTotalBRL().total;
@@ -443,6 +458,7 @@ function formatPrice(key, item, priceData) {
   }
 
   if (!priceData) return { priceStr: '', changeHtml: '' };
+  if (!Number.isFinite(priceData.price)) return { priceStr: '', changeHtml: '' };
 
   const prefix = priceData.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
   const priceStr = prefix + priceData.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

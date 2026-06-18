@@ -253,6 +253,14 @@ function initEmptyPortfolio() {
 // Event listeners: panels (delegated)
 
 elements.panels.addEventListener('click', event => {
+  const descToggle = event.target.closest('[data-desc-toggle]');
+  if (descToggle) {
+    const desc = descToggle.previousElementSibling;
+    const expanded = desc.classList.toggle('expanded');
+    descToggle.textContent = t(expanded ? 'descLess' : 'descMore');
+    return;
+  }
+
   const chartToggle = event.target.closest('[data-toggle-chart]');
   if (chartToggle) {
     event.stopPropagation();
@@ -324,6 +332,17 @@ elements.panels.addEventListener('click', event => {
   const sortButton = event.target.closest('[data-sort]');
   if (sortButton) {
     toggleSort(sortButton.dataset.sort);
+    render();
+  }
+});
+
+// Summary cards navigate on click; mirror that for the keyboard when the card itself (not a child control) is focused.
+elements.panels.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const card = event.target.closest('.summary-card[data-goto]');
+  if (card && event.target === card) {
+    event.preventDefault();
+    setActiveTab(card.dataset.goto);
     render();
   }
 });

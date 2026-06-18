@@ -1,4 +1,4 @@
-import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings } from './state.js';
+import { CLASS_KEYS, DECLARED_CLASSES, portfolio, preferences, prices, settings, isTicker } from './state.js';
 
 export function formatBRL(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -9,7 +9,11 @@ export function assetValueBRL(key, asset) {
   if (DECLARED_CLASSES.has(key)) return asset.amount;
 
   const priceData = prices.get(asset.id);
-  if (!priceData) return key === 'storeOfValue' ? asset.amount : null;
+  if (!priceData) {
+    // In storeOfValue, free-text cash (e.g. "Reais em Espécie") is declared in BRL, so its amount is the value.
+    // Tickers like BTC or GLD are quoted, so without a price their value is unknown, not the amount.
+    return key === 'storeOfValue' && !isTicker(asset.id) ? asset.amount : null;
+  }
 
   if (priceData.currency === 'USD') {
     // Without an exchange rate the value is unknown, not zero.
@@ -33,12 +37,13 @@ export function classTotalBRL(key) {
   return hasValue ? total : null;
 }
 
-// Full portfolio value across all classes.
-export function portfolioTotalBRL() {
+// Sums class totals in BRL, restricted by a class predicate, flagging the result as partial when a class has items but no value.
+function totalBRL(includeKey) {
   let total = 0;
   let partial = false;
 
   for (const key of CLASS_KEYS) {
+    if (!includeKey(key)) continue;
     const value = classTotalBRL(key);
     if (value !== null) total += value;
     else if (portfolio.items(key).length) partial = true;
@@ -46,21 +51,12 @@ export function portfolioTotalBRL() {
 
   return { total, partial };
 }
+
+// Full portfolio value across all classes.
+export const portfolioTotalBRL = () => totalBRL(() => true);
 
 // Portfolio value considering only classes visible in the chart.
-export function chartVisibleTotalBRL() {
-  let total = 0;
-  let partial = false;
-
-  for (const key of CLASS_KEYS) {
-    if (preferences.isChartHidden(key)) continue;
-    const value = classTotalBRL(key);
-    if (value !== null) total += value;
-    else if (portfolio.items(key).length) partial = true;
-  }
-
-  return { total, partial };
-}
+export const chartVisibleTotalBRL = () => totalBRL(key => !preferences.isChartHidden(key));
 
 export const isSkippedAsset = item => item.target === 0;
 export const classTargetPct = key => portfolio.target(key);
