@@ -11,11 +11,12 @@ Provedores pagos não se justificam para uso pessoal, e a estratégia buy and ho
 
 ## Decisão
 
-Buscar cotações diretamente do navegador em três APIs gratuitas:
+Buscar cotações diretamente do navegador em APIs gratuitas, cada uma na fonte mais confiável para o tipo de ativo:
 
 - Ações e FIIs brasileiros: brapi.dev, com token do usuário.
-- Stocks e REITs americanos: Finnhub, com token do usuário.
-- Câmbio USD-BRL e criptomoedas: AwesomeAPI, sem token.
+- Stocks, REITs e ETFs (como o GLD): Finnhub, com token do usuário.
+- Câmbio USD-BRL: AwesomeAPI, sem token.
+- Criptomoedas (BTC e afins): CoinGecko, sem token, cotando direto em BRL.
 
 Os tokens ficam no `localStorage`; os preços ficam em cache e um aviso de desatualização aparece após 24 horas.
 Classes declarativas (Renda Fixa, Reserva de Emergência, Bens) não têm cotação: o valor é informado manualmente.

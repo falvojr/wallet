@@ -29,6 +29,10 @@ export const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'ass
 // Classes excluded from percentage-based rebalancing.
 export const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
+// A holding is quoted when its id looks like a ticker; free-text names (e.g. "Reais em Espécie") are declared in BRL.
+const TICKER_RE = /^[A-Z0-9.]{1,10}$/;
+export const isTicker = id => TICKER_RE.test(id);
+
 function normalizeNumber(value, fallback = 0) {
   const num = Number(value);
   return Number.isFinite(num) && num >= 0 ? num : fallback;
