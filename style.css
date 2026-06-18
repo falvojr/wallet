@@ -569,7 +569,26 @@ body {
   margin-top: auto;
   padding-top: 10px;
   border-top: 1px solid var(--border);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+.summary-card-desc.expanded { -webkit-line-clamp: unset; }
+.desc-toggle {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--link);
+  font-family: var(--font-b);
+  font-size: var(--type-label);
+  font-weight: 600;
+  cursor: pointer;
+}
+.desc-toggle:hover,
+.desc-toggle:focus-visible { color: var(--link-hover); }
 
 /* Badges */
 

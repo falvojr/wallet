@@ -75,6 +75,7 @@ export function render() {
   renderTabs();
   renderPanels();
   refreshIcons();
+  revealDescToggles();
   if (activeTab === 'charts') renderBubbleChart();
 }
 
@@ -83,6 +84,7 @@ export function renderOverviewOnly() {
   if (panel) {
     panel.innerHTML = renderOverview();
     refreshIcons();
+    revealDescToggles();
   }
   renderTabs();
 }
@@ -220,7 +222,18 @@ function renderSummaryCard(key, recommended, index, orderedKeys) {
     </div>
     <div class="summary-card-meta">${metaContent}</div>
     <p class="summary-card-desc">${esc(description)}</p>
+    <button type="button" class="desc-toggle" data-desc-toggle hidden>${t('descMore')}</button>
   </div>`;
+}
+
+// Shows the "ver mais" toggle only on cards whose description is actually clipped.
+function revealDescToggles() {
+  for (const desc of document.querySelectorAll('.summary-card-desc')) {
+    const toggle = desc.nextElementSibling;
+    if (toggle?.matches('[data-desc-toggle]')) {
+      toggle.hidden = desc.scrollHeight <= desc.clientHeight + 1;
+    }
+  }
 }
 
 function buildMetaContent(key, label, inactive, isEmergency) {
