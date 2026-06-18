@@ -37,12 +37,13 @@ export function classTotalBRL(key) {
   return hasValue ? total : null;
 }
 
-// Full portfolio value across all classes.
-export function portfolioTotalBRL() {
+// Sums class totals in BRL, restricted by a class predicate, flagging the result as partial when a class has items but no value.
+function totalBRL(includeKey) {
   let total = 0;
   let partial = false;
 
   for (const key of CLASS_KEYS) {
+    if (!includeKey(key)) continue;
     const value = classTotalBRL(key);
     if (value !== null) total += value;
     else if (portfolio.items(key).length) partial = true;
@@ -50,21 +51,12 @@ export function portfolioTotalBRL() {
 
   return { total, partial };
 }
+
+// Full portfolio value across all classes.
+export const portfolioTotalBRL = () => totalBRL(() => true);
 
 // Portfolio value considering only classes visible in the chart.
-export function chartVisibleTotalBRL() {
-  let total = 0;
-  let partial = false;
-
-  for (const key of CLASS_KEYS) {
-    if (preferences.isChartHidden(key)) continue;
-    const value = classTotalBRL(key);
-    if (value !== null) total += value;
-    else if (portfolio.items(key).length) partial = true;
-  }
-
-  return { total, partial };
-}
+export const chartVisibleTotalBRL = () => totalBRL(key => !preferences.isChartHidden(key));
 
 export const isSkippedAsset = item => item.target === 0;
 export const classTargetPct = key => portfolio.target(key);

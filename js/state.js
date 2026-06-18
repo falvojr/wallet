@@ -27,7 +27,7 @@ export const CLASS_KEYS = Object.keys(CLASS_ICONS);
 export const DECLARED_CLASSES = new Set(['fixedIncome', 'emergencyReserve', 'assets']);
 
 // Classes excluded from percentage-based rebalancing.
-export const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
+const NON_REBALANCED_CLASSES = new Set(['emergencyReserve', 'assets']);
 
 // A holding is quoted when its id looks like a ticker; free-text names (e.g. "Reais em Espécie") are declared in BRL.
 const TICKER_RE = /^[A-Z0-9.]{1,10}$/;

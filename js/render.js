@@ -261,23 +261,14 @@ function buildMetaContent(key, label, inactive, isEmergency) {
     </label>`;
   }
 
-  if (!inactive) {
-    const actual = classActualPct(key);
-    const target = classTargetPct(key);
-    return `<span class="summary-card-actual">${(actual ?? 0).toFixed(1)}%</span>
+  // Inactive classes have target 0, so target.toFixed(0) is "0"; only the leading span differs.
+  const left = inactive
+    ? `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>`
+    : `<span class="summary-card-actual">${(classActualPct(key) ?? 0).toFixed(1)}%</span>`;
+  return left + `
     <label class="summary-card-target-chip">
       <span class="target-chip-label">${t('metaLabel')}</span>
-      <input class="target-chip-input" type="text" value="${target.toFixed(0)}"
-        data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
-        aria-label="${t('a11yTargetClass', esc(label))}">
-      <span class="target-chip-unit">%</span>
-    </label>`;
-  }
-
-  return `<span class="summary-card-inactive-hint">${t('inactiveClassHint')}</span>
-    <label class="summary-card-target-chip">
-      <span class="target-chip-label">${t('metaLabel')}</span>
-      <input class="target-chip-input" type="text" value="0"
+      <input class="target-chip-input" type="text" value="${classTargetPct(key).toFixed(0)}"
         data-class-target="${key}" inputmode="decimal" pattern="[0-9]*" autocomplete="off"
         aria-label="${t('a11yTargetClass', esc(label))}">
       <span class="target-chip-unit">%</span>
@@ -288,14 +279,17 @@ function buildMetaContent(key, label, inactive, isEmergency) {
 
 function renderChartsTab() {
   const order = preferences.displayOrder();
-  const data = order.map(key => ({
-    key,
-    label: classLabel(key),
-    count: portfolio.items(key).length,
-    hasPrices: classTotalBRL(key) !== null,
-    total: classTotalBRL(key),
-    hidden: preferences.isChartHidden(key),
-  }));
+  const data = order.map(key => {
+    const total = classTotalBRL(key);
+    return {
+      key,
+      label: classLabel(key),
+      count: portfolio.items(key).length,
+      hasPrices: total !== null,
+      total,
+      hidden: preferences.isChartHidden(key),
+    };
+  });
 
   const { total, partial } = chartVisibleTotalBRL();
   const portfolioTotal = portfolioTotalBRL().total;
@@ -464,6 +458,7 @@ function formatPrice(key, item, priceData) {
   }
 
   if (!priceData) return { priceStr: '', changeHtml: '' };
+  if (!Number.isFinite(priceData.price)) return { priceStr: '', changeHtml: '' };
 
   const prefix = priceData.currency === 'USD' ? '$\u00A0' : 'R$\u00A0';
   const priceStr = prefix + priceData.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

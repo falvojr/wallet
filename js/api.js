@@ -41,7 +41,7 @@ async function fetchBrQuote(ticker) {
   try {
     const data = await fetchJson(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);
     const result = data?.results?.[0];
-    if (result) {
+    if (result && Number.isFinite(result.regularMarketPrice)) {
       prices.set(result.symbol, {
         price: result.regularMarketPrice,
         currency: result.currency || 'BRL',

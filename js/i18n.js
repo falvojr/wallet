@@ -1,5 +1,5 @@
-/**
- * Centralised UI strings for internationalisation.
+/*
+ * Centralized UI strings for internationalization.
  * To add a locale, duplicate `pt-BR`, translate, and switch `locale`.
  */
 
