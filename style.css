@@ -1149,8 +1149,15 @@ tr:hover .remove-btn { opacity: 0.6; }
 @media (max-width: 479px) {
   .td-price, .td-change,
   .col-price, .col-change { display: none; }
-  .asset-table td { padding: 4px 8px; }
-  .asset-table thead th { padding: 6px 8px; }
+  /* Let the table fit the screen: long names wrap and dense columns tighten, avoiding a horizontal scroll. */
+  .asset-table { min-width: 0; }
+  .asset-table td { padding: 4px 6px; }
+  .asset-table thead th { padding: 6px 6px; }
+  .td-ticker { white-space: normal; overflow-wrap: anywhere; }
+  .td-value { font-size: var(--type-body-sm); }
+  .inline-input--qty { width: 60px; }
+  .inline-input--target { width: 44px; }
+  .td-actions, .col-actions { width: 58px; }
   .summary-cards { grid-template-columns: 1fr; }
   .chart-legend-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
   .bubble-stage { height: clamp(280px, calc(100vh - 320px), 420px); }
