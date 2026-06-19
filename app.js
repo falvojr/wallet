@@ -182,7 +182,23 @@ function openSettingsModal() {
   $('#recommendedClassCount').value = settings.recommendedClassCount;
   $('#recommendedAssetCount').value = settings.recommendedAssetCount;
   $('#sardineMode').checked = settings.sardineMode;
+  updateBrapiStatus();
   $('#settingsModal').showModal();
+}
+
+// Reflects whether a brapi key is configured; the actual connection is confirmed when Cotar succeeds.
+function updateBrapiStatus() {
+  const filled = $('#brapiToken').value.trim().length > 0;
+  const status = $('#brapiStatus');
+  status.dataset.state = filled ? 'on' : 'off';
+  status.textContent = t(filled ? 'tokenSet' : 'tokenUnset');
+}
+
+// Adjusts a stepper input within its min and max bounds.
+function stepSetting(button) {
+  const input = $('#' + button.dataset.target);
+  const next = (Number(input.value) || Number(input.min)) + Number(button.dataset.step);
+  input.value = Math.min(Number(input.max), Math.max(Number(input.min), next));
 }
 
 function saveSettings() {
@@ -470,6 +486,11 @@ $('#modalCancel').addEventListener('click', () => $('#addModal').close());
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#settingsCancel').addEventListener('click', () => $('#settingsModal').close());
 $('#settingsSave').addEventListener('click', saveSettings);
+$('#brapiToken').addEventListener('input', updateBrapiStatus);
+$('#settingsModal').addEventListener('click', event => {
+  const stepButton = event.target.closest('.stepper-btn');
+  if (stepButton) stepSetting(stepButton);
+});
 $('#noteCancel').addEventListener('click', () => $('#noteModal').close());
 $('#noteSave').addEventListener('click', saveNote);
 

@@ -926,15 +926,17 @@ tr:hover .remove-btn { opacity: 0.6; }
 .modal h3 { font-family: var(--font-h); font-size: var(--type-title); font-weight: 600; margin-bottom: 14px; }
 .modal-hint { font-size: var(--type-body); color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5; }
 .modal-section-title {
-  margin: 22px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 22px 0 6px;
   font-family: var(--font-h);
-  font-size: var(--type-label);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--type-body-sm);
+  font-weight: 600;
   color: var(--accent);
 }
 .modal-section-title:first-of-type { margin-top: 0; }
+.modal-section-icon { width: 15px; height: 15px; }
 .modal-field { margin-bottom: 12px; }
 .modal-field label {
   display: block;
@@ -985,23 +987,48 @@ tr:hover .remove-btn { opacity: 0.6; }
   color: var(--text-muted);
   line-height: 1.45;
 }
-.setting-stepper {
-  width: 64px;
-  min-height: 36px;
-  padding: 6px 8px;
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
   border: 1px solid var(--border);
   border-radius: var(--r-sm);
   background: var(--bg-root);
+  overflow: hidden;
+  transition: border-color var(--ease);
+}
+.stepper:focus-within { border-color: var(--accent); }
+.stepper-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-height: 36px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--ease), color var(--ease);
+}
+.stepper-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.stepper-btn svg,
+.stepper-btn [data-lucide] { width: 16px; height: 16px; }
+.stepper-value {
+  width: 36px;
+  min-height: 36px;
+  border: none;
+  background: none;
   color: var(--text-primary);
   font-family: var(--font-b);
   font-size: var(--type-subtitle);
   font-weight: 600;
   text-align: center;
-  flex-shrink: 0;
-  transition: border-color var(--ease);
+  appearance: textfield;
+  -moz-appearance: textfield;
   outline: none;
 }
-.setting-stepper:focus { border-color: var(--accent); }
+.stepper-value::-webkit-outer-spin-button,
+.stepper-value::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* M3 switch built on a native checkbox, so the existing checked state keeps working. */
 .switch {
@@ -1039,14 +1066,49 @@ tr:hover .remove-btn { opacity: 0.6; }
   background: #fff;
 }
 .switch:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
-.field-top {
+.token-field-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.token-field-head label {
+  margin-bottom: 0;
+  font-size: var(--type-subtitle);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.token-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: var(--type-label);
+  font-weight: 600;
+}
+.token-status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.token-status[data-state="on"] { color: var(--up); background: var(--quote-up-bg); border-color: var(--quote-up-border); }
+.token-status[data-state="off"] { color: var(--text-muted); background: rgba(155, 150, 166, 0.12); border-color: rgba(155, 150, 166, 0.22); }
+.token-field-foot {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 5px;
+  margin-top: 7px;
 }
-.field-top label { margin-bottom: 0; }
+.token-coverage { font-size: var(--type-label); color: var(--text-muted); }
 .field-link {
   display: inline-flex;
   align-items: center;
@@ -1154,6 +1216,10 @@ tr:hover .remove-btn { opacity: 0.6; }
   .asset-table td { padding: 4px 6px; }
   .asset-table thead th { padding: 6px 6px; }
   .td-ticker { white-space: normal; overflow-wrap: anywhere; }
+  /* The aporte badge would wrap inside the now-narrow name cell; a left accent bar marks the row instead, and skipped rows already read as muted. */
+  .td-ticker .badge { display: none; }
+  .row-target .td-ticker { box-shadow: inset 3px 0 0 var(--accent); }
+  [data-theme="light"] .row-target .td-ticker { box-shadow: inset 3px 0 0 var(--accent-fill); }
   .td-value { font-size: var(--type-body-sm); }
   .inline-input--qty { width: 60px; }
   .inline-input--target { width: 44px; }
