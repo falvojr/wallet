@@ -129,36 +129,67 @@
     <div class="modal">
       <h3 id="settingsModalTitle" data-i18n="settingsTitle">Configurações</h3>
 
-      <h4 class="modal-section-title" data-i18n="settingsSectionApis">Cotações</h4>
-      <p class="modal-hint" data-i18n="settingsHint">Inclua sua API Key da brapi para cotar seus ativos.</p>
-      <div class="modal-field">
-        <div class="field-top">
-          <label for="brapiToken" data-i18n="brapiLabel">brapi.dev (ações, FIIs, stocks e REITs)</label>
+      <h4 class="modal-section-title">
+        <i data-lucide="key-round" class="modal-section-icon"></i>
+        <span data-i18n="settingsSectionApis">Cotações</span>
+      </h4>
+      <p class="modal-hint" data-i18n="settingsHint">Sua chave da brapi puxa as cotações.</p>
+      <div class="modal-field token-field">
+        <div class="token-field-head">
+          <label for="brapiToken" data-i18n="brapiLabel">brapi.dev</label>
+          <span class="token-status" id="brapiStatus" data-state="off"></span>
+        </div>
+        <input type="text" id="brapiToken" data-i18n-placeholder="tokenPlaceholder"
+          placeholder="Cole sua API Key" autocomplete="off">
+        <div class="token-field-foot">
+          <span class="token-coverage" data-i18n="brapiCoverage">Ações, FIIs, stocks e REITs.</span>
           <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
             data-i18n-aria-label="createAccountAria" aria-label="Criar conta grátis (abre em nova aba)">
             <span data-i18n="createAccount">Criar Conta Grátis</span>
             <i data-lucide="external-link"></i>
           </a>
         </div>
-        <input type="text" id="brapiToken" data-i18n-placeholder="tokenPlaceholder"
-          placeholder="Cole sua API Key" autocomplete="off">
       </div>
 
-      <h4 class="modal-section-title" data-i18n="settingsSectionInvest">Aportes</h4>
+      <h4 class="modal-section-title">
+        <i data-lucide="target" class="modal-section-icon"></i>
+        <span data-i18n="settingsSectionInvest">Aportes</span>
+      </h4>
       <div class="setting-row">
-        <label class="setting-label" for="recommendedClassCount" data-i18n="recommendedClassesLabel">Classes recomendadas por aporte</label>
-        <input type="number" id="recommendedClassCount" class="setting-stepper" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
+        <label class="setting-label" for="recommendedClassCount">
+          <span data-i18n="recommendedClassesLabel">Classes recomendadas</span>
+          <small data-i18n="recommendedClassesHint">Quantas classes recebem o selo aportar.</small>
+        </label>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" data-step="-1" data-target="recommendedClassCount"
+            data-i18n-aria-label="a11yDecrease" aria-label="Diminuir"><i data-lucide="minus"></i></button>
+          <input type="number" id="recommendedClassCount" class="stepper-value" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
+          <button type="button" class="stepper-btn" data-step="1" data-target="recommendedClassCount"
+            data-i18n-aria-label="a11yIncrease" aria-label="Aumentar"><i data-lucide="plus"></i></button>
+        </div>
       </div>
       <div class="setting-row">
-        <label class="setting-label" for="recommendedAssetCount" data-i18n="recommendedAssetsLabel">Ativos recomendados por classe</label>
-        <input type="number" id="recommendedAssetCount" class="setting-stepper" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
+        <label class="setting-label" for="recommendedAssetCount">
+          <span data-i18n="recommendedAssetsLabel">Ativos recomendados</span>
+          <small data-i18n="recommendedAssetsHint">Quantos ativos destacar em cada classe.</small>
+        </label>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" data-step="-1" data-target="recommendedAssetCount"
+            data-i18n-aria-label="a11yDecrease" aria-label="Diminuir"><i data-lucide="minus"></i></button>
+          <input type="number" id="recommendedAssetCount" class="stepper-value" min="1" max="10" step="1" inputmode="numeric" autocomplete="off">
+          <button type="button" class="stepper-btn" data-step="1" data-target="recommendedAssetCount"
+            data-i18n-aria-label="a11yIncrease" aria-label="Aumentar"><i data-lucide="plus"></i></button>
+        </div>
       </div>
 
-      <h4 class="modal-section-title" data-i18n="settingsSectionDisplay">Exibição</h4>
+      <h4 class="modal-section-title">
+        <i data-lucide="eye" class="modal-section-icon"></i>
+        <span data-i18n="settingsSectionDisplay">Exibição</span>
+      </h4>
       <div class="setting-row">
         <label class="setting-label" for="sardineMode">
           <span data-i18n="sardineModeLabel">Modo Sardinha</span>
-          <small data-i18n="sardineModeHint">Exibe cotações, variação diária e totais em reais. Desligado, apenas quantidades e percentuais.</small>
+          <small data-i18n="sardineModeHint">Mostra cotações, variação e totais em reais. Desligado, só quantidades e percentuais.</small>
         </label>
         <input type="checkbox" id="sardineMode" class="switch" role="switch">
       </div>
