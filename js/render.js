@@ -452,7 +452,9 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const isSkipped = isSkippedAsset(item);
   const price = prices.get(item.id);
   const value = assetValueBRL(key, item);
-  const valueCell = value === null ? '' : settings.sardineMode ? formatBRL(value) : percentOfTotal(value, classTotal);
+  const valueCell = value === null
+    ? ''
+    : settings.sardineMode ? formatBRL(value) : percentOfTotal(value, classTotal);
   const id = esc(item.id);
 
   const url = tickerUrl(key, item.id);
@@ -463,7 +465,9 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const { priceStr, changeHtml } = formatPrice(key, item, price);
   const noteIcon = item.note ? 'message-square-text' : 'message-square';
   const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
-  const rowCls = isRecommended ? ' class="row-target"' : isSkipped ? ' class="row-skipped"' : '';
+  const rowCls = isRecommended
+    ? ' class="row-target"'
+    : isSkipped ? ' class="row-skipped"' : '';
 
   return `<tr${rowCls}>
     <td class="td-ticker">${ticker}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>

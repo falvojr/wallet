@@ -66,7 +66,7 @@ async function fetchCryptoQuotes(tickers) {
 
 async function fetchBrapiQuote(ticker) {
   let result = await requestBrapi(ticker);
-  // brapi usa hífen para ações de classe (BRK-B, não BRK.B); tenta a forma com hífen quando a com ponto falha.
+  // brapi uses a dash for class shares (BRK-B, not BRK.B); retry the dash form when the dotted one fails.
   if (!result && ticker.includes('.')) result = await requestBrapi(ticker.replace(/\./g, '-'));
 
   if (result && Number.isFinite(result.regularMarketPrice)) {
@@ -76,11 +76,11 @@ async function fetchBrapiQuote(ticker) {
       change: result.regularMarketChangePercent,
     });
   } else {
-    console.warn(`brapi: sem cotação para ${ticker}`);
+    console.warn(`brapi: no quote for ${ticker}`);
   }
 }
 
-// Busca a cotação de um ticker na brapi, devolvendo null quando não existe ou a requisição falha.
+// Fetches a single brapi quote, returning null when the ticker is missing or the request fails.
 async function requestBrapi(ticker) {
   try {
     const data = await fetchJson(`https://brapi.dev/api/quote/${ticker}?token=${settings.brapiToken}`);

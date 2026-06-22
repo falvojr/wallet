@@ -178,8 +178,6 @@ export class Portfolio {
     const trimmed = note.trim();
     if (trimmed) item.note = trimmed;
     else delete item.note;
-
-    this.save();
   }
 
   load() {
