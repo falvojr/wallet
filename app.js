@@ -171,6 +171,7 @@ function openNoteModal(classKey, itemId) {
 function saveNote() {
   if (!noteClassKey || !noteItemId) return;
   portfolio.setItemNote(noteClassKey, noteItemId, $('#noteText').value);
+  portfolio.save();
   $('#noteModal').close();
   render();
 }
