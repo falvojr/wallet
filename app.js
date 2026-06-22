@@ -180,23 +180,20 @@ function saveNote() {
 
 function openSettingsModal() {
   $('#brapiToken').value = settings.brapiToken;
+  setTokenVisibility(false);
   $('#recommendedClassCount').value = settings.recommendedClassCount;
   $('#recommendedAssetCount').value = settings.recommendedAssetCount;
   $('#sardineMode').checked = settings.sardineMode;
-  updateBrapiStatus();
   $('#settingsModal').showModal();
 }
 
-const STATUS_LABELS = { online: 'statusOnline', offline: 'statusOffline', off: 'statusNoKey' };
-
-// Subtle brapi status: online with fresh quotes, offline with a key but no current quotes, no key otherwise.
-function updateBrapiStatus() {
-  const hasToken = $('#brapiToken').value.trim().length > 0;
-  let state = 'off';
-  if (hasToken) state = prices.hasData && !prices.stale ? 'online' : 'offline';
-  const status = $('#brapiStatus');
-  status.dataset.state = state;
-  status.textContent = t(STATUS_LABELS[state]);
+// Masks the API Key by default; the eye button reveals it.
+function setTokenVisibility(show) {
+  $('#brapiToken').type = show ? 'text' : 'password';
+  const toggle = $('#brapiToggle');
+  toggle.setAttribute('aria-label', t(show ? 'tokenHide' : 'tokenShow'));
+  toggle.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}"></i>`;
+  refreshIcons();
 }
 
 // Adjusts a stepper input within its min and max bounds.
@@ -491,7 +488,7 @@ $('#modalCancel').addEventListener('click', () => $('#addModal').close());
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#settingsCancel').addEventListener('click', () => $('#settingsModal').close());
 $('#settingsSave').addEventListener('click', saveSettings);
-$('#brapiToken').addEventListener('input', updateBrapiStatus);
+$('#brapiToggle').addEventListener('click', () => setTokenVisibility($('#brapiToken').type === 'password'));
 $('#settingsModal').addEventListener('click', event => {
   const stepButton = event.target.closest('.stepper-btn');
   if (stepButton) stepSetting(stepButton);

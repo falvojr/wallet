@@ -56,9 +56,9 @@ const strings = {
 
     // Badges
     badgeInvest: 'aportar',
-    badgeInvestTitle: 'Ativo com prioridade de aporte.',
+    badgeInvestTitle: 'Sugerido para o próximo aporte.',
     badgeSkip: 'ignorar',
-    badgeSkipTitle: 'Ativo ignorado no rebalanceamento.',
+    badgeSkipTitle: 'Fora do rebalanceamento (meta 0).',
 
     // Charts
     portfolioLabel: 'Patrimônio',
@@ -108,9 +108,8 @@ const strings = {
     settingsSectionDisplay: 'Exibição',
     settingsHint: 'Crie uma API Key na <a href="https://brapi.dev" target="_blank" rel="noopener">brapi.dev</a> para cotar seus ativos.',
     tokenPlaceholder: 'Sua API Key (ações, FIIs, stocks e REITs)',
-    statusOnline: 'online',
-    statusOffline: 'offline',
-    statusNoKey: 'sem chave',
+    tokenShow: 'Mostrar API Key',
+    tokenHide: 'Ocultar API Key',
     recommendedClassesLabel: 'Classes recomendadas',
     recommendedClassesHint: 'Quantas classes recebem o selo aportar.',
     recommendedAssetsLabel: 'Ativos recomendados',
