@@ -192,9 +192,10 @@ function openSettingsModal() {
   $('#settingsModal').showModal();
 }
 
-// Masks the API Key by default; the eye button reveals it.
+// Masks the token by default via CSS; the eye button reveals it. A text input (not type=password)
+// keeps the browser from offering to save it as a credential, since it is an API token, not a login.
 function setTokenVisibility(show) {
-  $('#brapiToken').type = show ? 'text' : 'password';
+  $('#brapiToken').classList.toggle('token-masked', !show);
   const toggle = $('#brapiToggle');
   toggle.setAttribute('aria-label', t(show ? 'tokenHide' : 'tokenShow'));
   toggle.innerHTML = `<i data-lucide="${show ? 'eye-off' : 'eye'}"></i>`;
@@ -493,7 +494,7 @@ $('#modalCancel').addEventListener('click', () => $('#addModal').close());
 $('#modalConfirm').addEventListener('click', confirmAddAsset);
 $('#settingsCancel').addEventListener('click', () => $('#settingsModal').close());
 $('#settingsSave').addEventListener('click', saveSettings);
-$('#brapiToggle').addEventListener('click', () => setTokenVisibility($('#brapiToken').type === 'password'));
+$('#brapiToggle').addEventListener('click', () => setTokenVisibility($('#brapiToken').classList.contains('token-masked')));
 $('#settingsModal').addEventListener('click', event => {
   const stepButton = event.target.closest('.stepper-btn');
   if (stepButton) stepSetting(stepButton);

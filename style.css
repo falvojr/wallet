@@ -965,6 +965,8 @@ tr:hover .remove-btn { opacity: 0.6; }
 .modal-field textarea:focus { border-color: var(--accent); }
 .input-reveal { position: relative; }
 .input-reveal input { padding-right: 42px; }
+/* Masks the value like a password field, but on a text input so the browser does not offer to save it as a credential. */
+.token-masked { -webkit-text-security: disc; }
 .input-reveal-btn {
   position: absolute;
   right: 4px;
