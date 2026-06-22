@@ -9,6 +9,8 @@ const STORAGE_KEYS = {
 };
 
 const PRICES_TTL = 24 * 60 * 60 * 1000;
+// brapi (free tier) only refreshes quotes every 15 minutes, so a fetch within this window returns the same data.
+const QUOTE_REFRESH_MS = 15 * 60 * 1000;
 
 export const CLASS_ICONS = {
   emergencyReserve: 'life-buoy',
@@ -316,6 +318,10 @@ export class PriceCache {
 
   get stale() {
     return this.#timestamp ? Date.now() - this.#timestamp > PRICES_TTL : false;
+  }
+
+  get recentlyUpdated() {
+    return this.#timestamp ? Date.now() - this.#timestamp < QUOTE_REFRESH_MS : false;
   }
 
   get dateStr() {

@@ -58,7 +58,7 @@ const strings = {
     badgeInvest: 'aportar',
     badgeInvestTitle: 'Sugerido para o próximo aporte.',
     badgeSkip: 'ignorar',
-    badgeSkipTitle: 'Fora do rebalanceamento (meta 0).',
+    badgeSkipTitle: 'Fora do rebalanceamento (meta zerada).',
 
     // Charts
     portfolioLabel: 'Patrimônio',
@@ -123,6 +123,7 @@ const strings = {
     toastConfigTokens: 'Configure sua API Key em ⚙️',
     toastPricesOk: 'Cotações atualizadas',
     toastPricesFail: 'Não foi possível buscar as cotações',
+    toastPricesRecent: 'Cotações atualizadas há poucos minutos',
     toastImported: 'Carteira importada',
     toastExported: 'JSON exportado',
     toastSettingsSaved: 'Configurações salvas',

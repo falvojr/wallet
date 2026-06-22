@@ -96,6 +96,11 @@ async function refreshPrices() {
     showToast(t('toastConfigTokens'));
     return;
   }
+  // The free brapi tier refreshes every 15 minutes, so a fetch within that window just repeats the same data.
+  if (prices.recentlyUpdated) {
+    showToast(t('toastPricesRecent'));
+    return;
+  }
 
   refreshingPrices = true;
   try {
