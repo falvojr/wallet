@@ -56,29 +56,15 @@ Confira se as API Keys estão salvas em Configurações e clique em **Cotar**. A
 **O que significa o badge `aportar`?**
 A classe (e o ativo) mais distante da meta, ou seja, o melhor destino do próximo aporte. Enquanto a meta da Reserva de Emergência não for atingida, ela é a única recomendação.
 
-## 🧱 Estrutura do projeto
+## 🧱 Sob o capô
 
-HTML, CSS e JavaScript puros (ES2023+), sem build step nem dependências de npm. As únicas bibliotecas externas são [D3](https://d3js.org) (gráfico de bolhas) e [Lucide](https://lucide.dev) (ícones), via CDN, e um Service Worker garante o uso offline (PWA).
+HTML, CSS e JavaScript puros (ES2023+), sem build nem dependências de npm: as únicas bibliotecas são [D3](https://d3js.org) (gráfico de bolhas) e [Lucide](https://lucide.dev) (ícones), via CDN, com um Service Worker para o uso offline (PWA). Arquivos pequenos e sem build mantêm o projeto fácil de evoluir, inclusive com a ajuda de agentes de IA.
 
-O código é dividido em módulos curtos, de responsabilidade única:
-
-| Arquivo | Papel |
-| --- | --- |
-| `js/state.js` | Estado e persistência: carteira, preferências, cotações e tema |
-| `js/calc.js` | Cálculos puros: totais, percentuais e recomendação de aporte |
-| `js/render.js` | Renderização da interface |
-| `js/chart.js` | Gráfico de bolhas (D3) |
-| `js/api.js` | Busca de cotações |
-| `js/i18n.js` | Textos da interface |
-| `app.js` | Eventos, modais e import/export |
-
-Arquivos pequenos, sem build e com as convenções escritas em [CLAUDE.md](CLAUDE.md) e as decisões registradas nas [ADRs](docs/adr/README.md): isso mantém o projeto fácil de evoluir com a ajuda de agentes de IA, o que conta bastante num projeto pessoal mantido por quem não é desenvolvedor backend.
-
-Para rodar local, basta um servidor estático na raiz: `python -m http.server 8123`. O Service Worker é cache-first, então recarregue a página duas vezes para ver as mudanças.
+Quem quiser os detalhes: as convenções de código estão em [CLAUDE.md](CLAUDE.md) e as decisões de arquitetura nas [ADRs](docs/adr/README.md).
 
 ### Formato do JSON
 
-A carteira é importada e exportada como JSON. Cada classe tem `items`, `target` (meta %) e `goal` (meta em R$, usada pela Reserva de Emergência); cada ativo tem `id`, `amount` e, opcionalmente, `target` (use `0` para ignorar no rebalanceamento) e `note`. O arquivo também guarda um bloco `preferences` (ordem das classes, ocultas no gráfico, ordenação, limites de aporte e Modo Sardinha); as API Keys nunca são exportadas.
+A carteira é exportada e importada como um JSON legível. Cada classe tem `items`, `target` (meta %) e `goal` (meta em R$, usada pela Reserva de Emergência); cada ativo tem `id`, `amount` e, opcionalmente, `target` (use `0` para ignorar no rebalanceamento) e `note`. As API Keys nunca são exportadas.
 
 ```json
 {
