@@ -123,7 +123,7 @@ const strings = {
     toastConfigTokens: 'Configure sua API Key em ⚙️',
     toastPricesOk: 'Cotações atualizadas',
     toastPricesFail: 'Não foi possível buscar as cotações',
-    toastPricesRecent: 'Cotações atualizadas há poucos minutos',
+    toastPricesRecent: 'Respira, Sardinha! As cotações ainda estão fresquinhas.',
     toastImported: 'Carteira importada',
     toastExported: 'JSON exportado',
     toastSettingsSaved: 'Configurações salvas',
