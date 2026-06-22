@@ -186,12 +186,16 @@ function openSettingsModal() {
   $('#settingsModal').showModal();
 }
 
-// Reflects whether a brapi key is configured; the actual connection is confirmed when Cotar succeeds.
+const STATUS_LABELS = { online: 'statusOnline', offline: 'statusOffline', off: 'statusNoKey' };
+
+// Subtle brapi status: online with fresh quotes, offline with a key but no current quotes, no key otherwise.
 function updateBrapiStatus() {
-  const filled = $('#brapiToken').value.trim().length > 0;
+  const hasToken = $('#brapiToken').value.trim().length > 0;
+  let state = 'off';
+  if (hasToken) state = prices.hasData && !prices.stale ? 'online' : 'offline';
   const status = $('#brapiStatus');
-  status.dataset.state = filled ? 'on' : 'off';
-  status.textContent = t(filled ? 'tokenSet' : 'tokenUnset');
+  status.dataset.state = state;
+  status.textContent = t(STATUS_LABELS[state]);
 }
 
 // Adjusts a stepper input within its min and max bounds.

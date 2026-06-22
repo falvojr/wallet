@@ -59,6 +59,39 @@ function tickerUrl(key, id) {
 
 // Render entry points
 
+function editingSelector(el) {
+  const data = el.dataset;
+  if (el.classList.contains('inline-input')) {
+    return `.inline-input[data-class="${data.class}"][data-idx="${data.idx}"][data-field="${data.field}"]`;
+  }
+  if (data.classTarget !== undefined) return `[data-class-target="${data.classTarget}"]`;
+  if (data.classGoal !== undefined) return `[data-class-goal="${data.classGoal}"]`;
+  return null;
+}
+
+/*
+ * A full re-render rebuilds the panels via innerHTML, dropping the focus and any uncommitted text of the edited field.
+ * Capture that field before the rebuild and restore it afterwards.
+ */
+function captureEditing() {
+  const el = document.activeElement;
+  if (!el || typeof el.matches !== 'function') return null;
+  if (!el.matches('.inline-input, [data-class-target], [data-class-goal]')) return null;
+  return { selector: editingSelector(el), value: el.value, start: el.selectionStart, end: el.selectionEnd };
+}
+
+function restoreEditing(snapshot) {
+  if (!snapshot || !snapshot.selector) return;
+  const el = $(snapshot.selector);
+  if (!el) return;
+  el.value = snapshot.value;
+  el.focus();
+  // Some input types reject setSelectionRange; the caret is non-essential, so ignore the failure.
+  try {
+    el.setSelectionRange(snapshot.start, snapshot.end);
+  } catch {}
+}
+
 export function render() {
   const hasData = portfolio.loaded;
   $('#emptyWelcome').hidden = hasData;
@@ -72,14 +105,17 @@ export function render() {
     return;
   }
 
+  const editing = captureEditing();
   renderTabs();
   renderPanels();
   refreshIcons();
   revealDescToggles();
+  restoreEditing(editing);
   if (activeTab === 'charts') renderBubbleChart();
 }
 
 export function renderOverviewOnly() {
+  const editing = captureEditing();
   const panel = $('[data-panel="overview"]');
   if (panel) {
     panel.innerHTML = renderOverview();
@@ -87,6 +123,7 @@ export function renderOverviewOnly() {
     revealDescToggles();
   }
   renderTabs();
+  restoreEditing(editing);
 }
 
 export function renderChartOnly() {

@@ -1081,34 +1081,29 @@ tr:hover .remove-btn { opacity: 0.6; }
   letter-spacing: 0;
   text-transform: none;
 }
+/* Subtle status: a muted label with a small dot that turns green only when quotes are loaded and fresh. */
 .token-status {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   flex-shrink: 0;
-  padding: 2px 9px;
-  border: 1px solid transparent;
-  border-radius: 999px;
   font-size: var(--type-label);
-  font-weight: 600;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 .token-status::before {
   content: '';
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--text-muted);
 }
-.token-status[data-state="on"] { color: var(--up); background: var(--quote-up-bg); border-color: var(--quote-up-border); }
-.token-status[data-state="off"] { color: var(--text-muted); background: rgba(155, 150, 166, 0.12); border-color: rgba(155, 150, 166, 0.22); }
+.token-status[data-state="online"]::before { background: var(--up); }
 .token-field-foot {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 7px;
+  justify-content: flex-end;
+  margin-top: 8px;
 }
-.token-coverage { font-size: var(--type-label); color: var(--text-muted); }
 .field-link {
   display: inline-flex;
   align-items: center;
