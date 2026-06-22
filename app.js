@@ -93,7 +93,7 @@ let refreshingPrices = false;
 async function refreshPrices() {
   if (refreshingPrices) return;
   if (!settings.hasTokens) {
-    showToast(t('toastConfigTokens'));
+    showToast(t('toastConfigTokens'), { label: t('toastConfigAction'), handler: openSettingsModal });
     return;
   }
   // The free brapi tier refreshes every 15 minutes, so a fetch within that window just repeats the same data.
