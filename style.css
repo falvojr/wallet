@@ -620,6 +620,7 @@ body {
   font-size: var(--type-label-sm);
   font-weight: 600;
   line-height: 1.4;
+  text-transform: capitalize;
   vertical-align: 1px;
 }
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }

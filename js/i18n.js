@@ -106,7 +106,7 @@ const strings = {
     settingsSectionApis: 'Cotações',
     settingsSectionInvest: 'Aportes',
     settingsSectionDisplay: 'Exibição',
-    settingsHint: 'Use uma API Key da <a href="https://brapi.dev" target="_blank" rel="noopener">brapi.dev</a> para cotar seus ativos.',
+    settingsHint: 'Crie uma API Key na <a href="https://brapi.dev" target="_blank" rel="noopener">brapi.dev</a> para cotar seus ativos.',
     tokenPlaceholder: 'Sua API Key (ações, FIIs, stocks e REITs)',
     statusOnline: 'online',
     statusOffline: 'offline',
