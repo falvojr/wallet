@@ -626,18 +626,6 @@ body {
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }
 .badge--invest { color: var(--accent-light); background: rgba(208, 188, 255, 0.18); border: 1px solid rgba(208, 188, 255, 0.30); }
 .badge--skip { color: var(--text-secondary); background: rgba(155, 150, 166, 0.12); border: 1px solid rgba(155, 150, 166, 0.22); }
-/* Connection status reuses the badge family for consistency; a dot turns green only when quotes are loaded and fresh. */
-.badge--status { margin-left: auto; gap: 5px; }
-.badge--status::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.badge--status[data-state="online"] { color: var(--quote-up-fg); background: var(--quote-up-bg); border: 1px solid var(--quote-up-border); }
-.badge--status[data-state="offline"],
-.badge--status[data-state="off"] { color: var(--text-secondary); background: rgba(155, 150, 166, 0.12); border: 1px solid rgba(155, 150, 166, 0.22); }
 
 /* Ticker links */
 
@@ -975,6 +963,29 @@ tr:hover .remove-btn { opacity: 0.6; }
 }
 .modal-field input:focus,
 .modal-field textarea:focus { border-color: var(--accent); }
+.input-reveal { position: relative; }
+.input-reveal input { padding-right: 42px; }
+.input-reveal-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--ease), background var(--ease);
+}
+.input-reveal-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+.input-reveal-btn:focus-visible { color: var(--text-primary); box-shadow: 0 0 0 2px var(--accent); }
+.input-reveal-btn svg,
+.input-reveal-btn [data-lucide] { width: 17px; height: 17px; }
 .setting-row {
   display: flex;
   align-items: center;
@@ -1297,8 +1308,6 @@ tr:hover .remove-btn { opacity: 0.6; }
 [data-theme="light"] [data-tab="assets"] { --card-color: #546e7a; }
 [data-theme="light"] .badge--invest { color: #4a357c; background: rgba(103, 80, 164, 0.10); border-color: rgba(103, 80, 164, 0.22); }
 [data-theme="light"] .badge--skip { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.16); }
-[data-theme="light"] .badge--status[data-state="offline"],
-[data-theme="light"] .badge--status[data-state="off"] { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.16); }
 [data-theme="light"] .btn--tonal { background: rgba(103, 80, 164, 0.12); color: var(--accent); }
 [data-theme="light"] .btn--tonal:hover { background: rgba(103, 80, 164, 0.18); }
 [data-theme="light"] .notice--warning { color: #7a4900; background: rgba(161, 98, 7, 0.08); border-color: rgba(161, 98, 7, 0.20); }
