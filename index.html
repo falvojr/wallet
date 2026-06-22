@@ -132,22 +132,12 @@
       <h4 class="modal-section-title">
         <i data-lucide="key-round" class="modal-section-icon"></i>
         <span data-i18n="settingsSectionApis">Cotações</span>
+        <span class="badge badge--status" id="brapiStatus" data-state="off"></span>
       </h4>
-      <p class="modal-hint" data-i18n="settingsHint">Sua chave da brapi puxa as cotações.</p>
-      <div class="modal-field token-field">
-        <div class="token-field-head">
-          <label for="brapiToken" data-i18n="brapiLabel">brapi.dev</label>
-          <span class="token-status" id="brapiStatus" data-state="off"></span>
-        </div>
+      <p class="modal-hint" data-i18n-html="settingsHint">Use uma API Key da <a href="https://brapi.dev" target="_blank" rel="noopener">brapi.dev</a> para cotar seus ativos.</p>
+      <div class="modal-field">
         <input type="text" id="brapiToken" data-i18n-placeholder="tokenPlaceholder"
           placeholder="Sua API Key (ações, FIIs, stocks e REITs)" autocomplete="off">
-        <div class="token-field-foot">
-          <a class="field-link" href="https://brapi.dev" target="_blank" rel="noopener"
-            data-i18n-aria-label="createAccountAria" aria-label="Criar conta grátis (abre em nova aba)">
-            <span data-i18n="createAccount">Criar Conta Grátis</span>
-            <i data-lucide="external-link"></i>
-          </a>
-        </div>
       </div>
 
       <h4 class="modal-section-title">

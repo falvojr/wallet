@@ -615,18 +615,28 @@ body {
   display: inline-flex;
   align-items: center;
   margin-left: 5px;
-  padding: 3px 7px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: var(--type-label-sm);
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 600;
   line-height: 1.4;
-  text-transform: uppercase;
   vertical-align: 1px;
 }
 .badge-icon { width: 10px; height: 10px; margin-right: 3px; vertical-align: -1px; }
 .badge--invest { color: var(--accent-light); background: rgba(208, 188, 255, 0.18); border: 1px solid rgba(208, 188, 255, 0.30); }
 .badge--skip { color: var(--text-secondary); background: rgba(155, 150, 166, 0.12); border: 1px solid rgba(155, 150, 166, 0.22); }
+/* Connection status reuses the badge family for consistency; a dot turns green only when quotes are loaded and fresh. */
+.badge--status { margin-left: auto; gap: 5px; }
+.badge--status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge--status[data-state="online"] { color: var(--quote-up-fg); background: var(--quote-up-bg); border: 1px solid var(--quote-up-border); }
+.badge--status[data-state="offline"],
+.badge--status[data-state="off"] { color: var(--text-secondary); background: rgba(155, 150, 166, 0.12); border: 1px solid rgba(155, 150, 166, 0.22); }
 
 /* Ticker links */
 
@@ -1066,59 +1076,9 @@ tr:hover .remove-btn { opacity: 0.6; }
   background: #fff;
 }
 .switch:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
-.token-field-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.token-field-head label {
-  margin-bottom: 0;
-  font-size: var(--type-subtitle);
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: 0;
-  text-transform: none;
-}
-/* Subtle status: a muted label with a small dot that turns green only when quotes are loaded and fresh. */
-.token-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-  font-size: var(--type-label);
-  font-weight: 500;
-  color: var(--text-muted);
-}
-.token-status::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-muted);
-}
-.token-status[data-state="online"]::before { background: var(--up); }
-.token-field-foot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-.field-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--type-label);
-  font-weight: 600;
-  color: var(--link);
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.field-link svg,
-.field-link [data-lucide] { width: 13px; height: 13px; }
-.field-link:hover,
-.field-link:focus-visible { color: var(--link-hover); }
+.modal-hint a { color: var(--link); }
+.modal-hint a:hover,
+.modal-hint a:focus-visible { color: var(--link-hover); }
 .modal-actions {
   display: flex;
   gap: 8px;
@@ -1336,6 +1296,8 @@ tr:hover .remove-btn { opacity: 0.6; }
 [data-theme="light"] [data-tab="assets"] { --card-color: #546e7a; }
 [data-theme="light"] .badge--invest { color: #4a357c; background: rgba(103, 80, 164, 0.10); border-color: rgba(103, 80, 164, 0.22); }
 [data-theme="light"] .badge--skip { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.16); }
+[data-theme="light"] .badge--status[data-state="offline"],
+[data-theme="light"] .badge--status[data-state="off"] { color: #546e7a; background: rgba(84, 110, 122, 0.08); border-color: rgba(84, 110, 122, 0.16); }
 [data-theme="light"] .btn--tonal { background: rgba(103, 80, 164, 0.12); color: var(--accent); }
 [data-theme="light"] .btn--tonal:hover { background: rgba(103, 80, 164, 0.18); }
 [data-theme="light"] .notice--warning { color: #7a4900; background: rgba(161, 98, 7, 0.08); border-color: rgba(161, 98, 7, 0.20); }
