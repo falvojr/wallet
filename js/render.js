@@ -461,6 +461,9 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const ticker = url
     ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${id}</a>`
     : `<span class="ticker-name">${id}</span>`;
+  const noteIndicator = item.note
+    ? ` <span class="note-indicator" title="${esc(item.note)}" aria-label="${t('a11yHasNote')}"><i data-lucide="message-circle"></i></span>`
+    : '';
 
   const { priceStr, changeHtml } = formatPrice(key, item, price);
   const rowCls = isRecommended
@@ -468,7 +471,7 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
     : isSkipped ? ' class="row-skipped"' : '';
 
   return `<tr${rowCls}>
-    <td class="td-ticker">${ticker}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>
+    <td class="td-ticker">${ticker}${noteIndicator}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>
     <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}"
       data-class="${key}" data-idx="${index}" data-field="amount" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yAmountOf', id)}"></td>
@@ -481,8 +484,7 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
       placeholder="${t('targetPlaceholder')}" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yTargetOf', id)}"></td>
     <td class="td-actions">
-      <button class="icon-btn icon-btn--ghost edit-btn${item.note ? ' has-note' : ''}"
-        data-edit-class="${key}" data-edit-idx="${index}"
+      <button class="icon-btn icon-btn--ghost edit-btn" data-edit-class="${key}" data-edit-idx="${index}"
         aria-label="${t('a11yEdit', id)}"><i data-lucide="pencil"></i></button>
     </td>
   </tr>`;

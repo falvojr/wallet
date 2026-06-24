@@ -825,22 +825,12 @@ body {
 .row-skipped { opacity: 0.5; }
 .row-skipped:hover { opacity: 0.75; }
 
-.edit-btn { color: var(--text-muted); opacity: 0.35; transition: all var(--ease); }
-.edit-btn.has-note { opacity: 0.7; }
-tr:hover .edit-btn { opacity: 0.7; }
-.edit-btn:hover { opacity: 1; color: var(--accent-light); }
-/* A dot marks an asset that already has a comment. */
-.edit-btn.has-note { position: relative; }
-.edit-btn.has-note::after {
-  content: '';
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-}
+.edit-btn { color: var(--text-secondary); transition: color var(--ease); }
+.edit-btn:hover { color: var(--accent-light); }
+/* A comment shows as a quiet icon next to the name; the note itself is the tooltip. */
+.note-indicator { color: var(--text-muted); cursor: help; margin-left: 5px; vertical-align: middle; }
+.note-indicator svg,
+.note-indicator [data-lucide] { width: 13px; height: 13px; }
 
 .sort-btn {
   display: inline-flex;
@@ -1218,9 +1208,6 @@ tr:hover .edit-btn { opacity: 0.7; }
   .legend-item-value { white-space: normal; }
 }
 
-@media (hover: none) {
-  .edit-btn { opacity: 0.5; }
-}
 
 @media (min-width: 480px) {
   .app-container { padding: 0 16px 100px; }

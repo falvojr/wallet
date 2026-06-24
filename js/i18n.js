@@ -151,6 +151,7 @@ const strings = {
     // Accessibility
     a11yBubbleChart: 'Mapa da carteira por tamanho de posição',
     a11yEdit: (id) => `Editar ${id}`,
+    a11yHasNote: 'Tem comentário',
     a11yTargetClass: (label) => `Meta de ${label} (%)`,
     a11yGoalClass: (label) => `Meta de ${label} (R$)`,
     a11yAmountOf: (id) => `Quantidade de ${id}`,
