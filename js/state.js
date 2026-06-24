@@ -173,15 +173,6 @@ export class Portfolio {
     if (normalized) this.#data[key].items.push(normalized);
   }
 
-  setItemNote(key, id, note) {
-    const item = this.items(key).find(a => a.id === id);
-    if (!item) return;
-
-    const trimmed = note.trim();
-    if (trimmed) item.note = trimmed;
-    else delete item.note;
-  }
-
   load() {
     const raw = this.#storage.read(null);
     this.#data = raw ? normalizePortfolioData(raw) : null;

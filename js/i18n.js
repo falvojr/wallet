@@ -72,7 +72,9 @@ const strings = {
     colChange: 'Hoje',
     colTotal: 'Total',
     colActual: 'Atual %',
+    colActualHint: 'Participação atual do ativo na classe.',
     colTarget: 'Meta %',
+    colTargetHint: 'Participação desejada do ativo na classe.',
     colActionsA11y: 'Opções',
     addAsset: 'Adicionar ativo',
     descMore: 'ver mais',
@@ -89,17 +91,16 @@ const strings = {
     addFieldAmount: 'Quantidade ou valor (R$)',
     addAmountHint: 'Ex: 100 (use 0 para incluir sem posição)',
     addFieldTarget: 'Meta % na Classe',
-    addTargetHint: 'Deixe em branco para distribuição igual; use 0 para ignorar',
+    addTargetHint: 'Deixe em branco para distribuir igual, ou 0 para ignorar',
     btnCancel: 'Cancelar',
     btnAdd: 'Adicionar',
 
-    // Note modal
-    noteModalTitle: 'Comentário',
-    noteHintPrefix: 'Comentário sobre',
+    // Edit modal
+    editModalTitle: 'Editar ativo',
+    editFieldNote: 'Comentário (opcional)',
     notePlaceholder: 'Ex: Vence em 2027, rendendo 120% do CDI',
-    noteTextAria: 'Comentário sobre o ativo',
-    noteShortcutHint: 'Ctrl + Enter para salvar',
     btnSave: 'Salvar',
+    btnDelete: 'Excluir',
 
     // Settings
     settingsTitle: 'Configurações',
@@ -151,9 +152,7 @@ const strings = {
 
     // Accessibility
     a11yBubbleChart: 'Mapa da carteira por tamanho de posição',
-    a11yRemove: (id) => `Remover ${id}`,
-    a11yNote: (id) => `Comentário de ${id}`,
-    a11yAddNote: 'Adicionar comentário',
+    a11yEdit: (id) => `Editar ${id}`,
     a11yTargetClass: (label) => `Meta de ${label} (%)`,
     a11yGoalClass: (label) => `Meta de ${label} (R$)`,
     a11yAmountOf: (id) => `Quantidade de ${id}`,

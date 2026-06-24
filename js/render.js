@@ -373,11 +373,12 @@ function sortIndicator(col) {
   return `<i data-lucide="${icon}" class="sort-icon"></i>`;
 }
 
-function sortableHeader(col, label, extraClass = '') {
+function sortableHeader(col, label, extraClass = '', hint = '') {
   const ariaSort = preferences.sortCol !== col
     ? 'none'
     : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
-  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}">
+  const hintAttr = hint ? ` title="${hint}"` : '';
+  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}"${hintAttr}>
     <button type="button" class="sort-btn" data-sort="${col}">${label} ${sortIndicator(col)}</button>
   </th>`;
 }
@@ -433,8 +434,8 @@ function renderClassPanel(key) {
       ${sortableHeader('amount', t('colAmount'), ' col-r')}
       ${sortableHeader('price', t('colPrice'), ' col-r')}
       ${sortableHeader('change', t('colChange'), ' col-r')}
-      ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r')}
-      ${sortableHeader('target', t('colTarget'), ' col-r')}
+      ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r', settings.sardineMode ? '' : t('colActualHint'))}
+      ${sortableHeader('target', t('colTarget'), ' col-r', t('colTargetHint'))}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
@@ -458,13 +459,12 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const id = esc(item.id);
 
   const url = tickerUrl(key, item.id);
+  const noteTitle = item.note ? ` title="${esc(item.note)}"` : '';
   const ticker = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${id}</a>`
-    : `<span class="ticker-name">${id}</span>`;
+    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteTitle}>${id}</a>`
+    : `<span class="ticker-name"${noteTitle}>${id}</span>`;
 
   const { priceStr, changeHtml } = formatPrice(key, item, price);
-  const noteIcon = item.note ? 'message-square-text' : 'message-square';
-  const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
   const rowCls = isRecommended
     ? ' class="row-target"'
     : isSkipped ? ' class="row-skipped"' : '';
@@ -483,12 +483,8 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
       placeholder="${t('targetPlaceholder')}" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yTargetOf', id)}"></td>
     <td class="td-actions">
-      <button class="icon-btn icon-btn--ghost note-btn${item.note ? ' has-note' : ''}"
-        data-note-class="${key}" data-note-id="${id}" title="${noteTitle}"
-        aria-label="${t('a11yNote', id)}"><i data-lucide="${noteIcon}"></i></button>
-      <button class="icon-btn icon-btn--ghost remove-btn" data-class="${key}" data-idx="${index}"
-        title="${t('a11yRemove', id)}" aria-label="${t('a11yRemove', id)}">
-        <i data-lucide="trash-2"></i></button>
+      <button class="icon-btn icon-btn--ghost edit-btn" data-edit-class="${key}" data-edit-idx="${index}"
+        aria-label="${t('a11yEdit', id)}"><i data-lucide="pencil"></i></button>
     </td>
   </tr>`;
 }

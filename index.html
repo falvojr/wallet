@@ -98,7 +98,7 @@
       <div class="modal-field">
         <label for="newTarget" data-i18n="addFieldTarget">Meta % na Classe</label>
         <input type="text" id="newTarget" data-i18n-placeholder="addTargetHint"
-          placeholder="Deixe em branco para distribuição igual; use 0 para ignorar" inputmode="decimal"
+          placeholder="Deixe em branco para distribuir igual, ou 0 para ignorar" inputmode="decimal"
           autocomplete="off">
       </div>
       <div class="modal-actions">
@@ -108,19 +108,24 @@
     </div>
   </dialog>
 
-  <dialog class="modal-dialog modal-dialog--wide" id="noteModal" aria-labelledby="noteModalTitle">
+  <dialog class="modal-dialog modal-dialog--wide" id="editModal" aria-labelledby="editModalTitle">
     <div class="modal">
-      <h3 id="noteModalTitle" data-i18n="noteModalTitle">Comentário</h3>
-      <p class="modal-hint"><span data-i18n="noteHintPrefix">Comentário sobre</span> <strong
-          id="noteAssetName"></strong></p>
+      <h3 id="editModalTitle" data-i18n="editModalTitle">Editar ativo</h3>
       <div class="modal-field">
-        <textarea id="noteText" rows="8" data-i18n-placeholder="notePlaceholder" data-i18n-aria-label="noteTextAria"
-          placeholder="Ex.: Vence em 2027, rendendo 120% do CDI" aria-label="Comentário sobre o ativo"></textarea>
+        <label for="editName" data-i18n="addFieldTicker">Nome / Ticker</label>
+        <input type="text" id="editName" autocomplete="off">
       </div>
-      <div class="modal-actions">
-        <span class="modal-shortcut-hint" data-i18n="noteShortcutHint">Ctrl + Enter para salvar</span>
-        <button type="button" class="btn btn--text" id="noteCancel" data-i18n="btnCancel">Cancelar</button>
-        <button type="button" class="btn btn--filled" id="noteSave" data-i18n="btnSave">Salvar</button>
+      <div class="modal-field">
+        <label for="editNote" data-i18n="editFieldNote">Comentário (opcional)</label>
+        <textarea id="editNote" rows="6" data-i18n-placeholder="notePlaceholder"
+          placeholder="Ex.: Vence em 2027, rendendo 120% do CDI"></textarea>
+      </div>
+      <div class="modal-actions modal-actions--split">
+        <button type="button" class="btn btn--text btn--danger" id="editDelete" data-i18n="btnDelete">Excluir</button>
+        <div class="modal-actions-end">
+          <button type="button" class="btn btn--text" id="editCancel" data-i18n="btnCancel">Cancelar</button>
+          <button type="button" class="btn btn--filled" id="editSave" data-i18n="btnSave">Salvar</button>
+        </div>
       </div>
     </div>
   </dialog>
