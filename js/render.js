@@ -463,8 +463,6 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
     : `<span class="ticker-name">${id}</span>`;
 
   const { priceStr, changeHtml } = formatPrice(key, item, price);
-  const noteIcon = item.note ? 'message-square-text' : 'message-square';
-  const noteTitle = item.note ? esc(item.note) : t('a11yAddNote');
   const rowCls = isRecommended
     ? ' class="row-target"'
     : isSkipped ? ' class="row-skipped"' : '';
@@ -483,12 +481,9 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
       placeholder="${t('targetPlaceholder')}" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yTargetOf', id)}"></td>
     <td class="td-actions">
-      <button class="icon-btn icon-btn--ghost note-btn${item.note ? ' has-note' : ''}"
-        data-note-class="${key}" data-note-id="${id}" title="${noteTitle}"
-        aria-label="${t('a11yNote', id)}"><i data-lucide="${noteIcon}"></i></button>
-      <button class="icon-btn icon-btn--ghost remove-btn" data-class="${key}" data-idx="${index}"
-        title="${t('a11yRemove', id)}" aria-label="${t('a11yRemove', id)}">
-        <i data-lucide="trash-2"></i></button>
+      <button class="icon-btn icon-btn--ghost edit-btn${item.note ? ' has-note' : ''}"
+        data-edit-class="${key}" data-edit-idx="${index}"
+        aria-label="${t('a11yEdit', id)}"><i data-lucide="pencil"></i></button>
     </td>
   </tr>`;
 }

@@ -159,26 +159,62 @@ function confirmAddAsset() {
   showToast(t('toastAdded', id));
 }
 
-// Note modal
+// Edit asset modal
 
-let noteClassKey = null;
-let noteItemId = null;
+let editClassKey = null;
+let editIndex = null;
 
-function openNoteModal(classKey, itemId) {
-  noteClassKey = classKey;
-  noteItemId = itemId;
-  const item = portfolio.items(classKey).find(a => a.id === itemId);
-  $('#noteAssetName').textContent = itemId;
-  $('#noteText').value = item?.note || '';
-  $('#noteModal').showModal();
+function openEditModal(classKey, index) {
+  const item = portfolio.items(classKey)[index];
+  if (!item) return;
+  editClassKey = classKey;
+  editIndex = index;
+  $('#editName').value = item.id;
+  $('#editNote').value = item.note || '';
+  $('#editModal').showModal();
 }
 
-function saveNote() {
-  if (!noteClassKey || !noteItemId) return;
-  portfolio.setItemNote(noteClassKey, noteItemId, $('#noteText').value);
+function saveAsset() {
+  if (editClassKey === null || editIndex === null) return;
+  const items = portfolio.items(editClassKey);
+  const item = items[editIndex];
+  if (!item) return;
+
+  const newId = $('#editName').value.trim();
+  if (!newId) { $('#editName').focus(); return; }
+  if (newId !== item.id && items.some((other, i) => i !== editIndex && other.id === newId)) {
+    showToast(t('toastExists', newId));
+    return;
+  }
+
+  item.id = newId;
+  const note = $('#editNote').value.trim();
+  if (note) item.note = note;
+  else delete item.note;
+
   portfolio.save();
-  $('#noteModal').close();
+  $('#editModal').close();
   render();
+}
+
+function deleteAsset() {
+  if (editClassKey === null || editIndex === null) return;
+  const classKey = editClassKey;
+  const items = portfolio.items(classKey);
+  const removedItem = { ...items[editIndex] };
+
+  items.splice(editIndex, 1);
+  portfolio.save();
+  $('#editModal').close();
+  render();
+  showToast(t('toastRemoved', removedItem.id), {
+    label: t('toastUndo'),
+    handler() {
+      portfolio.addItem(classKey, removedItem);
+      portfolio.save();
+      render();
+    },
+  });
 }
 
 // Settings modal
@@ -324,30 +360,9 @@ elements.panels.addEventListener('click', event => {
     return;
   }
 
-  const removeButton = event.target.closest('.remove-btn');
-  if (removeButton) {
-    const classKey = removeButton.dataset.class;
-    const items = portfolio.items(classKey);
-    const index = Number.parseInt(removeButton.dataset.idx, 10);
-    const removedItem = { ...items[index] };
-
-    items.splice(index, 1);
-    portfolio.save();
-    render();
-    showToast(t('toastRemoved', removedItem.id), {
-      label: t('toastUndo'),
-      handler() {
-        portfolio.addItem(classKey, removedItem);
-        portfolio.save();
-        render();
-      },
-    });
-    return;
-  }
-
-  const noteButton = event.target.closest('.note-btn');
-  if (noteButton) {
-    openNoteModal(noteButton.dataset.noteClass, noteButton.dataset.noteId);
+  const editButton = event.target.closest('.edit-btn');
+  if (editButton) {
+    openEditModal(editButton.dataset.editClass, Number.parseInt(editButton.dataset.editIdx, 10));
     return;
   }
 
@@ -499,18 +514,19 @@ $('#settingsModal').addEventListener('click', event => {
   const stepButton = event.target.closest('.stepper-btn');
   if (stepButton) stepSetting(stepButton);
 });
-$('#noteCancel').addEventListener('click', () => $('#noteModal').close());
-$('#noteSave').addEventListener('click', saveNote);
+$('#editCancel').addEventListener('click', () => $('#editModal').close());
+$('#editSave').addEventListener('click', saveAsset);
+$('#editDelete').addEventListener('click', deleteAsset);
 
-['#addModal', '#noteModal', '#settingsModal'].forEach(selector => bindBackdropClose($(selector)));
+['#addModal', '#editModal', '#settingsModal'].forEach(selector => bindBackdropClose($(selector)));
 
 $('#addModal').addEventListener('close', () => {
   addClassKey = null;
 });
 
-$('#noteModal').addEventListener('close', () => {
-  noteClassKey = null;
-  noteItemId = null;
+$('#editModal').addEventListener('close', () => {
+  editClassKey = null;
+  editIndex = null;
 });
 
 // Keyboard shortcuts
@@ -518,8 +534,8 @@ $('#noteModal').addEventListener('close', () => {
 $('#newTicker').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newAmount').focus(); });
 $('#newAmount').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newTarget').focus(); });
 $('#newTarget').addEventListener('keydown', e => { if (e.key === 'Enter') confirmAddAsset(); });
-$('#noteText').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveNote(); }
+$('#editNote').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); saveAsset(); }
 });
 
 // Service Worker
