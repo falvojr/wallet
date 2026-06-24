@@ -73,6 +73,7 @@ const strings = {
     colTotal: 'Total',
     colActual: 'Atual %',
     colTarget: 'Meta %',
+    colTargetHint: 'Meta do ativo dentro da classe. Em branco distribui igual; 0 ignora no rebalanceamento.',
     colActionsA11y: 'Opções',
     addAsset: 'Adicionar ativo',
     descMore: 'ver mais',

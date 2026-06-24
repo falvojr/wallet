@@ -373,11 +373,12 @@ function sortIndicator(col) {
   return `<i data-lucide="${icon}" class="sort-icon"></i>`;
 }
 
-function sortableHeader(col, label, extraClass = '') {
+function sortableHeader(col, label, extraClass = '', hint = '') {
   const ariaSort = preferences.sortCol !== col
     ? 'none'
     : preferences.sortDir === 'asc' ? 'ascending' : 'descending';
-  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}">
+  const hintAttr = hint ? ` title="${hint}"` : '';
+  return `<th class="col-${col}${extraClass}" aria-sort="${ariaSort}"${hintAttr}>
     <button type="button" class="sort-btn" data-sort="${col}">${label} ${sortIndicator(col)}</button>
   </th>`;
 }
@@ -434,7 +435,7 @@ function renderClassPanel(key) {
       ${sortableHeader('price', t('colPrice'), ' col-r')}
       ${sortableHeader('change', t('colChange'), ' col-r')}
       ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r')}
-      ${sortableHeader('target', t('colTarget'), ' col-r')}
+      ${sortableHeader('target', t('colTarget'), ' col-r', t('colTargetHint'))}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
     <tbody>
