@@ -827,10 +827,8 @@ body {
 
 .edit-btn { color: var(--text-secondary); transition: color var(--ease); }
 .edit-btn:hover { color: var(--accent-light); }
-/* A comment shows as a quiet icon next to the name; the note itself is the tooltip. */
-.note-indicator { color: var(--text-muted); cursor: help; margin-left: 5px; vertical-align: middle; }
-.note-indicator svg,
-.note-indicator [data-lucide] { width: 13px; height: 13px; }
+/* A free-text name carrying a comment shows it on hover; the help cursor hints the tooltip. */
+.ticker-name[title] { cursor: help; }
 
 .sort-btn {
   display: inline-flex;

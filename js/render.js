@@ -458,12 +458,10 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
   const id = esc(item.id);
 
   const url = tickerUrl(key, item.id);
+  const noteTitle = item.note ? ` title="${esc(item.note)}"` : '';
   const ticker = url
-    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link">${id}</a>`
-    : `<span class="ticker-name">${id}</span>`;
-  const noteIndicator = item.note
-    ? ` <span class="note-indicator" title="${esc(item.note)}" aria-label="${t('a11yHasNote')}"><i data-lucide="message-circle"></i></span>`
-    : '';
+    ? `<a href="${url}" target="_blank" rel="noopener" class="ticker-link"${noteTitle}>${id}</a>`
+    : `<span class="ticker-name"${noteTitle}>${id}</span>`;
 
   const { priceStr, changeHtml } = formatPrice(key, item, price);
   const rowCls = isRecommended
@@ -471,7 +469,7 @@ function renderAssetRow(key, item, index, recommendedIds, classTotal) {
     : isSkipped ? ' class="row-skipped"' : '';
 
   return `<tr${rowCls}>
-    <td class="td-ticker">${ticker}${noteIndicator}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>
+    <td class="td-ticker">${ticker}${isRecommended ? investBadge() : isSkipped ? skipBadge() : ''}</td>
     <td class="td-r"><input class="inline-input inline-input--qty" type="text" value="${item.amount}"
       data-class="${key}" data-idx="${index}" data-field="amount" inputmode="decimal" autocomplete="off"
       aria-label="${t('a11yAmountOf', id)}"></td>

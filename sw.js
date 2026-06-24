@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holding-v29';
+const CACHE_NAME = 'holding-v30';
 const APP_FILES = [
   './',
   './index.html',
