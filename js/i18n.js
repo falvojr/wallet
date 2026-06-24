@@ -91,7 +91,7 @@ const strings = {
     addFieldAmount: 'Quantidade ou valor (R$)',
     addAmountHint: 'Ex: 100 (use 0 para incluir sem posição)',
     addFieldTarget: 'Meta % na Classe',
-    addTargetHint: 'Deixe em branco para distribuição igual; use 0 para ignorar',
+    addTargetHint: 'Deixe em branco para distribuir igual, ou 0 para ignorar',
     btnCancel: 'Cancelar',
     btnAdd: 'Adicionar',
 
