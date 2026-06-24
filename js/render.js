@@ -434,7 +434,7 @@ function renderClassPanel(key) {
       ${sortableHeader('amount', t('colAmount'), ' col-r')}
       ${sortableHeader('price', t('colPrice'), ' col-r')}
       ${sortableHeader('change', t('colChange'), ' col-r')}
-      ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r')}
+      ${sortableHeader('total', settings.sardineMode ? t('colTotal') : t('colActual'), ' col-r', settings.sardineMode ? '' : t('colActualHint'))}
       ${sortableHeader('target', t('colTarget'), ' col-r', t('colTargetHint'))}
       <th class="col-actions"><span class="sr-only">${t('colActionsA11y')}</span></th>
     </tr></thead>
